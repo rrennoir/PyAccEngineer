@@ -1,42 +1,73 @@
+import ipaddress
+import math
+import socket
+import struct
+import time
+import tkinter
+from dataclasses import astuple, dataclass
+from enum import Enum, auto
+from functools import partial
 from multiprocessing import Pipe, Process, Queue
 from multiprocessing.connection import Connection
-from dataclasses import dataclass, astuple
+from threading import Event, Thread
+from typing import Tuple
+
+import pyautogui
+import win32com.client
+import win32gui
 
 from SharedMemory.PyAccSharedMemory import *
-import time
-import math
-import pyautogui
-import tkinter
-from typing import Optional, Tuple
-from functools import partial
-
-import win32gui
-import win32com.client
 
 
-def ACCWindowFinderCallback(hwnd: int, obj) -> bool:
-    """Since win32gui.FindWindow(None, 'AC2') doesn't work since kunos are a bunch of pepega and the title is 'AC2   '... """
-    
-    title = win32gui.GetWindowText(hwnd)
-    if title.find("AC2") != -1:
-        obj.append(hwnd)
+class PacketType(Enum):
 
-    return True
+    Connect = 1
+    SmData = 2
+    ServerData = 3
+    Disconnect = 4
+    ConnectionAccepted = 5
+    Strategy = 6
+    StrategyOK = 7
+
 
 @dataclass
 class PitStop:
 
     fuel: float
-    tyre_set: Optional[int]
+    tyre_set: int
     tyre_compound: str
-    tyre_pressures: Optional[Tuple[float]]
+    tyre_pressures: Tuple[float]
     next_driver: int = 0
     brake_pad: int = 1
     repairs_bodywork: bool = True
     repairs_suspension: bool = True
 
+    def to_bytes(self) -> bytes:
+        buffer = []
+        buffer.append(struct.pack("!f", self.fuel))
+        buffer.append(struct.pack("!i", self.tyre_set))
+        buffer.append(struct.pack("!3s", bytearray(self.tyre_compound, "utf-8")))
+        buffer.append(struct.pack("!4f", *self.tyre_pressures))
+        buffer.append(struct.pack("!i", self.next_driver))
+        buffer.append(struct.pack("!i", self.brake_pad))
+        buffer.append(struct.pack("!?", self.repairs_bodywork))
+        buffer.append(struct.pack("!?", self.repairs_suspension))
+
+        return b"".join(buffer)
+
+
+def ACCWindowFinderCallback(hwnd: int, obj: list) -> bool:
+    """Since win32gui.FindWindow(None, 'AC2') doesn't work since kunos are a bunch of pepega and the title is 'AC2   '... """
+    
+    title: str = win32gui.GetWindowText(hwnd)
+    if title.find("AC2") != -1:
+        obj.append(hwnd)
+
+    return True
+
 
 def set_acc_forground() -> None:
+    # List because I need to pass arg by reference and not value
     hwnd = []
     win32gui.EnumWindows(ACCWindowFinderCallback, hwnd)
     if len(hwnd) != 0:
@@ -104,8 +135,7 @@ def set_strategy(strategy: PitStop, sm: ACC_map, comm: Connection, data_queue: Q
         pyautogui.press("down")
         time.sleep(0.01)
 
-    mfd_fuel = sm.Graphics.mfd_fuel_to_add
-    set_fuel(mfd_fuel, strategy.fuel)
+    set_fuel(sm.Graphics.mfd_fuel_to_add, strategy.fuel)
 
     # check if tyre set is on wet, tyre set will be disable
     # so going down 5 times will be FR instead of FL
@@ -117,12 +147,13 @@ def set_strategy(strategy: PitStop, sm: ACC_map, comm: Connection, data_queue: Q
     old_fr = sm.Graphics.mfd_tyre_pressure.front_right
     pyautogui.press("left")
 
+    time.sleep(0.1)
     comm.send("NEW_DATA")
-    sm = data_queue.get() 
+    sm = data_queue.get()
 
-    wet_was_selected = False
-    if old_fr != sm.Graphics.mfd_tyre_pressure.front_right:
-        wet_was_selected = True
+    new_fr = sm.Graphics.mfd_tyre_pressure.front_right
+    wet_was_selected = not math.isclose(old_fr, new_fr, rel_tol=1e-2)
+
     pyautogui.press("right")
     time.sleep(0.01)
 
@@ -145,6 +176,7 @@ def set_strategy(strategy: PitStop, sm: ACC_map, comm: Connection, data_queue: Q
     set_tyre_compound(strategy.tyre_compound)
 
     # pressure data might be invalide (pressing left when on dry compound set pressure as currently used)
+    time.sleep(0.1)
     comm.send("NEW_DATA")
     sm = data_queue.get()
 
@@ -154,7 +186,6 @@ def set_strategy(strategy: PitStop, sm: ACC_map, comm: Connection, data_queue: Q
 
         mfd_tyre_set = sm.Graphics.mfd_tyre_set
         set_tyre_set(mfd_tyre_set, strategy.tyre_set)
-
         down = 3        
 
     else:
@@ -165,8 +196,6 @@ def set_strategy(strategy: PitStop, sm: ACC_map, comm: Connection, data_queue: Q
         time.sleep(0.01)
 
     mfd_pressures = astuple(sm.Graphics.mfd_tyre_pressure)
-    print(mfd_pressures)
-
     for tyre_index, tyre_pressure in enumerate(mfd_pressures):
 
         set_tyre_pressure(tyre_pressure, strategy.tyre_pressures[tyre_index])
@@ -182,7 +211,6 @@ def set_tyre_compound(compound: str):
         pyautogui.press("right")
     
     time.sleep(0.01)
-
 
 
 class ButtonPannel(tkinter.Frame):
@@ -247,11 +275,27 @@ class ConnectionWindow(tkinter.Toplevel):
 
     def connect(self) -> None:
 
-        print(f"{self.e_ip.get() = }")
-        print(f"{self.e_port.get() = }")
+        self.b_connect.config(state="disabled")
 
-        # TODO really connect to something
+        try:
+            ipaddress.ip_address(self.e_ip.get())
+            self.e_ip.config(background="White")
 
+            if self.e_port.get().isnumeric():
+                self.e_port.config(background="White")
+                port = int(self.e_port.get())
+
+                if self.master.connect_to_server(self.e_ip.get(), port):
+                    self.destroy()
+
+                else:
+                    self.b_connect.config(state="active")
+
+            else:
+                self.e_port.config(background="Red")
+    
+        except ValueError:
+            self.e_ip.config(background="Red")
 
 class StrategyUI(tkinter.Frame):
 
@@ -261,9 +305,9 @@ class StrategyUI(tkinter.Frame):
         self.asm = accSharedMemory()
         self.asm.start()
 
-        self.sm_data = self.asm.get_data()
-        while self.sm_data is None:
-            self.sm_data = self.asm.get_data()
+        self.server_data: CarInfo = None
+        self.strategy = None
+        self.strategy_ok = False
 
         self.child_com, self.parent_com = Pipe()
         self.data_queue = Queue()
@@ -273,6 +317,7 @@ class StrategyUI(tkinter.Frame):
         self.tyres = None
         self.mfd_fuel = 0
         self.mfd_tyre_set = 0
+        self.max_static_fuel = 120
 
         self.fuel_text = tkinter.DoubleVar()
         self.tyre_set_text = tkinter.IntVar()
@@ -339,8 +384,12 @@ class StrategyUI(tkinter.Frame):
 
         f_settings.grid(row=0)
 
-        self.bset_strat = tkinter.Button(self, text="Set Strategy", width=100, command=self.set_strategy)
-        self.bset_strat.grid(row=1)
+        f_button_grid = tkinter.Frame(self)
+        f_button_grid.grid(row=1)
+        self.bupdate_strat = tkinter.Button(f_button_grid, text="Update values", width=50, command=self.update_values)
+        self.bupdate_strat.grid(row=0, column=0)
+        self.bset_strat = tkinter.Button(f_button_grid, text="Set Strategy", width=50, command=self.set_strategy)
+        self.bset_strat.grid(row=0, column=1)
 
         self.check_reply()
 
@@ -350,8 +399,7 @@ class StrategyUI(tkinter.Frame):
         if self.parent_com.poll():
             message = self.parent_com.recv()
             if message == "STRATEGY_DONE":
-                self.bset_strat.config(state="active")
-                self.update_values()
+                self.strategy_ok = True
 
             elif message == "NEW_DATA":
                 self.data_queue.put(self.asm.get_data())
@@ -360,20 +408,32 @@ class StrategyUI(tkinter.Frame):
         self.after(60, self.check_reply)
 
     def update_values(self) -> None:
-        self.sm_data = self.asm.get_data()
+        
+        if self.server_data is not None:
 
-        self.tyres = self.sm_data.Graphics.mfd_tyre_pressure
-        self.mfd_fuel = self.sm_data.Graphics.mfd_fuel_to_add
-        self.mfd_tyre_set = self.sm_data.Graphics.mfd_tyre_set
+            self.tyres = list(astuple(self.server_data)[:4])
+            self.mfd_fuel = self.server_data.fuel_to_add
+            self.mfd_tyre_set = self.server_data.tyre_set
+            self.max_static_fuel = self.server_data.max_fuel
 
-        self.fuel_text.set(f"{self.mfd_fuel:.1f}")
-        self.tyre_set_text.set(self.mfd_tyre_set + 1)
-        self.front_left_text.set(f"{self.tyres.front_left:.1f}")
-        self.rear_left_text.set(f"{self.tyres.rear_left:.1f}")
-        self.rear_right_text.set(f"{self.tyres.rear_right:.1f}")
-        self.front_right_text.set(f"{self.tyres.front_right:.1f}")
+            self.fuel_text.set(f"{self.mfd_fuel:.1f}")
+            self.tyre_set_text.set(self.mfd_tyre_set + 1)
+            self.front_left_text.set(f"{self.tyres[0]:.1f}")
+            self.front_right_text.set(f"{self.tyres[1]:.1f}")
+            self.rear_left_text.set(f"{self.tyres[2]:.1f}")
+            self.rear_right_text.set(f"{self.tyres[3]:.1f}")
 
-        if self.tyre_compound_text.get() == "":
+            if self.tyre_compound_text.get() == "":
+                self.tyre_compound_text.set("Dry")
+
+        else:
+            print("data is none")
+            self.fuel_text.set(0)
+            self.tyre_set_text.set(0)
+            self.front_left_text.set(0)
+            self.rear_left_text.set(0)
+            self.rear_right_text.set(0)
+            self.front_right_text.set(0)
             self.tyre_compound_text.set("Dry")
 
     def close(self) -> None:
@@ -383,56 +443,65 @@ class StrategyUI(tkinter.Frame):
 
     def set_strategy(self) -> None:
 
-        strat = PitStop(self.mfd_fuel, self.mfd_tyre_set, self.tyre_compound_text.get(), astuple(self.tyres))
+        self.strategy = PitStop(self.mfd_fuel, self.mfd_tyre_set, self.tyre_compound_text.get(), self.tyres)
+        self.bset_strat.config(state="disabled")
+
+    def is_strategy_applied(self, state: bool) -> None:
+        if state:
+            self.bset_strat.config(state="active")
+        
+        else:
+            self.bset_strat.config(state="disabled")
+
+    def apply_strategy(self, strat) -> None:
         self.data_queue.put(strat)
         self.data_queue.put(self.asm.get_data())
         self.parent_com.send("SET_STRATEGY")
-        self.bset_strat.config(state="disabled")
 
     def change_pressure_fl(self, change) -> None:
 
-        self.tyres.front_left += change
+        self.tyres[0] += change
 
-        if self.tyres.front_left > 35.0:
-            self.tyres.front_left = 35.0
+        if self.tyres[0] > 35.0:
+            self.tyres[0] = 35.0
 
-        elif self.tyres.front_left < 20.3:
-            self.tyres.front_left = 20.3
+        elif self.tyres[0] < 20.3:
+            self.tyres[0] = 20.3
     
-        self.front_left_text.set(f"{self.tyres.front_left:.1f}")
+        self.front_left_text.set(f"{self.tyres[0]:.1f}")
 
     def change_pressure_fr(self, change) -> None:
-        self.tyres.front_right += change
+        self.tyres[1] += change
 
-        if self.tyres.front_right > 35.0:
-            self.tyres.front_right = 35.0
+        if self.tyres[1] > 35.0:
+            self.tyres[1] = 35.0
 
-        elif self.tyres.front_right < 20.3:
-            self.tyres.front_right = 20.3
+        elif self.tyres[1] < 20.3:
+            self.tyres[1] = 20.3
     
-        self.front_right_text.set(f"{self.tyres.front_right:.1f}")
+        self.front_right_text.set(f"{self.tyres[1]:.1f}")
     
     def change_pressure_rl(self, change) -> None:
-        self.tyres.rear_left += change
+        self.tyres[2] += change
 
-        if self.tyres.rear_left > 35.0:
-            self.tyres.rear_left = 35.0
+        if self.tyres[2] > 35.0:
+            self.tyres[2] = 35.0
 
-        elif self.tyres.rear_left < 20.3:
-            self.tyres.rear_left = 20.3
+        elif self.tyres[2] < 20.3:
+            self.tyres[2] = 20.3
         
-        self.rear_left_text.set(f"{self.tyres.rear_left:.1f}")
+        self.rear_left_text.set(f"{self.tyres[2]:.1f}")
     
     def change_pressure_rr(self, change) -> None:
-        self.tyres.rear_right += change
+        self.tyres[3] += change
 
-        if self.tyres.rear_right > 35.0:
-            self.tyres.rear_right = 35.0
+        if self.tyres[3] > 35.0:
+            self.tyres[3] = 35.0
 
-        elif self.tyres.rear_right < 20.3:
-            self.tyres.rear_right = 20.3
+        elif self.tyres[3] < 20.3:
+            self.tyres[3] = 20.3
 
-        self.rear_right_text.set(f"{self.tyres.rear_right:.1f}")
+        self.rear_right_text.set(f"{self.tyres[3]:.1f}")
 
     def change_fuel(self, change) -> None:
 
@@ -440,8 +509,8 @@ class StrategyUI(tkinter.Frame):
         if self.mfd_fuel < 0:
             self.mfd_fuel = 0
 
-        elif self.mfd_fuel > self.sm_data.Static.max_fuel:
-            self.mfd_fuel = self.sm_data.Static.max_fuel
+        if self.mfd_fuel > self.max_static_fuel:
+            self.mfd_fuel = self.max_static_fuel
 
         self.fuel_text.set(f"{self.mfd_fuel:.1f}")
     
@@ -465,6 +534,15 @@ class app(tkinter.Tk):
 
         tkinter.Tk.__init__(self)
         self.title("PyAccEngineer")
+        self.geometry("1280x720")
+
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
+
+        # Networking
+        self.server = None
+        self.client = None
+        self.client_queue_out = Queue()
+        self.client_queue_in = Queue()
 
         self.connection_window = None
 
@@ -477,22 +555,405 @@ class app(tkinter.Tk):
         self.strategy_ui = StrategyUI(self)
         self.strategy_ui.grid(row=0)
 
+        self.client_loop()
+
         self.mainloop()
-        self.strategy_ui.close()        
+    
+        self.strategy_ui.close()
+        self.stop_networking()
+    
+    def client_loop(self) -> None:
+
+        if self.client_queue_out.qsize() > 0:
+
+            event_type = self.client_queue_out.get()
+
+            if event_type == NetworkQueue.ServerData:
+                server_data = self.client_queue_out.get()
+                is_first_update = self.strategy_ui.server_data is None
+                self.strategy_ui.server_data = server_data
+                if is_first_update:
+                    self.strategy_ui.update_values()
+            
+            elif event_type == NetworkQueue.Strategy:
+                strategy = self.client_queue_out.get()
+
+                asm_data = self.strategy_ui.asm.get_data()
+                if asm_data is not None:
+                    pit_stop = PitStop(strategy[1], strategy[2], strategy[3], strategy[4:8], strategy[8], strategy[9], strategy[10], strategy[11])
+                    self.strategy_ui.apply_strategy(pit_stop)
+
+            elif event_type == NetworkQueue.StrategyDone:
+                self.strategy_ui.bset_strat.config(state="active")
+                self.strategy_ui.update_values()
+
+            elif event_type == NetworkQueue.AsmRequest:
         
+                infos = None
+                asm_data = self.strategy_ui.asm.get_data()
+                if asm_data is not None:
+
+                    mfd_pressure = asm_data.Graphics.mfd_tyre_pressure
+                    mfd_fuel = asm_data.Graphics.mfd_fuel_to_add
+                    max_fuel = asm_data.Static.max_fuel
+                    mfd_tyre_set = asm_data.Graphics.mfd_tyre_set
+                    infos = CarInfo(*astuple(mfd_pressure), mfd_fuel, max_fuel, mfd_tyre_set)
+                    
+                self.client_queue_in.put(infos)
+
+            elif event_type == NetworkQueue.IsStrategyAsked:
+                strategy = None
+                if self.strategy_ui.strategy is not None:
+                    strategy = self.strategy_ui.strategy
+                    self.strategy_ui.strategy = None
+                self.client_queue_in.put(strategy)
+
+            elif event_type == NetworkQueue.IsStrategyDone:
+                self.client_queue_in.put(self.strategy_ui.strategy_ok)
+                self.strategy_ui.strategy_ok = False
+
+        self.after(100, self.client_loop)
+
     def open_connection_window(self) -> None:
+
         self.connection_window = ConnectionWindow(self)
         self.menu_bar.entryconfig("Disconnect", state="active")
         self.menu_bar.entryconfig("Connect", state="disabled")
     
+    def connect_to_server(self, ip, port) -> bool:
+
+        self.client = ClientInstance(ip, port, self.client_queue_in, self.client_queue_out)
+        return self.client.connect()
+
     def as_server(self) -> None:
-        # TODO
-        pass
+
+        self.menu_bar.entryconfig("Disconnect", state="active")
+        self.menu_bar.entryconfig("Connect", state="disabled")
+        self.menu_bar.entryconfig("As Server", state="disabled")
+
+        self.server = ServerInstance()
+        self.connect_to_server("127.0.0.1", 4269)      
 
     def disconnect(self) -> None:
-        # TODO do disconnect stuff
+
+        self.stop_networking()
+        
         self.menu_bar.entryconfig("Disconnect", state="disabled")
         self.menu_bar.entryconfig("Connect", state="active")
+        self.menu_bar.entryconfig("As Server", state="active")
+
+    def stop_networking(self) -> None:
+
+        if self.client is not None:
+            self.client.disconnect()
+    
+            # Create new empty queues
+            self.client_queue_in = Queue()
+            self.client_queue_out = Queue()
+
+        if self.server is not None:
+            self.server.disconnect()
+
+        print("APP: disconnect done")
+
+    def on_close(self) -> None:
+
+        self.disconnect()
+        self.destroy()
+
+class NetworkQueue(Enum):
+
+    ServerData = auto()
+    Strategy = auto()
+    IsStrategyDone = auto()
+    StrategyDone = auto()
+    AsmRequest = auto()
+    IsStrategyAsked = auto()
+
+@dataclass
+class CarInfo:
+
+    front_left_pressure: float
+    front_right_pressure: float
+    rear_left_pressure: float
+    rear_right_pressure: float
+    fuel_to_add: float
+    max_fuel: float
+    tyre_set: int
+
+class ClientInstance:
+
+    def __init__(self, ip: str, port: int, in_queue: Queue, out_queue: Queue) -> None:
+        
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._server_ip = ip
+        self._server_port = port
+        self._listener_thread = None
+        self._thread_event = None
+        self._in_queue = in_queue
+        self._out_queue = out_queue
+
+    def connect(self) -> bool:
+
+        try:
+            self._socket.settimeout(3)
+            self._socket.connect((self._server_ip, self._server_port))
+            self._socket.settimeout(0.1)
+            print(f"CLIENT: Connected to {self._server_ip}")
+
+        except socket.timeout:
+            print(f"CLIENT: Timeout while connecting to {self._server_ip}")
+            return False
+
+        try:
+            self._socket.send(struct.pack("!H", PacketType.Connect.value))
+        
+        except ConnectionResetError:
+            print(f"CLIENT: Connection reset while sending connection message to {self._server_ip}")
+            return False
+
+        reply = self._socket.recv(64)
+        print(f"CLIENT: Got {reply =}")
+        packet_type = PacketType(struct.unpack("!H", reply[0:2])[0])
+        if packet_type == PacketType.ConnectionAccepted:
+
+            print("CLIENT: connected")
+            self._thread_event = Event()
+
+            self._listener_thread = Thread(target=self._network_listener)
+            self._listener_thread.start()
+
+            return True
+
+        else:
+            # TODO should I ?
+            self._socket.shutdown(socket.SHUT_RDWR)
+            return False
+
+    def disconnect(self) -> None:
+
+        self._thread_event.set()
+        self._listener_thread.join()
+
+    def _network_listener(self) -> None:
+
+        data = None
+        print("CLIENT: Listening for server packets")
+        while not (self._thread_event.is_set() or data == b""):
+       
+            try:
+                data = self._socket.recv(1024)
+    
+            except socket.timeout:
+                data = None
+
+            except ConnectionResetError:
+                data = b""
+    
+            if data is not None and len(data) > 0:
+                print("check handle")
+                self._handle_data(data)
+ 
+            if not self._thread_event.is_set():
+                print("check state")
+                self._check_app_state()
+
+        if data == b"":
+            print("CLIENT: Lost connection to server.")
+
+        print("close socket")
+        self._socket.close()
+        print("client_listener STOPPED")
+
+    def _handle_data(self, data: bytes) -> None:
+
+        packet_type = PacketType(struct.unpack("!H", data[0:2])[0])
+                
+        if packet_type == PacketType.ServerData:
+            server_data = CarInfo(*(struct.unpack("!H6fi", data[:30])[1:]))
+
+            self._out_queue.put(NetworkQueue.ServerData)
+            self._out_queue.put(copy.copy(server_data))
+
+        elif packet_type == PacketType.Strategy:
+            self._out_queue.put(NetworkQueue.Strategy)
+            self._out_queue.put(struct.unpack("!Hfi3s4fii??", data[:39]))
+
+        elif packet_type == PacketType.StrategyOK:
+            self._out_queue.put(NetworkQueue.StrategyDone)
+
+    def _check_app_state(self) -> None:
+        
+        self._out_queue.put(NetworkQueue.AsmRequest)
+        car_info: CarInfo = get_or_none(self._in_queue)   
+        if car_info is not None:
+            buffer = struct.pack("!H 6f i", PacketType.SmData.value, *astuple(car_info))
+            self._socket.send(buffer)
+
+        self._out_queue.put(NetworkQueue.IsStrategyAsked)
+        strategy: PitStop = get_or_none(self._in_queue)
+        if strategy is not None:
+            packet_type = PacketType.Strategy
+            buffer = struct.pack("!H", packet_type.value) + strategy.to_bytes()
+            self._socket.send(buffer)
+
+        self._out_queue.put(NetworkQueue.IsStrategyDone)
+        strategy_ok = get_or_none(self._in_queue)
+        if strategy_ok:
+            packet_type = PacketType.StrategyOK
+            buffer = struct.pack("!H", packet_type.value)
+            self._socket.send(buffer)
+
+
+def get_or_none(data_queue: Queue, timeout: float = 0.5) -> Any:
+
+    try:
+        return data_queue.get(timeout=timeout)
+
+    except queue.Empty:
+        return None
+
+@dataclass
+class ClientHandle:
+
+    thread: Thread
+    rx_queue: Queue
+    tx_queue: Queue
+
+class ServerInstance:
+
+    def __init__(self) -> None:
+        
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._socket.settimeout(0.2)
+        self._server_thread = Thread(target=self._server_listener)
+        self._server_event = Event()
+        self.server_queue = queue.Queue()
+
+        self.connection = None
+        self._thread_pool : List[ClientHandle] = []
+
+        self._socket.bind(("", 4269))
+        self._server_thread.start()
+
+    def _server_listener(self) -> None:
+
+        self._socket.listen()
+        handler_event = Event()
+        dead_thread_timer = time.time()
+        while not self._server_event.is_set():
+
+            if len(self._thread_pool) < 4:
+                try:
+                    c_socket, addr = self._socket.accept()
+                    print("SERVER: Accepting new connection")
+                    
+                    rx_queue = Queue()
+                    tx_queue = Queue()
+                    thread = Thread(target=self._client_handler, args=(c_socket, addr, handler_event, rx_queue, tx_queue))
+
+                    new_client = ClientHandle(thread, rx_queue, tx_queue)
+                    new_client.thread.start()
+
+                    self._thread_pool.append(new_client)
+
+                except socket.timeout:
+                    pass
+
+                for client_thread in self._thread_pool:
+                    
+                    if client_thread.rx_queue.qsize() > 0:
+                        data = client_thread.rx_queue.get()
+
+                        for thread in self._thread_pool:
+                            thread.tx_queue.put(data)
+            
+            if time.time() - dead_thread_timer > 5:
+                dead_thread_timer = time.time()
+                for client_thread in reversed(self._thread_pool):
+                    if not client_thread.thread.is_alive():
+                        print("SERVER: Removing thread of client thread pool")
+                        self._thread_pool.remove(client_thread)
+
+        self._socket.close()
+        handler_event.set()
+        print("Closing threads")
+        for client_thread in self._thread_pool:
+            print(f"SERVER: Joining thread (server_listener) {client_thread}")
+            client_thread.thread.join()
+
+        print("server_listener STOPPED")
+
+    def _client_handler(self, c_socket: socket.socket, addr, event: Event, rx_queue: Queue, tx_queue: Queue) -> None:
+
+        c_socket.settimeout(0.2)
+        print(f"SERVER: Connected to {addr}")
+
+        data = None
+        while not (event.is_set() or data == b""):
+
+            try:
+                data = c_socket.recv(1024)
+
+            except socket.timeout:
+                data = None
+
+            except ConnectionResetError:
+                data = b""
+
+            if data is not None and len(data) > 0:
+                
+                packet_type = PacketType(struct.unpack("!H", data[0:2])[0])
+
+                if packet_type == PacketType.Connect:
+                    c_socket.send(struct.pack("!H", PacketType.ConnectionAccepted.value))
+
+                elif packet_type == PacketType.Disconnect:
+                    print(f"SERVER: Client {addr} disconnected")
+
+                elif packet_type == PacketType.SmData:
+                    if rx_queue.qsize() == 0:
+                        # print(f"SERVER: Got sm data from {addr}")
+                        rx_queue.put(data)
+
+                elif packet_type == PacketType.Strategy:
+                    rx_queue.put(data)
+
+                elif packet_type == PacketType.StrategyOK:
+                    rx_queue.put(data)
+
+                else:
+                    print(f"Socket data {addr}: {data}")
+
+            if tx_queue.qsize() > 0:
+                # print(f"SERVER: Sending server data to {addr}")
+                net_data = tx_queue.get()
+
+                packet_type = PacketType(struct.unpack("!H", net_data[0:2])[0])
+                if packet_type == PacketType.SmData:
+                    t = struct.unpack("!H5fif", net_data)
+                    packet = PacketType.ServerData
+                    buffer = struct.pack("!H5fif", packet.value, *t[1:])
+                    c_socket.send(buffer)
+                
+                if packet_type == PacketType.Strategy:
+                    c_socket.send(net_data)
+
+                if packet_type == PacketType.StrategyOK:
+                    print("SERVER: Sending strat ok")
+                    c_socket.send(net_data)
+
+        if data == b"":
+            print(f"SERVER: Lost connection with client {addr}")
+
+        c_socket.close()
+        print("SERVER: client_handler STOPPED")
+
+    def disconnect(self) -> None:
+
+        print("server disconnect")
+        self._server_event.set()
+        self._server_thread.join()
 
 
 def main():
