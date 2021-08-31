@@ -580,7 +580,8 @@ class app(tkinter.Tk):
 
                 asm_data = self.strategy_ui.asm.get_data()
                 if asm_data is not None:
-                    pit_stop = PitStop(strategy[1], strategy[2], strategy[3], strategy[4:8], strategy[8], strategy[9], strategy[10], strategy[11])
+                    compound = strategy[3].decode("utf-8")
+                    pit_stop = PitStop(strategy[1], strategy[2], compound, strategy[4:8], strategy[8], strategy[9], strategy[10], strategy[11])
                     self.strategy_ui.apply_strategy(pit_stop)
 
             elif event_type == NetworkQueue.StrategyDone:
@@ -751,11 +752,9 @@ class ClientInstance:
                 data = b""
     
             if data is not None and len(data) > 0:
-                print("check handle")
                 self._handle_data(data)
  
             if not self._thread_event.is_set():
-                print("check state")
                 self._check_app_state()
 
         if data == b"":
