@@ -679,12 +679,10 @@ class app(tkinter.Tk):
                     self.strategy_ui.apply_strategy(pit_stop)
 
             elif event_type == NetworkQueue.StrategyDone:
+
                 self.strategy_ui.bset_strat.config(state="active")
                 self.strategy_ui.update_values()
 
-            elif event_type == NetworkQueue.AsmRequest:
-
-                infos = None
                 asm_data = self.strategy_ui.asm.get_data()
                 if asm_data is not None:
 
@@ -696,17 +694,19 @@ class app(tkinter.Tk):
                             mfd_fuel, max_fuel,
                             mfd_tyre_set)
 
+            self.client_queue_in.put(NetworkQueue.CarInfoData)
             self.client_queue_in.put(infos.to_bytes())
 
-            elif event_type == NetworkQueue.IsStrategyAsked:
-                strategy = None
-                if self.strategy_ui.strategy is not None:
+        elif self.strategy_ui.strategy is not None:
+
                     strategy = self.strategy_ui.strategy
                     self.strategy_ui.strategy = None
-                self.client_queue_in.put(strategy)
+            self.client_queue_in.put(NetworkQueue.StrategySet)
+            self.client_queue_in.put(strategy.to_bytes())
 
-            elif event_type == NetworkQueue.IsStrategyDone:
-                self.client_queue_in.put(self.strategy_ui.strategy_ok)
+        if self.strategy_ui.strategy_ok:
+
+            self.client_queue_in.put(NetworkQueue.StrategyDone)
                 self.strategy_ui.strategy_ok = False
 
         self.after(100, self.client_loop)
@@ -848,40 +848,39 @@ class ClientInstance:
         packet_type = PacketType.from_bytes(data)
 
         if packet_type == PacketType.ServerData:
-            server_data = CarInfo(*(struct.unpack("!H6fi", data[:30])[1:]))
 
             self._out_queue.put(NetworkQueue.ServerData)
-            self._out_queue.put(copy.copy(server_data))
+            self._out_queue.put(data[1:])
 
         elif packet_type == PacketType.Strategy:
+
             self._out_queue.put(NetworkQueue.Strategy)
-            self._out_queue.put(struct.unpack("!Hfi3s4fii??", data[:39]))
+            self._out_queue.put(data[1:])
 
         elif packet_type == PacketType.StrategyOK:
+
             self._out_queue.put(NetworkQueue.StrategyDone)
 
     def _check_app_state(self) -> None:
 
-        self._out_queue.put(NetworkQueue.AsmRequest)
-        car_info: CarInfo = get_or_none(self._in_queue)
-        if car_info is not None:
-            buffer = struct.pack(
-                "!H 6f i", PacketType.SmData.value, *astuple(car_info))
+        while self._in_queue.qsize() != 0:
+
+            item_type = self._in_queue.get()
+
+            if item_type == NetworkQueue.CarInfoData:
+
+                info: bytes = self._in_queue.get()
+                buffer = PacketType.SmData.to_bytes() + info
             self._socket.send(buffer)
 
-        self._out_queue.put(NetworkQueue.IsStrategyAsked)
-        strategy: PitStop = get_or_none(self._in_queue)
-        if strategy is not None:
-            packet_type = PacketType.Strategy
-            buffer = struct.pack("!H", packet_type.value) + strategy.to_bytes()
+            elif item_type == NetworkQueue.StrategySet:
+
+                strategy: bytes = self._in_queue.get()
+                buffer = PacketType.Strategy.to_bytes() + strategy
             self._socket.send(buffer)
 
-        self._out_queue.put(NetworkQueue.IsStrategyDone)
-        strategy_ok = get_or_none(self._in_queue)
-        if strategy_ok:
-            packet_type = PacketType.StrategyOK
-            buffer = struct.pack("!H", packet_type.value)
-            self._socket.send(buffer)
+            elif item_type == NetworkQueue.StrategyDone:
+                self._socket.send(PacketType.StrategyOK.to_bytes())
 
 
 def get_or_none(data_queue: Queue, timeout: float = 0.5) -> Any:
