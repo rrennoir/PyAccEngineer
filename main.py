@@ -657,7 +657,6 @@ class app(tkinter.Tk):
         self.mainloop()
 
         self.strategy_ui.close()
-        self.stop_networking()
 
     def client_loop(self) -> None:
 
@@ -756,12 +755,12 @@ class app(tkinter.Tk):
             self.client_queue_in = Queue()
             self.client_queue_out = Queue()
             self.client = None
+            print("APP: Client stopped.")
 
         if self.server is not None:
             self.server.disconnect()
             self.server = None
-
-        print("APP: disconnect done")
+            print("APP: Server stopped.")
 
     def on_close(self) -> None:
 
