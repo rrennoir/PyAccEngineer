@@ -702,7 +702,7 @@ class app(tkinter.Tk):
             self.client_queue_in.put(NetworkQueue.CarInfoData)
             self.client_queue_in.put(infos.to_bytes())
 
-        elif self.strategy_ui.strategy is not None:
+        if self.strategy_ui.strategy is not None:
 
             strategy = self.strategy_ui.strategy
             self.strategy_ui.strategy = None
@@ -842,8 +842,7 @@ class ClientInstance:
             if data is not None and len(data) > 0:
                 self._handle_data(data)
 
-            if not self._thread_event.is_set():
-                self._check_app_state()
+            self._check_app_state()
 
         if data == b"":
             print("CLIENT: Lost connection to server.")
