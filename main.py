@@ -58,6 +58,15 @@ class PacketType(Enum):
         return PacketType(struct.unpack("!B", data[:1])[0])
 
 
+class NetworkQueue(Enum):
+
+    ServerData = auto()
+    Strategy = auto()
+    StrategyDone = auto()
+    CarInfoData = auto()
+    StrategySet = auto()
+
+
 @dataclass
 class CarInfo:
 
@@ -107,6 +116,27 @@ class PitStop:
         buffer.append(struct.pack("!?", self.repairs_suspension))
 
         return b"".join(buffer)
+
+    @classmethod
+    def from_bytes(data: bytes) -> Any:
+
+        byte_format = "!f i 3s 4f 2i 2?"
+        size = struct.calcsize(byte_format)
+
+        temp_data = struct.unpack(byte_format, data[:size])
+
+        pit_data = [
+            temp_data[0],
+            temp_data[1],
+            temp_data[2].decode("utf-8"),
+            tuple(temp_data[3:7]),
+            temp_data[7],
+            temp_data[8],
+            temp_data[9],
+            temp_data[10],
+        ]
+
+        return PitStop(*pit_data)
 
 
 def ACCWindowFinderCallback(hwnd: int, obj: list) -> bool:
@@ -560,19 +590,16 @@ class StrategyUI(tkinter.Frame):
         self.front_left_text.set(f"{self.tyres[0]:.1f}")
 
     def change_pressure_fr(self, change) -> None:
-        self.tyres[1] += change
 
         self.tyres[1] = clamp(self.tyres[1] + change, 20.3, 35.0)
         self.front_right_text.set(f"{self.tyres[1]:.1f}")
 
     def change_pressure_rl(self, change) -> None:
-        self.tyres[2] += change
 
         self.tyres[2] = clamp(self.tyres[2] + change, 20.3, 35.0)
         self.rear_left_text.set(f"{self.tyres[2]:.1f}")
 
     def change_pressure_rr(self, change) -> None:
-        self.tyres[3] += change
 
         self.tyres[3] = clamp(self.tyres[3] + change, 20.3, 35.0)
         self.rear_right_text.set(f"{self.tyres[3]:.1f}")
@@ -645,13 +672,10 @@ class app(tkinter.Tk):
             elif event_type == NetworkQueue.Strategy:
 
                 strategy = self.client_queue_out.get()
-
                 asm_data = self.strategy_ui.asm.get_data()
                 if asm_data is not None:
-                    compound = strategy[3].decode("utf-8")
-                    pit_stop = PitStop(
-                        strategy[1], strategy[2], compound, strategy[4:8],
-                        strategy[8], strategy[9], strategy[10], strategy[11])
+
+                    pit_stop = PitStop.from_bytes(strategy)
                     self.strategy_ui.apply_strategy(pit_stop)
 
             elif event_type == NetworkQueue.StrategyDone:
@@ -734,28 +758,6 @@ class app(tkinter.Tk):
 
         self.disconnect()
         self.destroy()
-
-
-class NetworkQueue(Enum):
-
-    ServerData = auto()
-    Strategy = auto()
-    IsStrategyDone = auto()
-    StrategyDone = auto()
-    AsmRequest = auto()
-    IsStrategyAsked = auto()
-
-
-@dataclass
-class CarInfo:
-
-    front_left_pressure: float
-    front_right_pressure: float
-    rear_left_pressure: float
-    rear_right_pressure: float
-    fuel_to_add: float
-    max_fuel: float
-    tyre_set: int
 
 
 class ClientInstance:
