@@ -103,6 +103,9 @@ class PitStop:
     repairs_bodywork: bool = True
     repairs_suspension: bool = True
 
+    byte_format: ClassVar[str] = "!f i 3s 4f 2i 2?"
+    byte_size: ClassVar[int] = struct.calcsize(byte_format)
+
     def to_bytes(self) -> bytes:
         buffer = []
         buffer.append(struct.pack("!f", self.fuel))
@@ -118,12 +121,9 @@ class PitStop:
         return b"".join(buffer)
 
     @classmethod
-    def from_bytes(data: bytes) -> Any:
+    def from_bytes(cls, data: bytes) -> Any:
 
-        byte_format = "!f i 3s 4f 2i 2?"
-        size = struct.calcsize(byte_format)
-
-        temp_data = struct.unpack(byte_format, data[:size])
+        temp_data = struct.unpack(cls.byte_format, data[:cls.byte_size])
 
         pit_data = [
             temp_data[0],
