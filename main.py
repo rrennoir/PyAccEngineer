@@ -10,13 +10,26 @@ from functools import partial
 from multiprocessing import Pipe, Process, Queue
 from multiprocessing.connection import Connection
 from threading import Event, Thread
-from typing import Tuple
+from typing import ClassVar, Tuple, Union
 
 import pyautogui
 import win32com.client
 import win32gui
 
 from SharedMemory.PyAccSharedMemory import *
+
+
+def clamp(number: Union[float, int],
+          min_value: Union[float, int],
+          max_value: Union[float, int]) -> Union[float, int]:
+
+    if number > max_value:
+        number = max_value
+
+    elif number < min_value:
+        number = min_value
+
+    return number
 
 
 class PacketType(Enum):
@@ -504,69 +517,35 @@ class StrategyUI(tkinter.Frame):
 
     def change_pressure_fl(self, change) -> None:
 
-        self.tyres[0] += change
-
-        if self.tyres[0] > 35.0:
-            self.tyres[0] = 35.0
-
-        elif self.tyres[0] < 20.3:
-            self.tyres[0] = 20.3
-
+        self.tyres[0] = clamp(self.tyres[0] + change, 20.3, 35.0)
         self.front_left_text.set(f"{self.tyres[0]:.1f}")
 
     def change_pressure_fr(self, change) -> None:
         self.tyres[1] += change
 
-        if self.tyres[1] > 35.0:
-            self.tyres[1] = 35.0
-
-        elif self.tyres[1] < 20.3:
-            self.tyres[1] = 20.3
-
+        self.tyres[1] = clamp(self.tyres[1] + change, 20.3, 35.0)
         self.front_right_text.set(f"{self.tyres[1]:.1f}")
 
     def change_pressure_rl(self, change) -> None:
         self.tyres[2] += change
 
-        if self.tyres[2] > 35.0:
-            self.tyres[2] = 35.0
-
-        elif self.tyres[2] < 20.3:
-            self.tyres[2] = 20.3
-
+        self.tyres[2] = clamp(self.tyres[2] + change, 20.3, 35.0)
         self.rear_left_text.set(f"{self.tyres[2]:.1f}")
 
     def change_pressure_rr(self, change) -> None:
         self.tyres[3] += change
 
-        if self.tyres[3] > 35.0:
-            self.tyres[3] = 35.0
-
-        elif self.tyres[3] < 20.3:
-            self.tyres[3] = 20.3
-
+        self.tyres[3] = clamp(self.tyres[3] + change, 20.3, 35.0)
         self.rear_right_text.set(f"{self.tyres[3]:.1f}")
 
     def change_fuel(self, change) -> None:
 
-        self.mfd_fuel += change
-        if self.mfd_fuel < 0:
-            self.mfd_fuel = 0
-
-        if self.mfd_fuel > self.max_static_fuel:
-            self.mfd_fuel = self.max_static_fuel
-
+        self.mfd_fuel = clamp(self.mfd_fuel + change, 0, self.max_static_fuel)
         self.fuel_text.set(f"{self.mfd_fuel:.1f}")
 
     def change_tyre_set(self, change: int) -> None:
 
-        self.mfd_tyre_set += change
-        if self.mfd_tyre_set < 0:
-            self.mfd_tyre_set = 0
-
-        elif self.mfd_tyre_set > 49:
-            self.mfd_tyre_set = 49
-
+        self.mfd_tyre_set = clamp(self.mfd_tyre_set + change, 0, 49)
         self.tyre_set_text.set(self.mfd_tyre_set + 1)
 
     def change_tyre_compound(self, compound: str) -> None:
@@ -1015,8 +994,10 @@ class ServerInstance:
 
 
 def main():
+
     app()
 
 
 if __name__ == "__main__":
+
     main()
