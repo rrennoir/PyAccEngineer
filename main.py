@@ -881,15 +881,6 @@ class ClientInstance:
                 self._socket.send(PacketType.StrategyOK.to_bytes())
 
 
-def get_or_none(data_queue: Queue, timeout: float = 0.5) -> Any:
-
-    try:
-        return data_queue.get(timeout=timeout)
-
-    except queue.Empty:
-        return None
-
-
 @dataclass
 class ClientHandle:
 
