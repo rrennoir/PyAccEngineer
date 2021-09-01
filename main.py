@@ -579,7 +579,8 @@ class StrategyUI(tkinter.Frame):
         else:
             self.bset_strat.config(state="disabled")
 
-    def apply_strategy(self, strat) -> None:
+    def apply_strategy(self, strat: PitStop) -> None:
+
         self.data_queue.put(strat)
         self.data_queue.put(self.asm.get_data())
         self.parent_com.send("SET_STRATEGY")
