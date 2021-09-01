@@ -557,6 +557,7 @@ class StrategyUI(tkinter.Frame):
             self.tyre_compound_text.set("Dry")
 
     def close(self) -> None:
+
         self.parent_com.send("STOP")
         self.strategy_proc.join()
         self.asm.stop()
@@ -613,7 +614,13 @@ class StrategyUI(tkinter.Frame):
         self.tyre_set_text.set(self.mfd_tyre_set + 1)
 
     def change_tyre_compound(self, compound: str) -> None:
+
         self.tyre_compound_text.set(compound)
+
+    def reset(self) -> None:
+
+        self.bset_strat.config(state="active")
+        self.bupdate_strat.config(state="active")
 
 
 class app(tkinter.Tk):
@@ -654,7 +661,7 @@ class app(tkinter.Tk):
 
     def client_loop(self) -> None:
 
-        if self.client_queue_out.qsize() > 0:
+        if self.client is not None and self.client_queue_out.qsize() > 0:
 
             event_type = self.client_queue_out.get()
 
@@ -738,6 +745,8 @@ class app(tkinter.Tk):
         self.menu_bar.entryconfig("Connect", state="active")
         self.menu_bar.entryconfig("As Server", state="active")
 
+        self.strategy_ui.reset()
+
     def stop_networking(self) -> None:
 
         if self.client is not None:
@@ -746,9 +755,11 @@ class app(tkinter.Tk):
             # Create new empty queues
             self.client_queue_in = Queue()
             self.client_queue_out = Queue()
+            self.client = None
 
         if self.server is not None:
             self.server.disconnect()
+            self.server = None
 
         print("APP: disconnect done")
 
