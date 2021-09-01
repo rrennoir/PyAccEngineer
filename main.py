@@ -58,6 +58,29 @@ class PacketType(Enum):
         return PacketType(struct.unpack("!B", data[:1])[0])
 
 
+@dataclass
+class CarInfo:
+
+    front_left_pressure: float
+    front_right_pressure: float
+    rear_left_pressure: float
+    rear_right_pressure: float
+    fuel_to_add: float
+    max_fuel: float
+    tyre_set: int
+
+    byte_format: ClassVar[str] = "!6f i"
+    byte_size: ClassVar[int] = struct.calcsize(byte_format)
+
+    def to_bytes(self) -> bytes:
+
+        return struct.pack(self.byte_format, *astuple(self))
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> Any:
+
+        return CarInfo(*struct.unpack(cls.byte_format, data[:cls.byte_size]))
+
 
 @dataclass
 class PitStop:
@@ -611,13 +634,16 @@ class app(tkinter.Tk):
             event_type = self.client_queue_out.get()
 
             if event_type == NetworkQueue.ServerData:
-                server_data = self.client_queue_out.get()
+
+                server_data = CarInfo.from_bytes(self.client_queue_out.get())
                 is_first_update = self.strategy_ui.server_data is None
                 self.strategy_ui.server_data = server_data
                 if is_first_update:
+
                     self.strategy_ui.update_values()
 
             elif event_type == NetworkQueue.Strategy:
+
                 strategy = self.client_queue_out.get()
 
                 asm_data = self.strategy_ui.asm.get_data()
@@ -643,9 +669,10 @@ class app(tkinter.Tk):
                     max_fuel = asm_data.Static.max_fuel
                     mfd_tyre_set = asm_data.Graphics.mfd_tyre_set
                     infos = CarInfo(*astuple(mfd_pressure),
-                                    mfd_fuel, max_fuel, mfd_tyre_set)
+                            mfd_fuel, max_fuel,
+                            mfd_tyre_set)
 
-                self.client_queue_in.put(infos)
+            self.client_queue_in.put(infos.to_bytes())
 
             elif event_type == NetworkQueue.IsStrategyAsked:
                 strategy = None
