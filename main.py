@@ -411,10 +411,6 @@ class StrategyUI(tkinter.Frame):
         self.mfd_tyre_set = 0
         self.max_static_fuel = 120
 
-        self.tyre_compound_text = tkinter.StringVar()
-
-        self.update_values()
-
         f_settings = tkinter.Frame(self)
 
         app_row = 0
@@ -440,6 +436,7 @@ class StrategyUI(tkinter.Frame):
         # Strategy menu: Tyre compound
         f_tyre_compound = tkinter.Frame(f_settings)
 
+        self.tyre_compound_text = tkinter.StringVar()
         l_tyre_set = tkinter.Label(
             f_settings, text="Tyre compound: ", width=20)
         l_tyre_set.grid(row=app_row, column=0)
@@ -516,6 +513,7 @@ class StrategyUI(tkinter.Frame):
             command=self.set_strategy)
         self.bset_strat.grid(row=0, column=1)
 
+        self.update_values()
         self.check_reply()
 
     def check_reply(self) -> None:
@@ -550,7 +548,6 @@ class StrategyUI(tkinter.Frame):
                 self.tyre_compound_text.set("Dry")
 
         else:
-            print("data is none")
             self.fuel_text.set(0)
             self.tyre_set_text.set(0)
             self.front_left_text.set(0)
@@ -684,14 +681,14 @@ class app(tkinter.Tk):
                 self.strategy_ui.bset_strat.config(state="active")
                 self.strategy_ui.update_values()
 
-                asm_data = self.strategy_ui.asm.get_data()
-                if asm_data is not None:
+        asm_data = self.strategy_ui.asm.get_data()
+        if asm_data is not None:
 
-                    mfd_pressure = asm_data.Graphics.mfd_tyre_pressure
-                    mfd_fuel = asm_data.Graphics.mfd_fuel_to_add
-                    max_fuel = asm_data.Static.max_fuel
-                    mfd_tyre_set = asm_data.Graphics.mfd_tyre_set
-                    infos = CarInfo(*astuple(mfd_pressure),
+            mfd_pressure = asm_data.Graphics.mfd_tyre_pressure
+            mfd_fuel = asm_data.Graphics.mfd_fuel_to_add
+            max_fuel = asm_data.Static.max_fuel
+            mfd_tyre_set = asm_data.Graphics.mfd_tyre_set
+            infos = CarInfo(*astuple(mfd_pressure),
                             mfd_fuel, max_fuel,
                             mfd_tyre_set)
 
@@ -700,15 +697,15 @@ class app(tkinter.Tk):
 
         elif self.strategy_ui.strategy is not None:
 
-                    strategy = self.strategy_ui.strategy
-                    self.strategy_ui.strategy = None
+            strategy = self.strategy_ui.strategy
+            self.strategy_ui.strategy = None
             self.client_queue_in.put(NetworkQueue.StrategySet)
             self.client_queue_in.put(strategy.to_bytes())
 
         if self.strategy_ui.strategy_ok:
 
             self.client_queue_in.put(NetworkQueue.StrategyDone)
-                self.strategy_ui.strategy_ok = False
+            self.strategy_ui.strategy_ok = False
 
         self.after(100, self.client_loop)
 
@@ -872,13 +869,13 @@ class ClientInstance:
 
                 info: bytes = self._in_queue.get()
                 buffer = PacketType.SmData.to_bytes() + info
-            self._socket.send(buffer)
+                self._socket.send(buffer)
 
             elif item_type == NetworkQueue.StrategySet:
 
                 strategy: bytes = self._in_queue.get()
                 buffer = PacketType.Strategy.to_bytes() + strategy
-            self._socket.send(buffer)
+                self._socket.send(buffer)
 
             elif item_type == NetworkQueue.StrategyDone:
                 self._socket.send(PacketType.StrategyOK.to_bytes())
