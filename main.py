@@ -42,6 +42,22 @@ class PacketType(Enum):
     Strategy = 6
     StrategyOK = 7
 
+    def to_bytes(self) -> bytes:
+        """
+        Convert PacketType to bytes (unsigned char)
+        """
+
+        return struct.pack("!B", self.value)
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> Any:
+        """
+        Convert the first unsigned char of a bytes object into a PacketType
+        """
+
+        return PacketType(struct.unpack("!B", data[:1])[0])
+
+
 
 @dataclass
 class PitStop:
@@ -741,7 +757,7 @@ class ClientInstance:
             return False
 
         try:
-            self._socket.send(struct.pack("!H", PacketType.Connect.value))
+            self._socket.send(PacketType.Connect.to_bytes())
 
         except ConnectionResetError:
             print(f"CLIENT: Connection reset error with {self._server_ip}")
@@ -749,7 +765,7 @@ class ClientInstance:
 
         reply = self._socket.recv(64)
         print(f"CLIENT: Got {reply =}")
-        packet_type = PacketType(struct.unpack("!H", reply[0:2])[0])
+        packet_type = PacketType.from_bytes(reply)
         if packet_type == PacketType.ConnectionAccepted:
 
             print("CLIENT: connected")
@@ -800,7 +816,7 @@ class ClientInstance:
 
     def _handle_data(self, data: bytes) -> None:
 
-        packet_type = PacketType(struct.unpack("!H", data[0:2])[0])
+        packet_type = PacketType.from_bytes(data)
 
         if packet_type == PacketType.ServerData:
             server_data = CarInfo(*(struct.unpack("!H6fi", data[:30])[1:]))
@@ -941,11 +957,10 @@ class ServerInstance:
 
             if data is not None and len(data) > 0:
 
-                packet_type = PacketType(struct.unpack("!H", data[0:2])[0])
+                packet_type = PacketType.from_bytes(data)
 
                 if packet_type == PacketType.Connect:
-                    c_socket.send(struct.pack(
-                        "!H", PacketType.ConnectionAccepted.value))
+                    c_socket.send(PacketType.ConnectionAccepted.to_bytes())
 
                 elif packet_type == PacketType.Disconnect:
                     print(f"SERVER: Client {addr} disconnected")
@@ -966,18 +981,15 @@ class ServerInstance:
             if tx_queue.qsize() > 0:
                 net_data = tx_queue.get()
 
-                packet_type = PacketType(struct.unpack("!H", net_data[0:2])[0])
+                packet_type = PacketType.from_bytes(net_data)
                 if packet_type == PacketType.SmData:
-                    t = struct.unpack("!H5fif", net_data)
-                    packet = PacketType.ServerData
-                    buffer = struct.pack("!H5fif", packet.value, *t[1:])
+                    buffer = PacketType.ServerData.to_bytes() + net_data[1:]
                     c_socket.send(buffer)
 
                 if packet_type == PacketType.Strategy:
                     c_socket.send(net_data)
 
                 if packet_type == PacketType.StrategyOK:
-                    print("SERVER: Sending strat ok")
                     c_socket.send(net_data)
 
         if data == b"":
