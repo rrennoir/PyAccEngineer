@@ -154,8 +154,7 @@ class PitStop:
         buffer = []
         buffer.append(struct.pack("!f", self.fuel))
         buffer.append(struct.pack("!i", self.tyre_set))
-        buffer.append(struct.pack(
-            "!3s", bytearray(self.tyre_compound, "utf-8")))
+        buffer.append(struct.pack("!3s", self.tyre_compound.encode("utf-8")))
         buffer.append(struct.pack("!4f", *self.tyre_pressures))
         buffer.append(struct.pack("!i", self.next_driver))
         buffer.append(struct.pack("!i", self.brake_pad))
