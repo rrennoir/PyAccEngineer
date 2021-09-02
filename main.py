@@ -978,6 +978,9 @@ class app(tkinter.Tk):
         self.telemetry_ui = TelemetryUI(self)
         self.telemetry_ui.grid(row=0, column=1)
 
+        self.last_time = time.time()
+        self.min_delta = 0.2
+
         self.client_loop()
 
         self.mainloop()
@@ -985,6 +988,8 @@ class app(tkinter.Tk):
         self.strategy_ui.close()
 
     def client_loop(self) -> None:
+
+        delta_time = time.time() - self.last_time
 
         if self.client is not None and self.client_queue_out.qsize() > 0:
 
@@ -1023,7 +1028,10 @@ class app(tkinter.Tk):
                 self.telemetry_ui.update_values()
 
         asm_data = self.strategy_ui.asm.get_data()
-        if asm_data is not None:
+        if (asm_data is not None and self.client is not None
+                and delta_time > self.min_delta):
+
+            self.last_time = time.time()
 
             mfd_pressure = asm_data.Graphics.mfd_tyre_pressure
             mfd_fuel = asm_data.Graphics.mfd_fuel_to_add
@@ -1064,7 +1072,7 @@ class app(tkinter.Tk):
             self.client_queue_in.put(NetworkQueue.StrategyDone)
             self.strategy_ui.strategy_ok = False
 
-        self.after(100, self.client_loop)
+        self.after(10, self.client_loop)
 
     def open_connection_window(self) -> None:
 
