@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ipaddress
 import math
 import multiprocessing
@@ -51,7 +53,7 @@ class PacketType(Enum):
         return struct.pack("!B", self.value)
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> Any:
+    def from_bytes(cls, data: bytes) -> PacketType:
         """
         Convert the first unsigned char of a bytes object into a PacketType
         """
@@ -87,7 +89,7 @@ class CarInfo:
         return struct.pack(self.byte_format, *astuple(self))
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> Any:
+    def from_bytes(cls, data: bytes) -> CarInfo:
 
         return CarInfo(*struct.unpack(cls.byte_format, data[:cls.byte_size]))
 
@@ -122,7 +124,7 @@ class PitStop:
         return b"".join(buffer)
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> Any:
+    def from_bytes(cls, data: bytes) -> PitStop:
 
         temp_data = struct.unpack(cls.byte_format, data[:cls.byte_size])
 
