@@ -1,15 +1,16 @@
 import ipaddress
 import math
+import multiprocessing
+import queue
 import socket
 import struct
+import threading
 import time
 import tkinter
 from dataclasses import astuple, dataclass
 from enum import Enum, auto
 from functools import partial
-from multiprocessing import Pipe, Process, Queue
 from multiprocessing.connection import Connection
-from threading import Event, Thread
 from typing import ClassVar, Tuple, Union
 
 import pyautogui
@@ -209,7 +210,7 @@ def set_tyre_set(mfd_tyre_set: int, target_tyre_set: int) -> None:
 
 
 def set_strategy(strategy: PitStop, sm: ACC_map, comm: Connection,
-                 data_queue: Queue) -> None:
+                 data_queue: queue.Queue) -> None:
 
     set_acc_forground()
 
@@ -320,7 +321,7 @@ class ButtonPannel(tkinter.Frame):
         l_var.grid(row=0, column=3)
 
 
-def set_strat_proc(comm: Connection, data_queue: Queue) -> None:
+def set_strat_proc(comm: Connection, data_queue: queue.Queue) -> None:
 
     message = ""
     while message != "STOP":
@@ -400,9 +401,9 @@ class StrategyUI(tkinter.Frame):
         self.strategy = None
         self.strategy_ok = False
 
-        self.child_com, self.parent_com = Pipe()
-        self.data_queue = Queue()
-        self.strategy_proc = Process(
+        self.child_com, self.parent_com = multiprocessing.Pipe()
+        self.data_queue = multiprocessing.Queue()
+        self.strategy_proc = multiprocessing.Process(
             target=set_strat_proc, args=(self.child_com, self.data_queue))
         self.strategy_proc.start()
 
@@ -636,8 +637,8 @@ class app(tkinter.Tk):
         # Networking
         self.server = None
         self.client = None
-        self.client_queue_out = Queue()
-        self.client_queue_in = Queue()
+        self.client_queue_out = queue.Queue()
+        self.client_queue_in = queue.Queue()
 
         self.connection_window = None
 
@@ -752,8 +753,8 @@ class app(tkinter.Tk):
             self.client.disconnect()
 
             # Create new empty queues
-            self.client_queue_in = Queue()
-            self.client_queue_out = Queue()
+            self.client_queue_in = queue.Queue()
+            self.client_queue_out = queue.Queue()
             self.client = None
             print("APP: Client stopped.")
 
@@ -770,8 +771,8 @@ class app(tkinter.Tk):
 
 class ClientInstance:
 
-    def __init__(self, ip: str, port: int, in_queue: Queue,
-                 out_queue: Queue) -> None:
+    def __init__(self, ip: str, port: int, in_queue: queue.Queue,
+                 out_queue: queue.Queue) -> None:
 
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_ip = ip
@@ -806,9 +807,10 @@ class ClientInstance:
         if packet_type == PacketType.ConnectionAccepted:
 
             print("CLIENT: connected")
-            self._thread_event = Event()
+            self._thread_event = threading.Event()
 
-            self._listener_thread = Thread(target=self._network_listener)
+            self._listener_thread = threading.Thread(
+                target=self._network_listener)
             self._listener_thread.start()
 
             return True
@@ -893,9 +895,9 @@ class ClientInstance:
 @dataclass
 class ClientHandle:
 
-    thread: Thread
-    rx_queue: Queue
-    tx_queue: Queue
+    thread: threading.Thread
+    rx_queue: queue.Queue
+    tx_queue: queue.Queue
 
 
 class ServerInstance:
@@ -904,8 +906,8 @@ class ServerInstance:
 
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._socket.settimeout(0.2)
-        self._server_thread = Thread(target=self._server_listener)
-        self._server_event = Event()
+        self._server_thread = threading.Thread(target=self._server_listener)
+        self._server_event = threading.Event()
         self.server_queue = queue.Queue()
 
         self.connection = None
@@ -917,7 +919,7 @@ class ServerInstance:
     def _server_listener(self) -> None:
 
         self._socket.listen()
-        handler_event = Event()
+        handler_event = threading.Event()
         dead_thread_timer = time.time()
         while not self._server_event.is_set():
 
@@ -926,10 +928,12 @@ class ServerInstance:
                     c_socket, addr = self._socket.accept()
                     print("SERVER: Accepting new connection")
 
-                    rx_queue = Queue()
-                    tx_queue = Queue()
-                    thread = Thread(target=self._client_handler, args=(
-                        c_socket, addr, handler_event, rx_queue, tx_queue))
+                    rx_queue = queue.Queue()
+                    tx_queue = queue.Queue()
+                    thread = threading.Thread(target=self._client_handler,
+                                              args=(c_socket, addr,
+                                                    handler_event,
+                                                    rx_queue, tx_queue))
 
                     new_client = ClientHandle(thread, rx_queue, tx_queue)
                     new_client.thread.start()
@@ -960,11 +964,13 @@ class ServerInstance:
         for client_thread in self._thread_pool:
             print(f"SERVER: Joining thread (server_listener) {client_thread}")
             client_thread.thread.join()
+            self._thread_pool.remove(client_thread)
 
         print("server_listener STOPPED")
 
-    def _client_handler(self, c_socket: socket.socket, addr, event: Event,
-                        rx_queue: Queue, tx_queue: Queue) -> None:
+    def _client_handler(self, c_socket: socket.socket, addr,
+                        event: threading.Event, rx_queue: queue.Queue,
+                        tx_queue: queue.Queue) -> None:
 
         c_socket.settimeout(0.2)
         print(f"SERVER: Connected to {addr}")
