@@ -35,6 +35,41 @@ def clamp(number: Union[float, int],
     return number
 
 
+def string_time_from_ms(time_in_ms: int) -> str:
+
+    # if no time time_in_ms is equal to the maximum value of a 32bit int
+    if time_in_ms == 2147483647:
+        # simply return 00:00.000
+        time_in_ms = 0
+
+    minute = time_in_ms // 60_000
+    second = (time_in_ms % 60_000) // 1000
+    millisecond = (time_in_ms % 60_000) % 1000
+
+    if minute < 10:
+        minute_str = f"0{minute}"
+
+    else:
+        minute_str = str(minute)
+
+    if second < 10:
+        second_str = f"0{second}"
+
+    else:
+        second_str = str(second)
+
+    if millisecond < 100:
+        millisecond_str = f"0{millisecond}"
+
+    elif millisecond < 10:
+        millisecond_str = f"00{millisecond}"
+
+    else:
+        millisecond_str = str(millisecond)
+
+    return f"{minute_str}:{second_str}.{millisecond_str}"
+
+
 class PacketType(Enum):
 
     Connect = auto()
@@ -44,6 +79,7 @@ class PacketType(Enum):
     ConnectionAccepted = auto()
     Strategy = auto()
     StrategyOK = auto()
+    Telemetry = auto()
 
     def to_bytes(self) -> bytes:
         """
@@ -68,6 +104,7 @@ class NetworkQueue(Enum):
     StrategyDone = auto()
     CarInfoData = auto()
     StrategySet = auto()
+    Telemetry = auto()
 
 
 @dataclass
@@ -391,9 +428,292 @@ class ConnectionWindow(tkinter.Toplevel):
             self.e_ip.config(background="Red")
 
 
+@dataclass
+class Telemetry:
+
+    speed: float
+    gear: int
+    fuel: float
+    steering: float
+    tyre_pressure: Wheels
+    brake_temp: Wheels
+    pad_wear: Wheels
+    disc_wear: Wheels
+    lap_time: int
+    previous_time: int
+
+    def to_bytes(self) -> bytes:
+
+        buffer = [
+            struct.pack("!f", self.speed),
+            struct.pack("!i", self.gear),
+            struct.pack("!f", self.fuel),
+            struct.pack("!f", self.steering),
+            struct.pack("!4f", *astuple(self.tyre_pressure)),
+            struct.pack("!4f", *astuple(self.brake_temp)),
+            struct.pack("!4f", *astuple(self.pad_wear)),
+            struct.pack("!4f", *astuple(self.disc_wear)),
+            struct.pack("!i", self.lap_time),
+            struct.pack("!i", self.previous_time),
+        ]
+
+        return b"".join(buffer)
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> Telemetry:
+
+        raw_data = struct.unpack("!f i 18f 2i", data)
+
+        return Telemetry(
+            raw_data[0],
+            raw_data[1],
+            raw_data[2],
+            raw_data[3],
+            Wheels(*raw_data[4:8]),
+            Wheels(*raw_data[8:12]),
+            Wheels(*raw_data[12:16]),
+            Wheels(*raw_data[16:20]),
+            raw_data[20],
+            raw_data[21],
+        )
+
+
+class TelemetryUI(tkinter.Frame):
+
+    def __init__(self, root):
+
+        tkinter.Frame.__init__(self, master=root)
+
+        self.telemetry: Optional[Telemetry] = None
+
+        # Fuel
+        self.fuel_var = tkinter.DoubleVar()
+        l_fuel = tkinter.Label(self, text="Fuel: ", width=20)
+        l_fuel_var = tkinter.Label(self, textvariable=self.fuel_var, width=20)
+        l_fuel.grid(row=0, column=0)
+        l_fuel_var.grid(row=0, column=1)
+
+        # Speed
+        self.speed_var = tkinter.DoubleVar()
+        l_speed = tkinter.Label(self, text="Speed: ", width=20)
+        l_speed_var = tkinter.Label(
+            self, textvariable=self.speed_var, width=20)
+        l_speed.grid(row=1, column=0)
+        l_speed_var.grid(row=1, column=1)
+
+        # Gear
+        self.gear_var = tkinter.IntVar()
+        l_gear = tkinter.Label(self, text="Gear: ", width=20)
+        l_gear_var = tkinter.Label(self, textvariable=self.gear_var, width=20)
+        l_gear.grid(row=2, column=0)
+        l_gear_var.grid(row=2, column=1)
+
+        # Steering
+        self.steering_var = tkinter.DoubleVar()
+        l_steering = tkinter.Label(self, text="Steering: ", width=20)
+        l_steering_var = tkinter.Label(
+            self, textvariable=self.steering_var, width=20)
+        l_steering.grid(row=3, column=0)
+        l_steering_var.grid(row=3, column=1)
+
+        # Tyre pressure FL
+        self.pressure_fl_var = tkinter.DoubleVar()
+        l_pressure_fl = tkinter.Label(self, text="Pressure FL: ", width=20)
+        l_pressure_fl_var = tkinter.Label(
+            self, textvariable=self.pressure_fl_var, width=20)
+        l_pressure_fl.grid(row=4, column=0)
+        l_pressure_fl_var.grid(row=4, column=1)
+
+        # Tyre pressure FR
+        self.pressure_fr_var = tkinter.DoubleVar()
+        l_pressure_fr = tkinter.Label(self, text="Pressure FR: ", width=20)
+        l_pressure_fr_var = tkinter.Label(
+            self, textvariable=self.pressure_fr_var, width=20)
+        l_pressure_fr.grid(row=5, column=0)
+        l_pressure_fr_var.grid(row=5, column=1)
+
+        # Tyre pressure RL
+        self.pressure_rl_var = tkinter.DoubleVar()
+        l_pressure_rl = tkinter.Label(self, text="Pressure RL: ", width=20)
+        l_pressure_rl_var = tkinter.Label(
+            self, textvariable=self.pressure_rl_var, width=20)
+        l_pressure_rl.grid(row=6, column=0)
+        l_pressure_rl_var.grid(row=6, column=1)
+
+        # Tyre pressure RR
+        self.pressure_rr_var = tkinter.DoubleVar()
+        l_pressure_rr = tkinter.Label(self, text="Pressure RR: ", width=20)
+        l_pressure_rr_var = tkinter.Label(
+            self, textvariable=self.pressure_rr_var, width=20)
+        l_pressure_rr.grid(row=7, column=0)
+        l_pressure_rr_var.grid(row=7, column=1)
+
+        # Brake temp FL
+        self.brake_temp_fl_var = tkinter.DoubleVar()
+        l_brake_temp_fl = tkinter.Label(self, text="Brake temp FL: ", width=20)
+        l_brake_temp_fl_var = tkinter.Label(
+            self, textvariable=self.brake_temp_fl_var, width=20)
+        l_brake_temp_fl.grid(row=8, column=0)
+        l_brake_temp_fl_var.grid(row=8, column=1)
+
+        # Brake temp FR
+        self.brake_temp_fr_var = tkinter.DoubleVar()
+        l_brake_temp_fr = tkinter.Label(self, text="Brake temp FR: ", width=20)
+        l_brake_temp_fr_var = tkinter.Label(
+            self, textvariable=self.brake_temp_fr_var, width=20)
+        l_brake_temp_fr.grid(row=9, column=0)
+        l_brake_temp_fr_var.grid(row=9, column=1)
+
+        # Brake temp RL
+        self.brake_temp_rl_var = tkinter.DoubleVar()
+        l_brake_temp_rl = tkinter.Label(self, text="Brake temp RL: ", width=20)
+        l_brake_temp_rl_var = tkinter.Label(
+            self, textvariable=self.brake_temp_rl_var, width=20)
+        l_brake_temp_rl.grid(row=10, column=0)
+        l_brake_temp_rl_var.grid(row=10, column=1)
+
+        # Brake temp RR
+        self.brake_temp_rr_var = tkinter.DoubleVar()
+        l_brake_temp_rr = tkinter.Label(self, text="Brake temp RR: ", width=20)
+        l_brake_temp_rr_var = tkinter.Label(
+            self, textvariable=self.brake_temp_rr_var, width=20)
+        l_brake_temp_rr.grid(row=11, column=0)
+        l_brake_temp_rr_var.grid(row=11, column=1)
+
+        # Pad wear FL
+        self.pad_wear_fl_var = tkinter.DoubleVar()
+        l_pad_wear_fl = tkinter.Label(self, text=" Pad wear FL: ", width=20)
+        l_pad_wear_fl_var = tkinter.Label(
+            self, textvariable=self.pad_wear_fl_var, width=20)
+        l_pad_wear_fl.grid(row=12, column=0)
+        l_pad_wear_fl_var.grid(row=12, column=1)
+
+        #  Pad wear FR
+        self.pad_wear_fr_var = tkinter.DoubleVar()
+        l_pad_wear_fr = tkinter.Label(self, text=" Pad wear FR: ", width=20)
+        l_pad_wear_fr_var = tkinter.Label(
+            self, textvariable=self.pad_wear_fr_var, width=20)
+        l_pad_wear_fr.grid(row=13, column=0)
+        l_pad_wear_fr_var.grid(row=13, column=1)
+
+        #  Pad wear RL
+        self.pad_wear_rl_var = tkinter.DoubleVar()
+        l_pad_wear_rl = tkinter.Label(self, text=" Pad wear RL: ", width=20)
+        l_pad_wear_rl_var = tkinter.Label(
+            self, textvariable=self.pad_wear_rl_var, width=20)
+        l_pad_wear_rl.grid(row=14, column=0)
+        l_pad_wear_rl_var.grid(row=14, column=1)
+
+        # Pad wear  RR
+        self.pad_wear_rr_var = tkinter.DoubleVar()
+        l_pad_wear_rr = tkinter.Label(self, text=" Pad wear RR: ", width=20)
+        l_pad_wear_rr_var = tkinter.Label(
+            self, textvariable=self.pad_wear_rr_var, width=20)
+        l_pad_wear_rr.grid(row=15, column=0)
+        l_pad_wear_rr_var.grid(row=15, column=1)
+
+        # Disc wear FL
+        self.disc_wear_fl_var = tkinter.DoubleVar()
+        l_disc_wear_fl = tkinter.Label(self, text="Brake temp FL: ", width=20)
+        l_disc_wear_fl_var = tkinter.Label(
+            self, textvariable=self.disc_wear_fl_var, width=20)
+        l_disc_wear_fl.grid(row=16, column=0)
+        l_disc_wear_fl_var.grid(row=16, column=1)
+
+        # Disc wear FR
+        self.disc_wear_fr_var = tkinter.DoubleVar()
+        l_disc_wear_fr = tkinter.Label(self, text="Disc wear FR: ", width=20)
+        l_disc_wear_fr_var = tkinter.Label(
+            self, textvariable=self.disc_wear_fr_var, width=20)
+        l_disc_wear_fr.grid(row=17, column=0)
+        l_disc_wear_fr_var.grid(row=17, column=1)
+
+        # Disc wear RL
+        self.disc_wear_rl_var = tkinter.DoubleVar()
+        l_disc_wear_rl = tkinter.Label(self, text="Disc wear RL: ", width=20)
+        l_disc_wear_rl_var = tkinter.Label(
+            self, textvariable=self.disc_wear_rl_var, width=20)
+        l_disc_wear_rl.grid(row=18, column=0)
+        l_disc_wear_rl_var.grid(row=18, column=1)
+
+        # Disc wear RR
+        self.disc_wear_rr_var = tkinter.DoubleVar()
+        l_disc_wear_rr = tkinter.Label(self, text="Disc wear RR: ", width=20)
+        l_disc_wear_rr_var = tkinter.Label(
+            self, textvariable=self.disc_wear_rr_var, width=20)
+        l_disc_wear_rr.grid(row=19, column=0)
+        l_disc_wear_rr_var.grid(row=19, column=1)
+
+        # Lap time
+        self.lap_time_var = tkinter.StringVar(value="00:00.000")
+        l_lap_time = tkinter.Label(self, text="Lap time: ", width=20)
+        l_lap_time_var = tkinter.Label(
+            self, textvariable=self.lap_time_var, width=20)
+        l_lap_time.grid(row=20, column=0)
+        l_lap_time_var.grid(row=20, column=1)
+
+        # Previous time
+        self.prev_time_var = tkinter.StringVar(value="00:00.000")
+        l_prev_time = tkinter.Label(self, text="Previous time: ", width=20)
+        l_prev_time_var = tkinter.Label(
+            self, textvariable=self.prev_time_var, width=20)
+        l_prev_time.grid(row=21, column=0)
+        l_prev_time_var.grid(row=21, column=1)
+
+    def update_values(self) -> None:
+
+        if self.telemetry is not None:
+
+            self.fuel_var.set(f"{self.telemetry.fuel:.1f}")
+            self.speed_var.set(f"{self.telemetry.speed:.1f}")
+            self.gear_var.set(f"{self.telemetry.gear}")
+            self.steering_var.set(f"{self.telemetry.steering:.1f}")
+
+            self.pressure_fl_var.set(
+                f"{self.telemetry.tyre_pressure.front_left:.1f}")
+            self.pressure_fr_var.set(
+                f"{self.telemetry.tyre_pressure.front_right:.1f}")
+            self.pressure_rl_var.set(
+                f"{self.telemetry.tyre_pressure.rear_left:.1f}")
+            self.pressure_rr_var.set(
+                f"{self.telemetry.tyre_pressure.rear_right:.1f}")
+
+            self.brake_temp_fl_var.set(
+                f"{self.telemetry.brake_temp.front_left:.1f}")
+            self.brake_temp_fr_var.set(
+                f"{self.telemetry.brake_temp.front_right:.1f}")
+            self.brake_temp_rl_var.set(
+                f"{self.telemetry.brake_temp.rear_left:.1f}")
+            self.brake_temp_rr_var.set(
+                f"{self.telemetry.brake_temp.rear_right:.1f}")
+
+            self.pad_wear_fl_var.set(
+                f"{self.telemetry.pad_wear.front_left:.1f}")
+            self.pad_wear_fr_var.set(
+                f"{self.telemetry.pad_wear.front_right:.1f}")
+            self.pad_wear_rl_var.set(
+                f"{self.telemetry.pad_wear.rear_left:.1f}")
+            self.pad_wear_rr_var.set(
+                f"{self.telemetry.pad_wear.rear_right:.1f}")
+
+            self.disc_wear_fl_var.set(
+                f"{self.telemetry.disc_wear.front_left:.1f}")
+            self.disc_wear_fr_var.set(
+                f"{self.telemetry.disc_wear.front_right:.1f}")
+            self.disc_wear_rl_var.set(
+                f"{self.telemetry.disc_wear.rear_left:.1f}")
+            self.disc_wear_rr_var.set(
+                f"{self.telemetry.disc_wear.rear_right:.1f}")
+
+            self.lap_time_var.set(string_time_from_ms(self.telemetry.lap_time))
+            self.prev_time_var.set(
+                string_time_from_ms(self.telemetry.previous_time))
+
+
 class StrategyUI(tkinter.Frame):
 
     def __init__(self, root):
+
         tkinter.Frame.__init__(self, master=root)
 
         self.asm = accSharedMemory()
@@ -653,7 +973,10 @@ class app(tkinter.Tk):
         self.config(menu=self.menu_bar)
 
         self.strategy_ui = StrategyUI(self)
-        self.strategy_ui.grid(row=0)
+        self.strategy_ui.grid(row=0, column=0)
+
+        self.telemetry_ui = TelemetryUI(self)
+        self.telemetry_ui.grid(row=0, column=1)
 
         self.client_loop()
 
@@ -690,6 +1013,15 @@ class app(tkinter.Tk):
                 self.strategy_ui.bset_strat.config(state="active")
                 self.strategy_ui.update_values()
 
+            elif event_type == NetworkQueue.Telemetry:
+
+                telemetry_bytes = self.client_queue_out.get()
+                if len(telemetry_bytes) > 88:
+                    print("mmm")
+                telemetry = Telemetry.from_bytes(telemetry_bytes[:88])
+                self.telemetry_ui.telemetry = telemetry
+                self.telemetry_ui.update_values()
+
         asm_data = self.strategy_ui.asm.get_data()
         if asm_data is not None:
 
@@ -703,6 +1035,22 @@ class app(tkinter.Tk):
 
             self.client_queue_in.put(NetworkQueue.CarInfoData)
             self.client_queue_in.put(infos.to_bytes())
+
+            # Telemetry
+            telemetry_data = Telemetry(
+                asm_data.Physics.speed_kmh,
+                asm_data.Physics.gear,
+                asm_data.Physics.fuel,
+                asm_data.Physics.steer_angle,
+                asm_data.Physics.wheel_pressure,
+                asm_data.Physics.brake_temp,
+                asm_data.Physics.pad_life,
+                asm_data.Physics.disc_life,
+                asm_data.Graphics.current_time,
+                asm_data.Graphics.last_time
+            )
+            self.client_queue_in.put(NetworkQueue.Telemetry)
+            self.client_queue_in.put(telemetry_data.to_bytes())
 
         if self.strategy_ui.strategy is not None:
 
@@ -872,6 +1220,11 @@ class ClientInstance:
 
             self._out_queue.put(NetworkQueue.StrategyDone)
 
+        elif packet_type == PacketType.Telemetry:
+
+            self._out_queue.put(NetworkQueue.Telemetry)
+            self._out_queue.put(data[1:])
+
     def _check_app_state(self) -> None:
 
         while self._in_queue.qsize() != 0:
@@ -892,6 +1245,11 @@ class ClientInstance:
 
             elif item_type == NetworkQueue.StrategyDone:
                 self._socket.send(PacketType.StrategyOK.to_bytes())
+
+            elif item_type == NetworkQueue.Telemetry:
+
+                telemetry = self._in_queue.get()
+                self._socket.send(PacketType.Telemetry.to_bytes() + telemetry)
 
 
 @dataclass
@@ -1009,6 +1367,9 @@ class ServerInstance:
                 elif packet_type == PacketType.StrategyOK:
                     rx_queue.put(data)
 
+                elif packet_type == PacketType.Telemetry:
+                    rx_queue.put(data)
+
                 else:
                     print(f"Socket data {addr}: {data}")
 
@@ -1024,6 +1385,9 @@ class ServerInstance:
                     c_socket.send(net_data)
 
                 if packet_type == PacketType.StrategyOK:
+                    c_socket.send(net_data)
+
+                if packet_type == PacketType.Telemetry:
                     c_socket.send(net_data)
 
         if data == b"":
