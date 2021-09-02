@@ -457,25 +457,33 @@ class UserUI(tkinter.Frame):
         tkinter.Frame.__init__(self, master=root)
         self.user_list = []
 
+        f_background = tkinter.Frame(self, background="Black")
         row_count = 0
+
+        l_user = tkinter.Label(f_background, text="Users:", width=20)
+        l_user.grid(row=row_count, column=0, padx=1, pady=1)
+        row_count += 1
+
         self.user1 = tkinter.StringVar()
-        l_user1_var = tkinter.Label(self, textvariable=self.user1, width=20)
-        l_user1_var.grid(row=row_count, column=0)
+        l_user1_var = tkinter.Label(f_background, textvariable=self.user1, width=20)
+        l_user1_var.grid(row=row_count, column=0, padx=1, pady=1)
         row_count += 1
 
         self.user2 = tkinter.StringVar()
-        l_user2_var = tkinter.Label(self, textvariable=self.user2, width=20)
-        l_user2_var.grid(row=row_count, column=0)
+        l_user2_var = tkinter.Label(f_background, textvariable=self.user2, width=20)
+        l_user2_var.grid(row=row_count, column=0, padx=1, pady=1)
         row_count += 1
 
         self.user3 = tkinter.StringVar()
-        l_user3_var = tkinter.Label(self, textvariable=self.user3, width=20)
-        l_user3_var.grid(row=row_count, column=0)
+        l_user3_var = tkinter.Label(f_background, textvariable=self.user3, width=20)
+        l_user3_var.grid(row=row_count, column=0, padx=1, pady=1)
         row_count += 1
 
         self.user4 = tkinter.StringVar()
-        l_user4_var = tkinter.Label(self, textvariable=self.user4, width=20)
-        l_user4_var.grid(row=row_count, column=0)
+        l_user4_var = tkinter.Label(f_background, textvariable=self.user4, width=20)
+        l_user4_var.grid(row=row_count, column=0, padx=1, pady=1)
+
+        f_background.pack()
 
     def add_user(self, name: str) -> None:
 
