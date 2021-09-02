@@ -82,6 +82,7 @@ class PacketType(Enum):
     Telemetry = auto()
     NewConnection = auto()
     UserDisconnect = auto()
+    UpdateUsers = auto()
 
     def to_bytes(self) -> bytes:
         """
@@ -109,6 +110,7 @@ class NetworkQueue(Enum):
     Telemetry = auto()
     NewUser = auto()
     UserDisconnect = auto()
+    UpdateUsers = auto()
 
 
 @dataclass
@@ -1115,6 +1117,24 @@ class app(tkinter.Tk):
                                          "utf-8")
                 self.user_ui.remove_user(name)
 
+            elif event_type == NetworkQueue.UpdateUsers:
+
+                user_update = self.client_queue_out.get()
+                nb_users = user_update[0]
+                self.user_ui.reset()
+
+                index = 1
+                for _ in range(nb_users):
+
+                    name_lenght = user_update[index]
+                    index += 1
+                    name = struct.unpack(
+                        f"!{name_lenght}s",
+                        user_update[index:index+name_lenght])[0].decode(
+                            "utf-8")
+                    index += name_lenght
+                    self.user_ui.add_user(name)
+
         asm_data = self.strategy_ui.asm.get_data()
         if (asm_data is not None and self.client is not None
                 and delta_time > self.min_delta):
@@ -1326,13 +1346,17 @@ class ClientInstance:
 
         elif packet_type == PacketType.NewConnection:
 
-            print("packet new connection ")
             self._out_queue.put(NetworkQueue.NewUser)
             self._out_queue.put(data[1:])
 
         elif packet_type == PacketType.UserDisconnect:
-            print("packet disconnect ")
+
             self._out_queue.put(NetworkQueue.UserDisconnect)
+            self._out_queue.put(data[1:])
+
+        elif packet_type == PacketType.UpdateUsers:
+
+            self._out_queue.put(NetworkQueue.UpdateUsers)
             self._out_queue.put(data[1:])
 
     def _check_app_state(self) -> None:
@@ -1367,6 +1391,7 @@ class ClientHandle:
     thread: threading.Thread
     rx_queue: queue.Queue
     tx_queue: queue.Queue
+    addr: str
     username: str = ""
 
 
@@ -1382,6 +1407,7 @@ class ServerInstance:
 
         self.connection = None
         self._thread_pool: List[ClientHandle] = []
+        self._users = []
 
         self._socket.bind(("", 4269))
         self._server_thread.start()
@@ -1405,7 +1431,7 @@ class ServerInstance:
                                                     handler_event,
                                                     rx_queue, tx_queue))
 
-                    new_client = ClientHandle(thread, rx_queue, tx_queue)
+                    new_client = ClientHandle(thread, rx_queue, tx_queue, addr)
                     new_client.thread.start()
 
                     self._thread_pool.append(new_client)
@@ -1421,10 +1447,14 @@ class ServerInstance:
                         if client_thread.username == "":
                             packet = PacketType.from_bytes(data)
                             if packet == PacketType.NewConnection:
-                                print("server set username")
                                 lenght = data[1]
-                                client_thread.username = struct.unpack(
-                                    f"!{lenght}s", data[2:2+lenght])
+                                name = struct.unpack(
+                                    f"!{lenght}s",
+                                    data[2:2+lenght])[0].decode("utf-8")
+                                client_thread.username = name
+                                self._users.append((addr, name))
+
+                                self._update_user_connected()
 
                         for thread in self._thread_pool:
                             thread.tx_queue.put(data)
@@ -1452,6 +1482,23 @@ class ServerInstance:
             self._thread_pool.remove(client_thread)
 
         print("server_listener STOPPED")
+
+    def _update_user_connected(self) -> None:
+
+        if len(self._thread_pool) == 0:
+            return
+
+        buffer = []
+        buffer.append(PacketType.UpdateUsers.to_bytes())
+        buffer.append(struct.pack("!B", len(self._users)))
+
+        for user in self._users:
+
+            lenght = struct.pack("!B", len(user[1]))
+            name = user[1].encode("utf-8")
+            buffer.append(lenght + name)
+
+        self._thread_pool[0].rx_queue.put(b"".join(buffer))
 
     def _client_handler(self, c_socket: socket.socket, addr,
                         event: threading.Event, rx_queue: queue.Queue,
@@ -1509,19 +1556,22 @@ class ServerInstance:
                     buffer = PacketType.ServerData.to_bytes() + net_data[1:]
                     c_socket.send(buffer)
 
-                if packet_type == PacketType.Strategy:
+                elif packet_type == PacketType.Strategy:
                     c_socket.send(net_data)
 
-                if packet_type == PacketType.StrategyOK:
+                elif packet_type == PacketType.StrategyOK:
                     c_socket.send(net_data)
 
-                if packet_type == PacketType.Telemetry:
+                elif packet_type == PacketType.Telemetry:
                     c_socket.send(net_data)
 
-                if packet_type == PacketType.NewConnection:
+                elif packet_type == PacketType.NewConnection:
                     c_socket.send(net_data)
 
-                if packet_type == PacketType.UserDisconnect:
+                elif packet_type == PacketType.UserDisconnect:
+                    c_socket.send(net_data)
+
+                elif packet_type == PacketType.UpdateUsers:
                     c_socket.send(net_data)
 
         if data == b"":
