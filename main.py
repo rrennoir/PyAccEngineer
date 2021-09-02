@@ -465,22 +465,26 @@ class UserUI(tkinter.Frame):
         row_count += 1
 
         self.user1 = tkinter.StringVar()
-        l_user1_var = tkinter.Label(f_background, textvariable=self.user1, width=20)
+        l_user1_var = tkinter.Label(
+            f_background, textvariable=self.user1, width=20)
         l_user1_var.grid(row=row_count, column=0, padx=1, pady=1)
         row_count += 1
 
         self.user2 = tkinter.StringVar()
-        l_user2_var = tkinter.Label(f_background, textvariable=self.user2, width=20)
+        l_user2_var = tkinter.Label(
+            f_background, textvariable=self.user2, width=20)
         l_user2_var.grid(row=row_count, column=0, padx=1, pady=1)
         row_count += 1
 
         self.user3 = tkinter.StringVar()
-        l_user3_var = tkinter.Label(f_background, textvariable=self.user3, width=20)
+        l_user3_var = tkinter.Label(
+            f_background, textvariable=self.user3, width=20)
         l_user3_var.grid(row=row_count, column=0, padx=1, pady=1)
         row_count += 1
 
         self.user4 = tkinter.StringVar()
-        l_user4_var = tkinter.Label(f_background, textvariable=self.user4, width=20)
+        l_user4_var = tkinter.Label(
+            f_background, textvariable=self.user4, width=20)
         l_user4_var.grid(row=row_count, column=0, padx=1, pady=1)
 
         f_background.pack()
@@ -530,11 +534,112 @@ class UserUI(tkinter.Frame):
         self.user4.set("")
 
 
+class TyreInfo(tkinter.Frame):
+
+    def __init__(self, root, name: str, on_the_right: bool = True):
+
+        tkinter.Frame.__init__(self, master=root)
+
+        self.tyre_pressure = tkinter.DoubleVar()
+        self.tyre_temp = tkinter.DoubleVar()
+        self.brake_temp = tkinter.DoubleVar()
+        self.pad_wear = tkinter.DoubleVar()
+        self.disc_wear = tkinter.DoubleVar()
+
+        label_width = 15
+        var_width = 5
+        if on_the_right:
+            label_column = 2
+            var_column = 1
+            tyre_column = 0
+            txt_anchor = tkinter.W
+
+        else:
+            label_column = 0
+            var_column = 1
+            tyre_column = 2
+            txt_anchor = tkinter.E
+
+        row_count = 0
+        self.tyre = tkinter.Frame(self, background="Green")
+        self.tyre.grid(row=row_count, rowspan=6, column=tyre_column)
+        t = tkinter.Label(self.tyre, width=10)
+        t.grid()
+
+        l_tyre = tkinter.Label(
+            self, text=name, width=label_width, anchor=txt_anchor)
+        l_tyre.grid(row=row_count, column=label_column)
+        row_count += 1
+
+        l_tyre_pressure = tkinter.Label(self, text="Tyre pressure",
+                                        width=label_width, anchor=txt_anchor)
+        l_tyre_pressure_var = tkinter.Label(self,
+                                            textvariable=self.tyre_pressure,
+                                            width=var_width)
+        l_tyre_pressure.grid(row=row_count, column=label_column)
+        l_tyre_pressure_var.grid(row=row_count, column=var_column)
+        row_count += 1
+
+        l_tyre_temp = tkinter.Label(self, text="Tyre temperature",
+                                    width=label_width, anchor=txt_anchor)
+        l_tyre_temp_var = tkinter.Label(self,
+                                        textvariable=self.tyre_temp,
+                                        width=var_width)
+        l_tyre_temp.grid(row=row_count, column=label_column)
+        l_tyre_temp_var.grid(row=row_count, column=var_column)
+        row_count += 1
+
+        l_brake_temp = tkinter.Label(self, text="Brake temperature",
+                                     width=label_width, anchor=txt_anchor)
+        l_brake_temp_var = tkinter.Label(self,
+                                         textvariable=self.brake_temp,
+                                         width=var_width)
+        l_brake_temp.grid(row=row_count, column=label_column)
+        l_brake_temp_var.grid(row=row_count, column=var_column)
+        row_count += 1
+
+        l_pad_wear = tkinter.Label(self, text="Pad wear",
+                                   width=label_width, anchor=txt_anchor)
+        l_pad_wear_var = tkinter.Label(self,
+                                       textvariable=self.pad_wear,
+                                       width=var_width)
+        l_pad_wear.grid(row=row_count, column=label_column)
+        l_pad_wear_var.grid(row=row_count, column=var_column)
+        row_count += 1
+
+        l_disc_wear = tkinter.Label(self, text="Disc wear",
+                                    width=label_width, anchor=txt_anchor)
+        l_disc_wear_var = tkinter.Label(self,
+                                        textvariable=self.disc_wear,
+                                        width=var_width)
+        l_disc_wear.grid(row=row_count, column=label_column)
+        l_disc_wear_var.grid(row=row_count, column=var_column)
+
+    def update_value(self, pressure: float, tyre_temp: float,
+                     brake_temp: float, pad_wear: float,
+                     disc_wear: float) -> None:
+
+        self.tyre_pressure.set(f"{pressure:.1f}")
+        self.tyre_temp.set(f"{tyre_temp:.1f}")
+        self.brake_temp.set(f"{brake_temp:.1f}")
+        self.pad_wear.set(f"{pad_wear:.1f}")
+        self.disc_wear.set(f"{disc_wear:.1f}")
+
+    def reset_value(self) -> None:
+
+        self.tyre_pressure.set(0)
+        self.tyre_temp.set(0)
+        self.brake_temp.set(0)
+        self.pad_wear.set(0)
+        self.disc_wear.set(0)
+
+
 @dataclass
 class Telemetry:
 
     fuel: float
     tyre_pressure: Wheels
+    tyre_temp: Wheels
     brake_temp: Wheels
     pad_wear: Wheels
     disc_wear: Wheels
@@ -546,6 +651,7 @@ class Telemetry:
         buffer = [
             struct.pack("!f", self.fuel),
             struct.pack("!4f", *astuple(self.tyre_pressure)),
+            struct.pack("!4f", *astuple(self.tyre_temp)),
             struct.pack("!4f", *astuple(self.brake_temp)),
             struct.pack("!4f", *astuple(self.pad_wear)),
             struct.pack("!4f", *astuple(self.disc_wear)),
@@ -558,7 +664,7 @@ class Telemetry:
     @classmethod
     def from_bytes(cls, data: bytes) -> Telemetry:
 
-        raw_data = struct.unpack("!17f 2i", data)
+        raw_data = struct.unpack("!21f 2i", data)
 
         return Telemetry(
             raw_data[0],
@@ -566,8 +672,9 @@ class Telemetry:
             Wheels(*raw_data[5:9]),
             Wheels(*raw_data[9:13]),
             Wheels(*raw_data[13:17]),
-            raw_data[17],
-            raw_data[18],
+            Wheels(*raw_data[17:21]),
+            raw_data[21],
+            raw_data[22],
         )
 
 
@@ -579,176 +686,47 @@ class TelemetryUI(tkinter.Frame):
 
         self.telemetry: Optional[Telemetry] = None
 
-        row_count = 0
+        f_info = tkinter.Frame(self)
+        f_info.grid(row=0, column=0)
 
         # Fuel
         self.fuel_var = tkinter.DoubleVar()
-        l_fuel = tkinter.Label(self, text="Fuel: ", width=20)
-        l_fuel_var = tkinter.Label(self, textvariable=self.fuel_var, width=20)
-        l_fuel.grid(row=row_count, column=0)
-        l_fuel_var.grid(row=row_count, column=1)
-        row_count += 1
-
-        # Tyre pressure FL
-        self.pressure_fl_var = tkinter.DoubleVar()
-        l_pressure_fl = tkinter.Label(self, text="Pressure FL: ", width=20)
-        l_pressure_fl_var = tkinter.Label(
-            self, textvariable=self.pressure_fl_var, width=20)
-        l_pressure_fl.grid(row=row_count, column=0)
-        l_pressure_fl_var.grid(row=row_count, column=1)
-        row_count += 1
-
-        # Tyre pressure FR
-        self.pressure_fr_var = tkinter.DoubleVar()
-        l_pressure_fr = tkinter.Label(self, text="Pressure FR: ", width=20)
-        l_pressure_fr_var = tkinter.Label(
-            self, textvariable=self.pressure_fr_var, width=20)
-        l_pressure_fr.grid(row=row_count, column=0)
-        l_pressure_fr_var.grid(row=row_count, column=1)
-        row_count += 1
-
-        # Tyre pressure RL
-        self.pressure_rl_var = tkinter.DoubleVar()
-        l_pressure_rl = tkinter.Label(self, text="Pressure RL: ", width=20)
-        l_pressure_rl_var = tkinter.Label(
-            self, textvariable=self.pressure_rl_var, width=20)
-        l_pressure_rl.grid(row=row_count, column=0)
-        l_pressure_rl_var.grid(row=row_count, column=1)
-        row_count += 1
-
-        # Tyre pressure RR
-        self.pressure_rr_var = tkinter.DoubleVar()
-        l_pressure_rr = tkinter.Label(self, text="Pressure RR: ", width=20)
-        l_pressure_rr_var = tkinter.Label(
-            self, textvariable=self.pressure_rr_var, width=20)
-        l_pressure_rr.grid(row=row_count, column=0)
-        l_pressure_rr_var.grid(row=row_count, column=1)
-        row_count += 1
-
-        # Brake temp FL
-        self.brake_temp_fl_var = tkinter.DoubleVar()
-        l_brake_temp_fl = tkinter.Label(self, text="Brake temp FL: ", width=20)
-        l_brake_temp_fl_var = tkinter.Label(
-            self, textvariable=self.brake_temp_fl_var, width=20)
-        l_brake_temp_fl.grid(row=row_count, column=0)
-        l_brake_temp_fl_var.grid(row=row_count, column=1)
-        row_count += 1
-
-        # Brake temp FR
-        self.brake_temp_fr_var = tkinter.DoubleVar()
-        l_brake_temp_fr = tkinter.Label(self, text="Brake temp FR: ", width=20)
-        l_brake_temp_fr_var = tkinter.Label(
-            self, textvariable=self.brake_temp_fr_var, width=20)
-        l_brake_temp_fr.grid(row=row_count, column=0)
-        l_brake_temp_fr_var.grid(row=row_count, column=1)
-        row_count += 1
-
-        # Brake temp RL
-        self.brake_temp_rl_var = tkinter.DoubleVar()
-        l_brake_temp_rl = tkinter.Label(self, text="Brake temp RL: ", width=20)
-        l_brake_temp_rl_var = tkinter.Label(
-            self, textvariable=self.brake_temp_rl_var, width=20)
-        l_brake_temp_rl.grid(row=row_count, column=0)
-        l_brake_temp_rl_var.grid(row=row_count, column=1)
-        row_count += 1
-
-        # Brake temp RR
-        self.brake_temp_rr_var = tkinter.DoubleVar()
-        l_brake_temp_rr = tkinter.Label(self, text="Brake temp RR: ", width=20)
-        l_brake_temp_rr_var = tkinter.Label(
-            self, textvariable=self.brake_temp_rr_var, width=20)
-        l_brake_temp_rr.grid(row=row_count, column=0)
-        l_brake_temp_rr_var.grid(row=row_count, column=1)
-        row_count += 1
-
-        # Pad wear FL
-        self.pad_wear_fl_var = tkinter.DoubleVar()
-        l_pad_wear_fl = tkinter.Label(self, text=" Pad wear FL: ", width=20)
-        l_pad_wear_fl_var = tkinter.Label(
-            self, textvariable=self.pad_wear_fl_var, width=20)
-        l_pad_wear_fl.grid(row=row_count, column=0)
-        l_pad_wear_fl_var.grid(row=row_count, column=1)
-        row_count += 1
-
-        #  Pad wear FR
-        self.pad_wear_fr_var = tkinter.DoubleVar()
-        l_pad_wear_fr = tkinter.Label(self, text=" Pad wear FR: ", width=20)
-        l_pad_wear_fr_var = tkinter.Label(
-            self, textvariable=self.pad_wear_fr_var, width=20)
-        l_pad_wear_fr.grid(row=row_count, column=0)
-        l_pad_wear_fr_var.grid(row=row_count, column=1)
-        row_count += 1
-
-        #  Pad wear RL
-        self.pad_wear_rl_var = tkinter.DoubleVar()
-        l_pad_wear_rl = tkinter.Label(self, text=" Pad wear RL: ", width=20)
-        l_pad_wear_rl_var = tkinter.Label(
-            self, textvariable=self.pad_wear_rl_var, width=20)
-        l_pad_wear_rl.grid(row=row_count, column=0)
-        l_pad_wear_rl_var.grid(row=row_count, column=1)
-        row_count += 1
-
-        # Pad wear  RR
-        self.pad_wear_rr_var = tkinter.DoubleVar()
-        l_pad_wear_rr = tkinter.Label(self, text=" Pad wear RR: ", width=20)
-        l_pad_wear_rr_var = tkinter.Label(
-            self, textvariable=self.pad_wear_rr_var, width=20)
-        l_pad_wear_rr.grid(row=row_count, column=0)
-        l_pad_wear_rr_var.grid(row=row_count, column=1)
-        row_count += 1
-
-        # Disc wear FL
-        self.disc_wear_fl_var = tkinter.DoubleVar()
-        l_disc_wear_fl = tkinter.Label(self, text="Brake temp FL: ", width=20)
-        l_disc_wear_fl_var = tkinter.Label(
-            self, textvariable=self.disc_wear_fl_var, width=20)
-        l_disc_wear_fl.grid(row=row_count, column=0)
-        l_disc_wear_fl_var.grid(row=row_count, column=1)
-        row_count += 1
-
-        # Disc wear FR
-        self.disc_wear_fr_var = tkinter.DoubleVar()
-        l_disc_wear_fr = tkinter.Label(self, text="Disc wear FR: ", width=20)
-        l_disc_wear_fr_var = tkinter.Label(
-            self, textvariable=self.disc_wear_fr_var, width=20)
-        l_disc_wear_fr.grid(row=row_count, column=0)
-        l_disc_wear_fr_var.grid(row=row_count, column=1)
-        row_count += 1
-
-        # Disc wear RL
-        self.disc_wear_rl_var = tkinter.DoubleVar()
-        l_disc_wear_rl = tkinter.Label(self, text="Disc wear RL: ", width=20)
-        l_disc_wear_rl_var = tkinter.Label(
-            self, textvariable=self.disc_wear_rl_var, width=20)
-        l_disc_wear_rl.grid(row=row_count, column=0)
-        l_disc_wear_rl_var.grid(row=row_count, column=1)
-        row_count += 1
-
-        # Disc wear RR
-        self.disc_wear_rr_var = tkinter.DoubleVar()
-        l_disc_wear_rr = tkinter.Label(self, text="Disc wear RR: ", width=20)
-        l_disc_wear_rr_var = tkinter.Label(
-            self, textvariable=self.disc_wear_rr_var, width=20)
-        l_disc_wear_rr.grid(row=row_count, column=0)
-        l_disc_wear_rr_var.grid(row=row_count, column=1)
-        row_count += 1
+        l_fuel = tkinter.Label(f_info, text="Fuel: ", width=15)
+        l_fuel_var = tkinter.Label(
+            f_info, textvariable=self.fuel_var, width=10)
+        l_fuel.grid(row=0, column=0)
+        l_fuel_var.grid(row=0, column=1)
 
         # Lap time
         self.lap_time_var = tkinter.StringVar(value="00:00.000")
-        l_lap_time = tkinter.Label(self, text="Lap time: ", width=20)
+        l_lap_time = tkinter.Label(f_info, text="Lap time: ", width=15)
         l_lap_time_var = tkinter.Label(
-            self, textvariable=self.lap_time_var, width=20)
-        l_lap_time.grid(row=row_count, column=0)
-        l_lap_time_var.grid(row=row_count, column=1)
-        row_count += 1
+            f_info, textvariable=self.lap_time_var, width=10)
+        l_lap_time.grid(row=0, column=2)
+        l_lap_time_var.grid(row=0, column=3)
 
         # Previous time
         self.prev_time_var = tkinter.StringVar(value="00:00.000")
-        l_prev_time = tkinter.Label(self, text="Previous time: ", width=20)
+        l_prev_time = tkinter.Label(f_info, text="Previous time: ", width=15)
         l_prev_time_var = tkinter.Label(
-            self, textvariable=self.prev_time_var, width=20)
-        l_prev_time.grid(row=row_count, column=0)
-        l_prev_time_var.grid(row=row_count, column=1)
+            f_info, textvariable=self.prev_time_var, width=10)
+        l_prev_time.grid(row=0, column=4)
+        l_prev_time_var.grid(row=0, column=5)
+
+        tyre_frame = tkinter.Frame(self)
+        tyre_frame.grid(row=1, column=0)
+
+        self.front_left = TyreInfo(tyre_frame, "FL", False)
+        self.front_left.grid(row=0, column=0)
+
+        self.front_right = TyreInfo(tyre_frame, "FR")
+        self.front_right.grid(row=0, column=1)
+
+        self.rear_left = TyreInfo(tyre_frame, "RL", False)
+        self.rear_left.grid(row=1, column=0)
+
+        self.rear_right = TyreInfo(tyre_frame, "RR")
+        self.rear_right.grid(row=1, column=1)
 
     def update_values(self) -> None:
 
@@ -756,41 +734,27 @@ class TelemetryUI(tkinter.Frame):
 
             self.fuel_var.set(f"{self.telemetry.fuel:.1f}")
 
-            self.pressure_fl_var.set(
-                f"{self.telemetry.tyre_pressure.front_left:.1f}")
-            self.pressure_fr_var.set(
-                f"{self.telemetry.tyre_pressure.front_right:.1f}")
-            self.pressure_rl_var.set(
-                f"{self.telemetry.tyre_pressure.rear_left:.1f}")
-            self.pressure_rr_var.set(
-                f"{self.telemetry.tyre_pressure.rear_right:.1f}")
+            pressure = astuple(self.telemetry.tyre_pressure)
+            tyre_temp = astuple(self.telemetry.tyre_temp)
+            brake_temp = astuple(self.telemetry.brake_temp)
+            pad_wear = astuple(self.telemetry.pad_wear)
+            disc_wear = astuple(self.telemetry.disc_wear)
 
-            self.brake_temp_fl_var.set(
-                f"{self.telemetry.brake_temp.front_left:.1f}")
-            self.brake_temp_fr_var.set(
-                f"{self.telemetry.brake_temp.front_right:.1f}")
-            self.brake_temp_rl_var.set(
-                f"{self.telemetry.brake_temp.rear_left:.1f}")
-            self.brake_temp_rr_var.set(
-                f"{self.telemetry.brake_temp.rear_right:.1f}")
+            self.front_left.update_value(pressure[0], tyre_temp[0],
+                                         brake_temp[0], pad_wear[0],
+                                         disc_wear[0])
 
-            self.pad_wear_fl_var.set(
-                f"{self.telemetry.pad_wear.front_left:.1f}")
-            self.pad_wear_fr_var.set(
-                f"{self.telemetry.pad_wear.front_right:.1f}")
-            self.pad_wear_rl_var.set(
-                f"{self.telemetry.pad_wear.rear_left:.1f}")
-            self.pad_wear_rr_var.set(
-                f"{self.telemetry.pad_wear.rear_right:.1f}")
+            self.front_right.update_value(pressure[1], tyre_temp[1],
+                                          brake_temp[1], pad_wear[1],
+                                          disc_wear[1])
 
-            self.disc_wear_fl_var.set(
-                f"{self.telemetry.disc_wear.front_left:.1f}")
-            self.disc_wear_fr_var.set(
-                f"{self.telemetry.disc_wear.front_right:.1f}")
-            self.disc_wear_rl_var.set(
-                f"{self.telemetry.disc_wear.rear_left:.1f}")
-            self.disc_wear_rr_var.set(
-                f"{self.telemetry.disc_wear.rear_right:.1f}")
+            self.rear_left.update_value(pressure[2], tyre_temp[2],
+                                        brake_temp[2], pad_wear[2],
+                                        disc_wear[2])
+
+            self.rear_right.update_value(pressure[3], tyre_temp[3],
+                                         brake_temp[3], pad_wear[3],
+                                         disc_wear[3])
 
             self.lap_time_var.set(string_time_from_ms(self.telemetry.lap_time))
             self.prev_time_var.set(
@@ -1102,8 +1066,6 @@ class app(tkinter.Tk):
             elif event_type == NetworkQueue.Telemetry:
 
                 telemetry_bytes = self.client_queue_out.get()
-                if len(telemetry_bytes) > 88:
-                    print("mmm")
                 telemetry = Telemetry.from_bytes(telemetry_bytes)
                 self.telemetry_ui.telemetry = telemetry
                 self.telemetry_ui.update_values()
@@ -1165,6 +1127,7 @@ class app(tkinter.Tk):
             telemetry_data = Telemetry(
                 asm_data.Physics.fuel,
                 asm_data.Physics.wheel_pressure,
+                asm_data.Physics.tyre_core_temp,
                 asm_data.Physics.brake_temp,
                 asm_data.Physics.pad_life,
                 asm_data.Physics.disc_life,
