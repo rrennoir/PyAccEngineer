@@ -1265,7 +1265,7 @@ class ServerInstance:
     def __init__(self) -> None:
 
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._socket.settimeout(0.2)
+        self._socket.settimeout(0.05)
         self._server_thread = threading.Thread(target=self._server_listener)
         self._server_event = threading.Event()
         self.server_queue = queue.Queue()
