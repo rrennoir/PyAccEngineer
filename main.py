@@ -35,13 +35,13 @@ def clamp(number: Union[float, int],
 
 class PacketType(Enum):
 
-    Connect = 1
-    SmData = 2
-    ServerData = 3
-    Disconnect = 4
-    ConnectionAccepted = 5
-    Strategy = 6
-    StrategyOK = 7
+    Connect = auto()
+    SmData = auto()
+    ServerData = auto()
+    Disconnect = auto()
+    ConnectionAccepted = auto()
+    Strategy = auto()
+    StrategyOK = auto()
 
     def to_bytes(self) -> bytes:
         """
