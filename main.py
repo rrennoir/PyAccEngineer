@@ -759,7 +759,7 @@ class StrategyUI(tkinter.Frame):
         # Strategy menu: Tyre compound
         f_tyre_compound = tkinter.Frame(f_settings)
 
-        self.tyre_compound_text = tkinter.StringVar()
+        self.tyre_compound_text = tkinter.StringVar(value="Dry")
         l_tyre_set = tkinter.Label(
             f_settings, text="Tyre compound: ", width=20)
         l_tyre_set.grid(row=app_row, column=0)
@@ -869,15 +869,6 @@ class StrategyUI(tkinter.Frame):
 
             if self.tyre_compound_text.get() == "":
                 self.tyre_compound_text.set("Dry")
-
-        else:
-            self.fuel_text.set(0)
-            self.tyre_set_text.set(0)
-            self.front_left_text.set(0)
-            self.rear_left_text.set(0)
-            self.rear_right_text.set(0)
-            self.front_right_text.set(0)
-            self.tyre_compound_text.set("Dry")
 
     def close(self) -> None:
 
@@ -1242,8 +1233,7 @@ class ClientInstance:
             if item_type == NetworkQueue.CarInfoData:
 
                 info: bytes = self._in_queue.get()
-                buffer = PacketType.SmData.to_bytes() + info
-                self._socket.send(buffer)
+                self._socket.send(PacketType.SmData.to_bytes() + info)
 
             elif item_type == NetworkQueue.StrategySet:
 
