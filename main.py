@@ -479,7 +479,7 @@ class UserUI(tkinter.Frame):
 
     def add_user(self, name: str) -> None:
 
-        if len(self.user_list) < 4:
+        if len(self.user_list) < 4 and name not in self.user_list:
             self.user_list.append(name)
 
             if self.user1.get() == "":
@@ -515,6 +515,7 @@ class UserUI(tkinter.Frame):
 
     def reset(self) -> None:
 
+        self.user_list.clear()
         self.user1.set("")
         self.user2.set("")
         self.user3.set("")
