@@ -80,6 +80,8 @@ class PacketType(Enum):
     Strategy = auto()
     StrategyOK = auto()
     Telemetry = auto()
+    NewConnection = auto()
+    UserDisconnect = auto()
 
     def to_bytes(self) -> bytes:
         """
@@ -105,6 +107,8 @@ class NetworkQueue(Enum):
     CarInfoData = auto()
     StrategySet = auto()
     Telemetry = auto()
+    NewUser = auto()
+    UserDisconnect = auto()
 
 
 @dataclass
@@ -390,6 +394,10 @@ class ConnectionWindow(tkinter.Toplevel):
         self.l_ip = tkinter.Label(self.f_connection_info, text="IP: ")
         self.l_ip.grid(row=0, column=0)
 
+        self.l_username = tkinter.Label(
+            self.f_connection_info, text="Username: ")
+        self.l_username.grid(row=2, column=0)
+
         self.l_port = tkinter.Label(self.f_connection_info, text="Port: ")
         self.l_port.grid(row=1, column=0)
 
@@ -397,7 +405,12 @@ class ConnectionWindow(tkinter.Toplevel):
         self.e_ip.grid(row=0, column=1)
 
         self.e_port = tkinter.Entry(self.f_connection_info)
+        self.e_port.insert(tkinter.END, "4269")
         self.e_port.grid(row=1, column=1)
+
+        self.e_username = tkinter.Entry(self.f_connection_info)
+        self.e_username.insert(tkinter.END, "xXx_cringe_xXx")
+        self.e_username.grid(row=2, column=1)
 
         self.b_connect = tkinter.Button(
             self, text="Connect", command=self.connect)
@@ -415,17 +428,96 @@ class ConnectionWindow(tkinter.Toplevel):
                 self.e_port.config(background="White")
                 port = int(self.e_port.get())
 
-                if self.master.connect_to_server(self.e_ip.get(), port):
-                    self.destroy()
+                if self.e_username.get() != "":
+                    self.e_username.config(background="White")
+
+                    if self.master.connect_to_server(self.e_ip.get(),
+                                                     port,
+                                                     self.e_username.get()):
+                        self.destroy()
+
+                    else:
+                        self.b_connect.config(state="active")
 
                 else:
-                    self.b_connect.config(state="active")
+                    self.e_username.config(background="Red")
 
             else:
                 self.e_port.config(background="Red")
 
         except ValueError:
             self.e_ip.config(background="Red")
+
+
+class UserUI(tkinter.Frame):
+
+    def __init__(self, root):
+
+        tkinter.Frame.__init__(self, master=root)
+        self.user_list = []
+
+        row_count = 0
+        self.user1 = tkinter.StringVar()
+        l_user1_var = tkinter.Label(self, textvariable=self.user1, width=20)
+        l_user1_var.grid(row=row_count, column=0)
+        row_count += 1
+
+        self.user2 = tkinter.StringVar()
+        l_user2_var = tkinter.Label(self, textvariable=self.user2, width=20)
+        l_user2_var.grid(row=row_count, column=0)
+        row_count += 1
+
+        self.user3 = tkinter.StringVar()
+        l_user3_var = tkinter.Label(self, textvariable=self.user3, width=20)
+        l_user3_var.grid(row=row_count, column=0)
+        row_count += 1
+
+        self.user4 = tkinter.StringVar()
+        l_user4_var = tkinter.Label(self, textvariable=self.user4, width=20)
+        l_user4_var.grid(row=row_count, column=0)
+
+    def add_user(self, name: str) -> None:
+
+        if len(self.user_list) < 4:
+            self.user_list.append(name)
+
+            if self.user1.get() == "":
+                self.user1.set(name)
+
+            elif self.user2.get() == "":
+                self.user2.set(name)
+
+            elif self.user3.get() == "":
+                self.user3.set(name)
+
+            elif self.user4.get() == "":
+                self.user4.set(name)
+
+            else:
+                print("UserUI: names full ?")
+        else:
+            print("UserUI: More than 4 users ?")
+
+    def remove_user(self, name: str) -> None:
+
+        if self.user1.get() == name:
+            self.user1.set("")
+
+        elif self.user2.get() == name:
+            self.user2.set("")
+
+        elif self.user3.get() == name:
+            self.user3.set("")
+
+        elif self.user4.get() == name:
+            self.user4.set("")
+
+    def reset(self) -> None:
+
+        self.user1.set("")
+        self.user2.set("")
+        self.user3.set("")
+        self.user4.set("")
 
 
 @dataclass
@@ -969,6 +1061,9 @@ class app(tkinter.Tk):
         self.telemetry_ui = TelemetryUI(self)
         self.telemetry_ui.grid(row=0, column=1)
 
+        self.user_ui = UserUI(self)
+        self.user_ui.grid(row=1, column=0)
+
         self.last_time = time.time()
         self.min_delta = 0.2
 
@@ -1017,6 +1112,24 @@ class app(tkinter.Tk):
                 telemetry = Telemetry.from_bytes(telemetry_bytes[:88])
                 self.telemetry_ui.telemetry = telemetry
                 self.telemetry_ui.update_values()
+
+            elif event_type == NetworkQueue.NewUser:
+
+                name_bytes = self.client_queue_out.get()
+                name_lenght = name_bytes[0]
+                name = struct.unpack(f"!{name_lenght}s",
+                                     name_bytes[1:1+name_lenght])[0].decode(
+                                         "utf-8")
+                self.user_ui.add_user(name)
+
+            elif event_type == NetworkQueue.UserDisconnect:
+
+                name_bytes = self.client_queue_out.get()
+                name_lenght = name_bytes[0]
+                name = struct.unpack(f"!{name_lenght}s",
+                                     name_bytes[1:1+name_lenght])[0].decode(
+                                         "utf-8")
+                self.user_ui.remove_user(name)
 
         asm_data = self.strategy_ui.asm.get_data()
         if (asm_data is not None and self.client is not None
@@ -1070,11 +1183,12 @@ class app(tkinter.Tk):
         self.connection_window = ConnectionWindow(self)
         self.menu_bar.entryconfig("Disconnect", state="active")
         self.menu_bar.entryconfig("Connect", state="disabled")
+        self.menu_bar.entryconfig("As Server", state="disabled")
 
-    def connect_to_server(self, ip, port) -> bool:
+    def connect_to_server(self, ip, port: int, username: str) -> bool:
 
         self.client = ClientInstance(
-            ip, port, self.client_queue_in, self.client_queue_out)
+            ip, port, username, self.client_queue_in, self.client_queue_out)
         return self.client.connect()
 
     def as_server(self) -> None:
@@ -1084,7 +1198,7 @@ class app(tkinter.Tk):
         self.menu_bar.entryconfig("As Server", state="disabled")
 
         self.server = ServerInstance()
-        self.connect_to_server("127.0.0.1", 4269)
+        self.connect_to_server("127.0.0.1", 4269, "Ryan Rennoir")  # TODO
 
     def disconnect(self) -> None:
 
@@ -1095,6 +1209,7 @@ class app(tkinter.Tk):
         self.menu_bar.entryconfig("As Server", state="active")
 
         self.strategy_ui.reset()
+        self.user_ui.reset()
 
     def stop_networking(self) -> None:
 
@@ -1120,12 +1235,13 @@ class app(tkinter.Tk):
 
 class ClientInstance:
 
-    def __init__(self, ip: str, port: int, in_queue: queue.Queue,
-                 out_queue: queue.Queue) -> None:
+    def __init__(self, ip: str, port: int, username: str,
+                 in_queue: queue.Queue, out_queue: queue.Queue) -> None:
 
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_ip = ip
         self._server_port = port
+        self._username = username
         self._listener_thread = None
         self._thread_event = None
         self._in_queue = in_queue
@@ -1144,7 +1260,10 @@ class ClientInstance:
             return False
 
         try:
-            self._socket.send(PacketType.Connect.to_bytes())
+            name_lenght = len(self._username)
+            name_byte = struct.pack(f"!B {name_lenght}s", name_lenght,
+                                    self._username.encode("utf-8"))
+            self._socket.send(PacketType.Connect.to_bytes() + name_byte)
 
         except ConnectionResetError:
             print(f"CLIENT: Connection reset error with {self._server_ip}")
@@ -1224,6 +1343,17 @@ class ClientInstance:
             self._out_queue.put(NetworkQueue.Telemetry)
             self._out_queue.put(data[1:])
 
+        elif packet_type == PacketType.NewConnection:
+
+            print("packet new connection ")
+            self._out_queue.put(NetworkQueue.NewUser)
+            self._out_queue.put(data[1:])
+
+        elif packet_type == PacketType.UserDisconnect:
+            print("packet disconnect ")
+            self._out_queue.put(NetworkQueue.UserDisconnect)
+            self._out_queue.put(data[1:])
+
     def _check_app_state(self) -> None:
 
         while self._in_queue.qsize() != 0:
@@ -1256,6 +1386,7 @@ class ClientHandle:
     thread: threading.Thread
     rx_queue: queue.Queue
     tx_queue: queue.Queue
+    username: str = ""
 
 
 class ServerInstance:
@@ -1304,7 +1435,15 @@ class ServerInstance:
                 for client_thread in self._thread_pool:
 
                     if client_thread.rx_queue.qsize() > 0:
+
                         data = client_thread.rx_queue.get()
+                        if client_thread.username == "":
+                            packet = PacketType.from_bytes(data)
+                            if packet == PacketType.NewConnection:
+                                print("server set username")
+                                lenght = data[1]
+                                client_thread.username = struct.unpack(
+                                    f"!{lenght}s", data[2:2+lenght])
 
                         for thread in self._thread_pool:
                             thread.tx_queue.put(data)
@@ -1315,6 +1454,13 @@ class ServerInstance:
                     if not client_thread.thread.is_alive():
                         print("SERVER: Removing thread of client thread pool")
                         self._thread_pool.remove(client_thread)
+
+                        if len(self._thread_pool) > 0:
+                            packet_type = PacketType.UserDisconnect.to_bytes()
+                            name = client_thread.username.encode("utf-8")
+                            lenght = struct.pack("!B", len(name))
+                            self._thread_pool[0].rx_queue.put(
+                                packet_type + lenght + name)
 
         self._socket.close()
         handler_event.set()
@@ -1350,7 +1496,10 @@ class ServerInstance:
                 packet_type = PacketType.from_bytes(data)
 
                 if packet_type == PacketType.Connect:
+
                     c_socket.send(PacketType.ConnectionAccepted.to_bytes())
+                    rx_queue.put(
+                        PacketType.NewConnection.to_bytes() + data[1:])
 
                 elif packet_type == PacketType.Disconnect:
                     print(f"SERVER: Client {addr} disconnected")
@@ -1386,6 +1535,12 @@ class ServerInstance:
                     c_socket.send(net_data)
 
                 if packet_type == PacketType.Telemetry:
+                    c_socket.send(net_data)
+
+                if packet_type == PacketType.NewConnection:
+                    c_socket.send(net_data)
+
+                if packet_type == PacketType.UserDisconnect:
                     c_socket.send(net_data)
 
         if data == b"":
