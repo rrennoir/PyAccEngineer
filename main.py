@@ -1246,14 +1246,12 @@ class ClientInstance:
             return (False, msg)
 
         reply = self._socket.recv(64)
-        print(f"CLIENT: Got {reply =}")
         packet_type = PacketType.from_bytes(reply)
         if packet_type == PacketType.ConnectionReply:
 
-            succes = struct.unpack("!?", reply[1])[0]
+            succes = struct.unpack("!?", reply[1:])[0]
 
             if succes:
-                print("CLIENT: connected")
                 self._thread_event = threading.Event()
 
                 self._listener_thread = threading.Thread(
@@ -1448,10 +1446,9 @@ class ServerInstance:
 
             lenght = data[1]
             name = struct.unpack(f"!{lenght}s", data[2:])[0].decode("utf-8")
-            print(name)
 
             packet_type = PacketType.ConnectionReply.to_bytes()
-            if (name, addr) not in self._users:
+            if name not in [user[0] for user in self._users]:
 
                 succes = struct.pack("!?", True)
                 c_socket.send(packet_type + succes)
