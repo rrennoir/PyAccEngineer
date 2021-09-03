@@ -664,6 +664,7 @@ class Telemetry:
     pad_wear: Wheels
     disc_wear: Wheels
     lap_time: int
+    best_time: int
     previous_time: int
 
     def to_bytes(self) -> bytes:
@@ -676,6 +677,7 @@ class Telemetry:
             struct.pack("!4f", *astuple(self.pad_wear)),
             struct.pack("!4f", *astuple(self.disc_wear)),
             struct.pack("!i", self.lap_time),
+            struct.pack("!i", self.best_time),
             struct.pack("!i", self.previous_time),
         ]
 
@@ -684,7 +686,7 @@ class Telemetry:
     @classmethod
     def from_bytes(cls, data: bytes) -> Telemetry:
 
-        raw_data = struct.unpack("!21f 2i", data)
+        raw_data = struct.unpack("!21f 3i", data)
 
         return Telemetry(
             raw_data[0],
@@ -695,6 +697,7 @@ class Telemetry:
             Wheels(*raw_data[17:21]),
             raw_data[21],
             raw_data[22],
+            raw_data[23],
         )
 
 
@@ -711,27 +714,35 @@ class TelemetryUI(tkinter.Frame):
 
         # Fuel
         self.fuel_var = tkinter.DoubleVar()
-        l_fuel = tkinter.Label(f_info, text="Fuel: ", width=15)
+        l_fuel = tkinter.Label(f_info, text="Fuel: ")
         l_fuel_var = tkinter.Label(
-            f_info, textvariable=self.fuel_var, width=10)
-        l_fuel.grid(row=0, column=0)
-        l_fuel_var.grid(row=0, column=1)
+            f_info, textvariable=self.fuel_var)
+        l_fuel.pack(side=tkinter.LEFT)
+        l_fuel_var.pack(side=tkinter.LEFT)
 
         # Lap time
         self.lap_time_var = tkinter.StringVar(value="00:00.000")
-        l_lap_time = tkinter.Label(f_info, text="Lap time: ", width=15)
+        l_lap_time = tkinter.Label(f_info, text="Lap time: ")
         l_lap_time_var = tkinter.Label(
-            f_info, textvariable=self.lap_time_var, width=10)
-        l_lap_time.grid(row=0, column=2)
-        l_lap_time_var.grid(row=0, column=3)
+            f_info, textvariable=self.lap_time_var)
+        l_lap_time.pack(side=tkinter.LEFT)
+        l_lap_time_var.pack(side=tkinter.LEFT)
+
+        # best time
+        self.best_time_var = tkinter.StringVar(value="00:00.000")
+        l_best_time = tkinter.Label(f_info, text="Best time: ")
+        l_best_time_var = tkinter.Label(
+            f_info, textvariable=self.lap_time_var)
+        l_best_time.pack(side=tkinter.LEFT)
+        l_best_time_var.pack(side=tkinter.LEFT)
 
         # Previous time
         self.prev_time_var = tkinter.StringVar(value="00:00.000")
-        l_prev_time = tkinter.Label(f_info, text="Previous time: ", width=15)
+        l_prev_time = tkinter.Label(f_info, text="Previous time: ",)
         l_prev_time_var = tkinter.Label(
-            f_info, textvariable=self.prev_time_var, width=10)
-        l_prev_time.grid(row=0, column=4)
-        l_prev_time_var.grid(row=0, column=5)
+            f_info, textvariable=self.prev_time_var)
+        l_prev_time.pack(side=tkinter.LEFT)
+        l_prev_time_var.pack(side=tkinter.LEFT)
 
         tyre_frame = tkinter.Frame(self)
         tyre_frame.grid(row=1, column=0)
@@ -777,6 +788,8 @@ class TelemetryUI(tkinter.Frame):
                                          disc_wear[3])
 
             self.lap_time_var.set(string_time_from_ms(self.telemetry.lap_time))
+            self.best_time_var.set(
+                string_time_from_ms(self.telemetry.best_time))
             self.prev_time_var.set(
                 string_time_from_ms(self.telemetry.previous_time))
 
@@ -1136,6 +1149,7 @@ class App(tkinter.Tk):
                 asm_data.Physics.pad_life,
                 asm_data.Physics.disc_life,
                 asm_data.Graphics.current_time,
+                asm_data.Graphics.best_time,
                 asm_data.Graphics.last_time
             )
             self.client_queue_in.put(NetworkQueue.Telemetry)
