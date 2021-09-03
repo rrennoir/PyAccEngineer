@@ -393,33 +393,37 @@ class ConnectionWindow(tkinter.Toplevel):
 
         self.as_server = as_server
 
-        self.f_connection_info = tkinter.Frame(self)
+        self.f_connection_info = tkinter.Frame(
+            self, bd=2, relief=tkinter.RIDGE)
         self.f_connection_info.grid()
 
-        self.l_ip = tkinter.Label(self.f_connection_info, text="IP: ")
-        self.l_ip.grid(row=0, column=0)
+        self.l_ip = tkinter.Label(self.f_connection_info, text="IP:",
+                                  anchor=tkinter.E, width=10)
+        self.l_ip.grid(row=0, column=0, padx=5, pady=2)
 
-        self.l_username = tkinter.Label(
-            self.f_connection_info, text="Username: ")
-        self.l_username.grid(row=2, column=0)
+        self.l_username = tkinter.Label(self.f_connection_info,
+                                        text="Username:",
+                                        anchor=tkinter.E, width=10)
+        self.l_username.grid(row=2, column=0, padx=5, pady=2)
 
-        self.l_port = tkinter.Label(self.f_connection_info, text="Port: ")
-        self.l_port.grid(row=1, column=0)
+        self.l_port = tkinter.Label(self.f_connection_info, text="Port:",
+                                    anchor=tkinter.E, width=10)
+        self.l_port.grid(row=1, column=0, padx=5, pady=2)
 
-        self.e_ip = tkinter.Entry(self.f_connection_info)
-        self.e_ip.grid(row=0, column=1)
+        self.e_ip = tkinter.Entry(self.f_connection_info, width=30)
+        self.e_ip.grid(row=0, column=1, padx=5, pady=2)
 
-        self.e_port = tkinter.Entry(self.f_connection_info)
+        self.e_port = tkinter.Entry(self.f_connection_info, width=30)
         self.e_port.insert(tkinter.END, "4269")
-        self.e_port.grid(row=1, column=1)
+        self.e_port.grid(row=1, column=1, padx=5, pady=2)
 
-        self.e_username = tkinter.Entry(self.f_connection_info)
+        self.e_username = tkinter.Entry(self.f_connection_info, width=30)
         self.e_username.insert(tkinter.END, "xXx_cringe_xXx")
-        self.e_username.grid(row=2, column=1)
+        self.e_username.grid(row=2, column=1, padx=5, pady=2)
 
         self.b_connect = tkinter.Button(
             self, text="Connect", command=self.connect)
-        self.b_connect.grid(row=1)
+        self.b_connect.grid(row=1, padx=10, pady=5)
 
         if self.as_server:
             self.e_ip.insert(tkinter.END, "127.0.0.1")
@@ -816,7 +820,7 @@ class StrategyUI(tkinter.Frame):
         self.mfd_tyre_set = 0
         self.max_static_fuel = 120
 
-        f_settings = tkinter.Frame(self)
+        f_settings = tkinter.Frame(self, bd=2, relief=tkinter.RIDGE)
 
         app_row = 0
 
@@ -905,18 +909,19 @@ class StrategyUI(tkinter.Frame):
         bp_tyre_rr.grid(row=app_row, column=1)
         app_row += 1
 
-        f_settings.grid(row=0)
+        f_settings.grid(row=0, padx=2, pady=2)
 
-        f_button_grid = tkinter.Frame(self)
-        f_button_grid.grid(row=1)
-        self.bupdate_strat = tkinter.Button(
+        f_button_grid = tkinter.Frame(self, relief=tkinter.RIDGE, bd=2)
+        f_button_grid.grid(row=1, pady=5)
+
+        self.b_update_strat = tkinter.Button(
             f_button_grid, text="Update values",
             command=self.update_values)
-        self.bupdate_strat.pack(side=tkinter.LEFT, padx=40, pady=2)
-        self.bset_strat = tkinter.Button(
+        self.b_update_strat.pack(side=tkinter.LEFT, padx=98, pady=2)
+        self.b_set_strat = tkinter.Button(
             f_button_grid, text="Set Strategy",
             command=self.set_strategy)
-        self.bset_strat.pack(side=tkinter.RIGHT, padx=40, pady=2)
+        self.b_set_strat.pack(side=tkinter.RIGHT, padx=98, pady=2)
 
         self.update_values()
         self.check_reply()
@@ -963,15 +968,15 @@ class StrategyUI(tkinter.Frame):
         self.strategy = PitStop(
             self.mfd_fuel, self.mfd_tyre_set, self.tyre_compound_text.get(),
             self.tyres)
-        self.bset_strat.config(state="disabled")
+        self.b_set_strat.config(state="disabled")
 
     def is_strategy_applied(self, state: bool) -> None:
 
         if state:
-            self.bset_strat.config(state="active")
+            self.b_set_strat.config(state="active")
 
         else:
-            self.bset_strat.config(state="disabled")
+            self.b_set_strat.config(state="disabled")
 
     def apply_strategy(self, strat: PitStop) -> None:
 
@@ -1015,8 +1020,8 @@ class StrategyUI(tkinter.Frame):
 
     def reset(self) -> None:
 
-        self.bset_strat.config(state="active")
-        self.bupdate_strat.config(state="active")
+        self.b_set_strat.config(state="active")
+        self.b_update_strat.config(state="active")
 
 
 class App(tkinter.Tk):
@@ -1094,7 +1099,7 @@ class App(tkinter.Tk):
 
             elif event_type == NetworkQueue.StrategyDone:
 
-                self.strategy_ui.bset_strat.config(state="active")
+                self.strategy_ui.b_set_strat.config(state="active")
                 self.strategy_ui.update_values()
 
             elif event_type == NetworkQueue.Telemetry:
