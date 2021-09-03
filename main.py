@@ -388,6 +388,11 @@ class ConnectionWindow(tkinter.Toplevel):
 
         self.main_app = root
 
+        # Block other window
+        self.grab_set()
+
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
+
         self.as_server = as_server
 
         self.f_connection_info = tkinter.Frame(self)
@@ -463,7 +468,7 @@ class ConnectionWindow(tkinter.Toplevel):
                                                                  username)
 
                 if connected:
-                    self.destroy()
+                    self.on_close()
 
                 else:
                     messagebox.showerror("Error", msg)
@@ -472,6 +477,11 @@ class ConnectionWindow(tkinter.Toplevel):
         else:
             messagebox.showerror("Error", error_message)
             self.b_connect.config(state="active")
+
+    def on_close(self) -> None:
+
+        self.grab_release()
+        self.destroy()
 
 
 class UserUI(tkinter.Frame):
@@ -1148,29 +1158,44 @@ class App(tkinter.Tk):
     def open_connection_window(self, as_server: bool = False) -> None:
 
         self.connection_window = ConnectionWindow(self, as_server)
-        self.menu_bar.entryconfig("Disconnect", state="active")
-        self.menu_bar.entryconfig("Connect", state="disabled")
-        self.menu_bar.entryconfig("As Server", state="disabled")
 
     def connect_to_server(self, ip, port: int,
                           username: str) -> Tuple(bool, str):
 
         self.client = ClientInstance(
             ip, port, username, self.client_queue_in, self.client_queue_out)
-        return self.client.connect()
+
+        succes, msg = self.client.connect()
+        if succes:
+            self.connected(True)
+
+        else:
+            self.client = None
+
+        return (succes, msg)
 
     def as_server(self, name: str) -> None:
 
         self.server = ServerInstance()
         self.connect_to_server("127.0.0.1", 4269, name)
+        self.connected(True)
+
+    def connected(self, state: bool) -> None:
+
+        if state:
+            self.menu_bar.entryconfig("Disconnect", state="active")
+            self.menu_bar.entryconfig("Connect", state="disabled")
+            self.menu_bar.entryconfig("As Server", state="disabled")
+
+        else:
+            self.menu_bar.entryconfig("Disconnect", state="disabled")
+            self.menu_bar.entryconfig("Connect", state="active")
+            self.menu_bar.entryconfig("As Server", state="active")
 
     def disconnect(self) -> None:
 
         self.stop_networking()
-
-        self.menu_bar.entryconfig("Disconnect", state="disabled")
-        self.menu_bar.entryconfig("Connect", state="active")
-        self.menu_bar.entryconfig("As Server", state="active")
+        self.connected(False)
 
         self.strategy_ui.reset()
         self.user_ui.reset()
