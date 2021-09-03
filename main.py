@@ -384,8 +384,6 @@ class ConnectionWindow(tkinter.Toplevel):
         tkinter.Toplevel.__init__(self, master=root)
 
         self.title("Connection window")
-        self.geometry("400x400")
-
         self.main_app = root
 
         # Block other window
@@ -912,13 +910,13 @@ class StrategyUI(tkinter.Frame):
         f_button_grid = tkinter.Frame(self)
         f_button_grid.grid(row=1)
         self.bupdate_strat = tkinter.Button(
-            f_button_grid, text="Update values", width=50,
+            f_button_grid, text="Update values",
             command=self.update_values)
-        self.bupdate_strat.grid(row=0, column=0)
+        self.bupdate_strat.pack(side=tkinter.LEFT, padx=40, pady=2)
         self.bset_strat = tkinter.Button(
-            f_button_grid, text="Set Strategy", width=50,
+            f_button_grid, text="Set Strategy",
             command=self.set_strategy)
-        self.bset_strat.grid(row=0, column=1)
+        self.bset_strat.pack(side=tkinter.RIGHT, padx=40, pady=2)
 
         self.update_values()
         self.check_reply()
@@ -1027,7 +1025,8 @@ class App(tkinter.Tk):
 
         tkinter.Tk.__init__(self)
         self.title("PyAccEngineer")
-        self.geometry("1280x720")
+        self.config(bg="Grey")
+        # self.geometry("1280x720")
 
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -1050,13 +1049,13 @@ class App(tkinter.Tk):
         self.config(menu=self.menu_bar)
 
         self.strategy_ui = StrategyUI(self)
-        self.strategy_ui.grid(row=0, column=0)
+        self.strategy_ui.grid(row=0, column=0, padx=5, pady=5)
 
         self.telemetry_ui = TelemetryUI(self)
-        self.telemetry_ui.grid(row=0, column=1)
+        self.telemetry_ui.grid(row=1, column=0)
 
         self.user_ui = UserUI(self)
-        self.user_ui.grid(row=1, column=0)
+        self.user_ui.grid(row=0, column=1)
 
         self.last_time = time.time()
         self.min_delta = 0.5
