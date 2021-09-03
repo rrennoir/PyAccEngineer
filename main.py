@@ -9,6 +9,7 @@ import struct
 import threading
 import time
 import tkinter
+from tkinter import messagebox
 from dataclasses import astuple, dataclass
 from enum import Enum, auto
 from functools import partial
@@ -383,11 +384,15 @@ def set_strat_proc(comm: Connection, data_queue: queue.Queue) -> None:
 
 class ConnectionWindow(tkinter.Toplevel):
 
-    def __init__(self, root):
+    def __init__(self, root: App, as_server: bool = False):
         tkinter.Toplevel.__init__(self, master=root)
 
         self.title("Connection window")
         self.geometry("400x400")
+
+        self.main_app = root
+
+        self.as_server = as_server
 
         self.f_connection_info = tkinter.Frame(self)
         self.f_connection_info.grid()
@@ -417,37 +422,60 @@ class ConnectionWindow(tkinter.Toplevel):
             self, text="Connect", command=self.connect)
         self.b_connect.grid(row=1)
 
+        if self.as_server:
+            self.e_ip.insert(tkinter.END, "127.0.0.1")
+            self.e_ip.config(state="disabled")
+            self.e_port.config(state="disabled")
+
     def connect(self) -> None:
 
         self.b_connect.config(state="disabled")
+
+        error_message = ""
 
         try:
             ipaddress.ip_address(self.e_ip.get())
             self.e_ip.config(background="White")
 
-            if self.e_port.get().isnumeric():
-                self.e_port.config(background="White")
-                port = int(self.e_port.get())
-
-                if self.e_username.get() != "":
-                    self.e_username.config(background="White")
-
-                    if self.master.connect_to_server(self.e_ip.get(),
-                                                     port,
-                                                     self.e_username.get()):
-                        self.destroy()
-
-                    else:
-                        self.b_connect.config(state="active")
-
-                else:
-                    self.e_username.config(background="Red")
-
-            else:
-                self.e_port.config(background="Red")
-
         except ValueError:
             self.e_ip.config(background="Red")
+            error_message += "Invalide IP address\n"
+
+        if self.e_port.get().isnumeric():
+            self.e_port.config(background="White")
+
+        else:
+            self.e_port.config(background="Red")
+            error_message += "Invalide port\n"
+
+        if self.e_username.get() != "":
+            self.e_username.config(background="White")
+
+        else:
+            self.e_username.config(background="Red")
+            error_message += "Invalide username\n"
+
+        if error_message == "":
+            username = self.e_username.get()
+            if self.as_server:
+                self.main_app.as_server(username)
+                self.destroy()
+            else:
+                ip = self.e_ip.get()
+                port = int(self.e_port.get())
+                connected, msg = self.main_app.connect_to_server(ip, port,
+                                                                 username)
+
+                if connected:
+                    self.destroy()
+
+                else:
+                    messagebox.showerror("Error", msg)
+                    self.b_connect.config(state="active")
+
+        else:
+            messagebox.showerror("Error", error_message)
+            self.b_connect.config(state="active")
 
 
 class UserUI(tkinter.Frame):
@@ -988,7 +1016,7 @@ class StrategyUI(tkinter.Frame):
         self.bupdate_strat.config(state="active")
 
 
-class app(tkinter.Tk):
+class App(tkinter.Tk):
 
     def __init__(self) -> None:
 
@@ -1009,7 +1037,9 @@ class app(tkinter.Tk):
         self.menu_bar = tkinter.Menu(self)
         self.menu_bar.add_command(
             label="Connect", command=self.open_connection_window)
-        self.menu_bar.add_command(label="As Server", command=self.as_server)
+        self.menu_bar.add_command(
+            label="As Server", command=partial(self.open_connection_window,
+                                               True))
         self.menu_bar.add_command(
             label="Disconnect", command=self.disconnect, state="disabled")
         self.config(menu=self.menu_bar)
@@ -1151,27 +1181,24 @@ class app(tkinter.Tk):
 
         self.after(10, self.client_loop)
 
-    def open_connection_window(self) -> None:
+    def open_connection_window(self, as_server: bool = False) -> None:
 
-        self.connection_window = ConnectionWindow(self)
+        self.connection_window = ConnectionWindow(self, as_server)
         self.menu_bar.entryconfig("Disconnect", state="active")
         self.menu_bar.entryconfig("Connect", state="disabled")
         self.menu_bar.entryconfig("As Server", state="disabled")
 
-    def connect_to_server(self, ip, port: int, username: str) -> bool:
+    def connect_to_server(self, ip, port: int,
+                          username: str) -> Tuple(bool, str):
 
         self.client = ClientInstance(
             ip, port, username, self.client_queue_in, self.client_queue_out)
         return self.client.connect()
 
-    def as_server(self) -> None:
-
-        self.menu_bar.entryconfig("Disconnect", state="active")
-        self.menu_bar.entryconfig("Connect", state="disabled")
-        self.menu_bar.entryconfig("As Server", state="disabled")
+    def as_server(self, name: str) -> None:
 
         self.server = ServerInstance()
-        self.connect_to_server("127.0.0.1", 4269, "Ryan Rennoir")  # TODO
+        self.connect_to_server("127.0.0.1", 4269, name)
 
     def disconnect(self) -> None:
 
@@ -1220,7 +1247,7 @@ class ClientInstance:
         self._in_queue = in_queue
         self._out_queue = out_queue
 
-    def connect(self) -> bool:
+    def connect(self) -> Tuple(bool, str):
 
         try:
             self._socket.settimeout(3)
@@ -1228,9 +1255,17 @@ class ClientInstance:
             self._socket.settimeout(0.1)
             print(f"CLIENT: Connected to {self._server_ip}")
 
-        except socket.timeout:
+        except socket.timeout as msg:
             print(f"CLIENT: Timeout while connecting to {self._server_ip}")
-            return False
+            return (False, msg)
+
+        except ConnectionResetError as msg:
+            print(f"CLIENT: {msg}")
+            return (False, msg)
+
+        except ConnectionRefusedError as msg:
+            print(f"CLIENT: {msg}")
+            return (False, msg)
 
         try:
             name_lenght = len(self._username)
@@ -1238,9 +1273,13 @@ class ClientInstance:
                                     self._username.encode("utf-8"))
             self._socket.send(PacketType.Connect.to_bytes() + name_byte)
 
-        except ConnectionResetError:
-            print(f"CLIENT: Connection reset error with {self._server_ip}")
-            return False
+        except ConnectionResetError as msg:
+            print(f"CLIENT: {msg}")
+            return (False, msg)
+
+        except ConnectionRefusedError as msg:
+            print(f"CLIENT: {msg}")
+            return (False, msg)
 
         reply = self._socket.recv(64)
         print(f"CLIENT: Got {reply =}")
@@ -1254,17 +1293,18 @@ class ClientInstance:
                 target=self._network_listener)
             self._listener_thread.start()
 
-            return True
+            return (True, "Connected")
 
         else:
             # TODO should I ?
             self._socket.shutdown(socket.SHUT_RDWR)
-            return False
+            return (False, "Connection refused")
 
     def disconnect(self) -> None:
 
-        self._thread_event.set()
-        self._listener_thread.join()
+        if self._thread_event is not None:
+            self._thread_event.set()
+            self._listener_thread.join()
 
     def _network_listener(self) -> None:
 
@@ -1561,7 +1601,7 @@ class ServerInstance:
 
 def main():
 
-    app()
+    App()
 
 
 if __name__ == "__main__":
