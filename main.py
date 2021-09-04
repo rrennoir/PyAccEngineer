@@ -783,7 +783,7 @@ class TelemetryUI(tkinter.Frame):
         self.best_time_var = tkinter.StringVar(value="00:00.000")
         l_best_time = tkinter.Label(f_info, text="Best time: ")
         l_best_time_var = tkinter.Label(
-            f_info, textvariable=self.lap_time_var)
+            f_info, textvariable=self.best_time_var)
         l_best_time.pack(side=tkinter.LEFT)
         l_best_time_var.pack(side=tkinter.LEFT)
 
@@ -1217,6 +1217,7 @@ class App(tkinter.Tk):
                 asm_data.Graphics.best_time,
                 asm_data.Graphics.last_time
             )
+
             self.client_queue_in.put(NetworkQueue.Telemetry)
             self.client_queue_in.put(telemetry_data.to_bytes())
 
