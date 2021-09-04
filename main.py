@@ -500,6 +500,8 @@ class UserUI(tkinter.Frame):
         tkinter.Frame.__init__(self, master=root)
         self.user_list = []
 
+        self.active_user = ""
+
         f_background = tkinter.Frame(self, background="Black")
         row_count = 0
 
@@ -548,25 +550,24 @@ class UserUI(tkinter.Frame):
                     user.var.set(name)
                     break
 
-            elif self.user2.get() == "":
-                self.user2.set(name)
+    def set_active(self, name: str) -> None:
 
-            elif self.user3.get() == "":
-                self.user3.set(name)
+        for user in self.user_vars:
 
-            elif self.user4.get() == "":
-                self.user4.set(name)
+            if user.var.get() == name:
+                user.label.config(bg="Green")
+                self.active_user = name
 
             else:
-                print("UserUI: names full ?")
-        else:
-            print("UserUI: More than 4 users ?")
+                user.label.config(bg="White")
 
     def reset(self) -> None:
 
         self.user_list.clear()
+        self.active_user = ""
         for user in self.user_vars:
             user.var.set("")
+            user.label.config(bg="White")
 
 
 class TyreInfo(tkinter.Frame):
@@ -759,6 +760,9 @@ class TelemetryUI(tkinter.Frame):
         f_info = tkinter.Frame(self)
         f_info.grid(row=0, column=0)
 
+        self.current_driver = ""
+        self.driver_swap = False
+
         # Fuel
         self.fuel_var = tkinter.DoubleVar()
         l_fuel = tkinter.Label(f_info, text="Fuel: ")
@@ -839,6 +843,11 @@ class TelemetryUI(tkinter.Frame):
                 string_time_from_ms(self.telemetry.best_time))
             self.prev_time_var.set(
                 string_time_from_ms(self.telemetry.previous_time))
+
+            if self.current_driver != self.telemetry.driver:
+
+                self.current_driver = self.telemetry.driver
+                self.driver_swap = True
 
 
 class StrategyUI(tkinter.Frame):
@@ -1163,13 +1172,10 @@ class App(tkinter.Tk):
                 index = 1
                 for _ in range(nb_users):
 
-                    name_lenght = user_update[index]
+                    lenght = user_update[index]
                     index += 1
-                    name = struct.unpack(
-                        f"!{name_lenght}s",
-                        user_update[index:index+name_lenght])[0].decode(
-                            "utf-8")
-                    index += name_lenght
+                    name = user_update[index:index+lenght].decode("utf-8")
+                    index += lenght
                     self.user_ui.add_user(name)
 
         asm_data = self.strategy_ui.asm.get_data()
@@ -1177,6 +1183,11 @@ class App(tkinter.Tk):
                 and delta_time > self.min_delta):
 
             self.last_time = time.time()
+
+            if self.telemetry_ui.driver_swap or self.user_ui.active_user == "":
+
+                self.user_ui.set_active(self.telemetry_ui.current_driver)
+                self.telemetry_ui.driver_swap = False
 
             mfd_pressure = asm_data.Graphics.mfd_tyre_pressure
             mfd_fuel = asm_data.Graphics.mfd_fuel_to_add
