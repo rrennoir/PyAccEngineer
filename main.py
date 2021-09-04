@@ -358,7 +358,7 @@ class ButtonPannel(tkinter.Frame):
             b_minus.grid(row=0, column=2 - index, padx=2, pady=1)
             b_add.grid(row=0, column=4 + index, padx=2, pady=1)
 
-        l_var = tkinter.Label(self, textvariable=var, width=15)
+        l_var = tkinter.Label(self, textvariable=var, width=10)
         l_var.grid(row=0, column=3)
 
 
@@ -750,16 +750,16 @@ class TelemetryUI(tkinter.Frame):
         tyre_frame.grid(row=1, column=0)
 
         self.front_left = TyreInfo(tyre_frame, "FL", False)
-        self.front_left.grid(row=0, column=0)
+        self.front_left.grid(row=0, column=0, padx=10, pady=10)
 
         self.front_right = TyreInfo(tyre_frame, "FR")
-        self.front_right.grid(row=0, column=1)
+        self.front_right.grid(row=0, column=1, padx=10, pady=10)
 
         self.rear_left = TyreInfo(tyre_frame, "RL", False)
-        self.rear_left.grid(row=1, column=0)
+        self.rear_left.grid(row=1, column=0, padx=10, pady=10)
 
         self.rear_right = TyreInfo(tyre_frame, "RR")
-        self.rear_right.grid(row=1, column=1)
+        self.rear_right.grid(row=1, column=1, padx=10, pady=10)
 
     def update_values(self) -> None:
 
@@ -826,7 +826,7 @@ class StrategyUI(tkinter.Frame):
 
         # Strategy Menu: Fuel Row
         self.fuel_text = tkinter.DoubleVar()
-        l_fuel = tkinter.Label(f_settings, text="Fuel: ", width=20)
+        l_fuel = tkinter.Label(f_settings, text="Fuel: ", width=15)
         l_fuel.grid(row=app_row, column=0)
         bp_fuel = ButtonPannel(f_settings, self.fuel_text,
                                self.change_fuel, [1, 5, 10])
@@ -835,7 +835,7 @@ class StrategyUI(tkinter.Frame):
 
         # Strategy menu: Tyre set row
         self.tyre_set_text = tkinter.IntVar()
-        l_tyre_set = tkinter.Label(f_settings, text="Tyre set: ", width=20)
+        l_tyre_set = tkinter.Label(f_settings, text="Tyre set: ", width=15)
         l_tyre_set.grid(row=app_row, column=0)
         bp_tyre_set = ButtonPannel(
             f_settings, self.tyre_set_text, self.change_tyre_set, [1])
@@ -847,7 +847,7 @@ class StrategyUI(tkinter.Frame):
 
         self.tyre_compound_text = tkinter.StringVar(value="Dry")
         l_tyre_set = tkinter.Label(
-            f_settings, text="Tyre compound: ", width=20)
+            f_settings, text="Tyre compound: ", width=15)
         l_tyre_set.grid(row=app_row, column=0)
 
         b_minus = tkinter.Button(
@@ -862,7 +862,7 @@ class StrategyUI(tkinter.Frame):
         b_add.grid(row=0, column=4, padx=2, pady=1)
 
         l_var = tkinter.Label(
-            f_tyre_compound, textvariable=self.tyre_compound_text, width=15)
+            f_tyre_compound, textvariable=self.tyre_compound_text, width=10)
         l_var.grid(row=0, column=3)
         f_tyre_compound.grid(row=app_row, column=1)
         app_row += 1
@@ -871,7 +871,7 @@ class StrategyUI(tkinter.Frame):
 
         # Strategy menu: Front left tyre
         self.front_left_text = tkinter.DoubleVar()
-        l_tyre_fl = tkinter.Label(f_settings, text="Front left: ", width=20)
+        l_tyre_fl = tkinter.Label(f_settings, text="Front left: ", width=15)
         l_tyre_fl.grid(row=app_row, column=0)
         bp_tyre_fl = ButtonPannel(
             f_settings, self.front_left_text, self.change_pressure_fl,
@@ -881,7 +881,7 @@ class StrategyUI(tkinter.Frame):
 
         # Strategy menu: Front right tyre
         self.front_right_text = tkinter.DoubleVar()
-        l_tyre_fr = tkinter.Label(f_settings, text="Front right: ", width=20)
+        l_tyre_fr = tkinter.Label(f_settings, text="Front right: ", width=15)
         l_tyre_fr.grid(row=app_row, column=0)
         bp_tyre_fr = ButtonPannel(
             f_settings, self.front_right_text, self.change_pressure_fr,
@@ -891,7 +891,7 @@ class StrategyUI(tkinter.Frame):
 
         # Strategy menu: Rear left tyre
         self.rear_left_text = tkinter.DoubleVar()
-        l_tyre_rl = tkinter.Label(f_settings, text="Rear left: ", width=20)
+        l_tyre_rl = tkinter.Label(f_settings, text="Rear left: ", width=15)
         l_tyre_rl.grid(row=app_row, column=0)
         bp_tyre_rl = ButtonPannel(
             f_settings, self.rear_left_text, self.change_pressure_rl,
@@ -901,7 +901,7 @@ class StrategyUI(tkinter.Frame):
 
         # Strategy menu: Rear right tyre
         self.rear_right_text = tkinter.DoubleVar()
-        l_tyre_rr = tkinter.Label(f_settings, text="Rear right: ", width=20)
+        l_tyre_rr = tkinter.Label(f_settings, text="Rear right: ", width=15)
         l_tyre_rr.grid(row=app_row, column=0)
         bp_tyre_rr = ButtonPannel(
             f_settings, self.rear_right_text, self.change_pressure_rr,
@@ -917,11 +917,11 @@ class StrategyUI(tkinter.Frame):
         self.b_update_strat = tkinter.Button(
             f_button_grid, text="Update values",
             command=self.update_values)
-        self.b_update_strat.pack(side=tkinter.LEFT, padx=98, pady=2)
+        self.b_update_strat.pack(side=tkinter.LEFT, padx=83, pady=2)
         self.b_set_strat = tkinter.Button(
             f_button_grid, text="Set Strategy",
             command=self.set_strategy)
-        self.b_set_strat.pack(side=tkinter.RIGHT, padx=98, pady=2)
+        self.b_set_strat.pack(side=tkinter.RIGHT, padx=83, pady=2)
 
         self.update_values()
         self.check_reply()
@@ -1031,7 +1031,7 @@ class App(tkinter.Tk):
         tkinter.Tk.__init__(self)
         self.title("PyAccEngineer")
         self.config(bg="Grey")
-        # self.geometry("1280x720")
+        self.resizable(False, False)
 
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
