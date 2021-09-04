@@ -462,7 +462,6 @@ class ConnectionWindow(tkinter.Toplevel):
             if self.as_server:
                 self.e_ip.insert(tkinter.END, "127.0.0.1")
 
-
     def connect(self) -> None:
 
         self.b_connect.config(state="disabled")
@@ -899,7 +898,7 @@ class StrategyUI(tkinter.Frame):
 
         tkinter.Frame.__init__(self, master=root)
 
-        self.asm = accSharedMemory()
+        self.asm = accSharedMemory(refresh=60)
         self.asm.start()
 
         self.server_data: CarInfo = None
