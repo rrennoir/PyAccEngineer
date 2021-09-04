@@ -687,6 +687,7 @@ class TyreInfo(tkinter.Frame):
 @dataclass
 class Telemetry:
 
+    driver: str
     fuel: float
     tyre_pressure: Wheels
     tyre_temp: Wheels
@@ -699,7 +700,11 @@ class Telemetry:
 
     def to_bytes(self) -> bytes:
 
+        driver_lenght = len(self.driver)
+
         buffer = [
+            struct.pack("!B", driver_lenght),
+            struct.pack(f"!{driver_lenght}s", self.driver.encode("utf-8")),
             struct.pack("!f", self.fuel),
             struct.pack("!4f", *astuple(self.tyre_pressure)),
             struct.pack("!4f", *astuple(self.tyre_temp)),
@@ -716,18 +721,24 @@ class Telemetry:
     @classmethod
     def from_bytes(cls, data: bytes) -> Telemetry:
 
-        raw_data = struct.unpack("!21f 3i", data)
+        lenght = data[0]
+
+        raw_data = struct.unpack(f"!{lenght}s 21f 3i", data[1:])
+
+        name = raw_data[0].decode("utf-8")
+        rest = raw_data[1:]
 
         return Telemetry(
-            raw_data[0],
-            Wheels(*raw_data[1:5]),
-            Wheels(*raw_data[5:9]),
-            Wheels(*raw_data[9:13]),
-            Wheels(*raw_data[13:17]),
-            Wheels(*raw_data[17:21]),
-            raw_data[21],
-            raw_data[22],
-            raw_data[23],
+            name,
+            rest[0],
+            Wheels(*rest[1:5]),
+            Wheels(*rest[5:9]),
+            Wheels(*rest[9:13]),
+            Wheels(*rest[13:17]),
+            Wheels(*rest[17:21]),
+            rest[21],
+            rest[22],
+            rest[23],
         )
 
 
@@ -1173,7 +1184,12 @@ class App(tkinter.Tk):
             self.client_queue_in.put(infos.to_bytes())
 
             # Telemetry
+            name = asm_data.Static.player_name.split("\x00")[0]
+            surname = asm_data.Static.player_surname.split("\x00")[0]
+            driver = f"{name} {surname}"
+
             telemetry_data = Telemetry(
+                driver,
                 asm_data.Physics.fuel,
                 asm_data.Physics.wheel_pressure,
                 asm_data.Physics.tyre_core_temp,
