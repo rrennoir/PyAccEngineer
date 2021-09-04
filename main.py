@@ -402,7 +402,9 @@ class ConnectionWindow(tkinter.Toplevel):
             try:
                 self.credidentials = json.load(fp)
 
-                if self.credidentials.keys() != ["ip", "port", "username"]:
+                if list(self.credidentials.keys()) != ["ip",
+                                                       "port",
+                                                       "username"]:
                     self.credidentials = None
 
             except json.JSONDecodeError as msg:
