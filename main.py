@@ -9,6 +9,7 @@ import struct
 import threading
 import time
 import tkinter
+from collections import namedtuple
 from dataclasses import astuple, dataclass
 from enum import Enum, auto
 from functools import partial
@@ -34,6 +35,12 @@ def clamp(number: Union[float, int],
         number = min_value
 
     return number
+
+
+def rgbtohex(r: int, g: int, b: int) -> str:
+    "Convert RGB values to hex"
+
+    return f'#{r:02x}{g:02x}{b:02x}'
 
 
 def string_time_from_ms(time_in_ms: int) -> str:
@@ -568,6 +575,8 @@ class TyreInfo(tkinter.Frame):
         self.pad_wear = tkinter.DoubleVar()
         self.disc_wear = tkinter.DoubleVar()
 
+        self.tyre_band: List[tkinter.Label] = []
+
         label_width = 15
         var_width = 5
         if on_the_right:
@@ -583,10 +592,12 @@ class TyreInfo(tkinter.Frame):
             txt_anchor = tkinter.E
 
         row_count = 0
-        self.tyre = tkinter.Frame(self, background="Green")
+        self.tyre = tkinter.Frame(self)
         self.tyre.grid(row=row_count, rowspan=6, column=tyre_column)
-        t = tkinter.Label(self.tyre, width=10)
-        t.grid()
+        for band_row in range(6):
+            temp = tkinter.Label(self.tyre, width=10, background="Green")
+            temp.grid(row=band_row, column=0)
+            self.tyre_band.append(temp)
 
         l_tyre = tkinter.Label(
             self, text=name, width=label_width, anchor=txt_anchor)
@@ -646,6 +657,23 @@ class TyreInfo(tkinter.Frame):
         self.brake_temp.set(f"{brake_temp:.1f}")
         self.pad_wear.set(f"{pad_wear:.1f}")
         self.disc_wear.set(f"{disc_wear:.1f}")
+
+        self.update_tyre_hud(pressure)
+
+    def update_tyre_hud(self, pressure: float) -> None:
+
+        for band in self.tyre_band:
+
+            if 27.4 < pressure < 28.0:
+                color = rgbtohex(0, 255, 0)
+
+            elif 28.0 < pressure:
+                color = rgbtohex(255, 0, 0)
+
+            elif pressure < 27.4:
+                color = rgbtohex(0, 0, 255)
+
+            band.config(bg=color)
 
     def reset_value(self) -> None:
 
