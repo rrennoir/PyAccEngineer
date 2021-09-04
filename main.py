@@ -6,6 +6,8 @@ import multiprocessing
 import queue
 import socket
 import struct
+import json
+import os
 import threading
 import time
 import tkinter
@@ -393,6 +395,19 @@ class ConnectionWindow(tkinter.Toplevel):
         self.title("Connection window")
         self.main_app = root
 
+        self.credidentials = None
+        if os.path.isfile("./connection.json"):
+            fp = open("./connection.json", "r")
+
+            try:
+                self.credidentials = json.load(fp)
+
+                if self.credidentials.keys() != ["ip", "port", "username"]:
+                    self.credidentials = None
+
+            except json.JSONDecodeError as msg:
+                print(f"error: {msg}")
+
         # Block other window
         self.grab_set()
 
@@ -421,21 +436,32 @@ class ConnectionWindow(tkinter.Toplevel):
         self.e_ip.grid(row=0, column=1, padx=5, pady=2)
 
         self.e_port = tkinter.Entry(self.f_connection_info, width=30)
-        self.e_port.insert(tkinter.END, "4269")
         self.e_port.grid(row=1, column=1, padx=5, pady=2)
 
         self.e_username = tkinter.Entry(self.f_connection_info, width=30)
-        self.e_username.insert(tkinter.END, "xXx_cringe_xXx")
         self.e_username.grid(row=2, column=1, padx=5, pady=2)
 
         self.b_connect = tkinter.Button(
             self, text="Connect", command=self.connect)
         self.b_connect.grid(row=1, padx=10, pady=5)
 
-        if self.as_server:
-            self.e_ip.insert(tkinter.END, "127.0.0.1")
-            self.e_ip.config(state="disabled")
-            self.e_port.config(state="disabled")
+        if self.credidentials is not None:
+
+            if self.as_server:
+                self.e_ip.insert(tkinter.END, "127.0.0.1")
+
+            else:
+                self.e_ip.insert(tkinter.END, self.credidentials["ip"])
+            self.e_port.insert(tkinter.END, self.credidentials["port"])
+            self.e_username.insert(tkinter.END, self.credidentials["username"])
+
+        else:
+            self.e_port.insert(tkinter.END, "4269")
+            self.e_username.insert(tkinter.END, "Ready Player One")
+
+            if self.as_server:
+                self.e_ip.insert(tkinter.END, "127.0.0.1")
+
 
     def connect(self) -> None:
 
@@ -466,17 +492,23 @@ class ConnectionWindow(tkinter.Toplevel):
             error_message += "Invalide username\n"
 
         if error_message == "":
+
+            ip = self.e_ip.get()
+            port = int(self.e_port.get())
             username = self.e_username.get()
+
             if self.as_server:
+
                 self.main_app.as_server(username)
-                self.destroy()
+                self.save_credidentials(ip, port, username)
+                self.on_close()
+
             else:
-                ip = self.e_ip.get()
-                port = int(self.e_port.get())
                 connected, msg = self.main_app.connect_to_server(ip, port,
                                                                  username)
 
                 if connected:
+                    self.save_credidentials(ip, port, username)
                     self.on_close()
 
                 else:
@@ -486,6 +518,17 @@ class ConnectionWindow(tkinter.Toplevel):
         else:
             messagebox.showerror("Error", error_message)
             self.b_connect.config(state="active")
+
+    def save_credidentials(self, ip: str, port: int, username: str) -> None:
+
+        with open("./connection.json", "w") as fp:
+
+            connection = {
+                "ip": ip,
+                "port": port,
+                "username": username
+            }
+            json.dump(connection, fp)
 
     def on_close(self) -> None:
 
