@@ -208,7 +208,7 @@ def set_acc_forground() -> None:
 
 def set_tyre_pressure(current_pressure: float, target_pressure: float) -> None:
 
-    while not math.isclose(current_pressure, target_pressure, rel_tol=1e-3):
+    while not math.isclose(current_pressure, target_pressure, rel_tol=1e-5):
 
         if current_pressure > target_pressure:
             pyautogui.press("left")
@@ -223,7 +223,7 @@ def set_tyre_pressure(current_pressure: float, target_pressure: float) -> None:
 
 def set_fuel(mfd_fuel: float, target_fuel: float) -> None:
 
-    while not math.isclose(mfd_fuel, target_fuel, rel_tol=1e-3):
+    while not math.isclose(mfd_fuel, target_fuel, rel_tol=1e-5):
         if mfd_fuel > target_fuel:
             pyautogui.press("left")
             mfd_fuel -= 1
@@ -281,7 +281,7 @@ def set_strategy(strategy: PitStop, sm: ACC_map, comm: Connection,
     sm = data_queue.get()
 
     new_fr = sm.Graphics.mfd_tyre_pressure.front_right
-    wet_was_selected = not math.isclose(old_fr, new_fr, rel_tol=1e-2)
+    wet_was_selected = not math.isclose(old_fr, new_fr, rel_tol=1e-5)
 
     pyautogui.press("right")
     time.sleep(0.01)
