@@ -507,28 +507,33 @@ class UserUI(tkinter.Frame):
         l_user.grid(row=row_count, column=0, padx=1, pady=1)
         row_count += 1
 
-        self.user1 = tkinter.StringVar()
-        l_user1_var = tkinter.Label(
-            f_background, textvariable=self.user1, width=20)
-        l_user1_var.grid(row=row_count, column=0, padx=1, pady=1)
+        user1 = tkinter.StringVar()
+        l_user1 = tkinter.Label(f_background, textvariable=user1, width=20)
+        l_user1.grid(row=row_count, column=0, padx=1, pady=1)
         row_count += 1
 
-        self.user2 = tkinter.StringVar()
-        l_user2_var = tkinter.Label(
-            f_background, textvariable=self.user2, width=20)
-        l_user2_var.grid(row=row_count, column=0, padx=1, pady=1)
+        user2 = tkinter.StringVar()
+        l_user2 = tkinter.Label(f_background, textvariable=user2, width=20)
+        l_user2.grid(row=row_count, column=0, padx=1, pady=1)
         row_count += 1
 
-        self.user3 = tkinter.StringVar()
-        l_user3_var = tkinter.Label(
-            f_background, textvariable=self.user3, width=20)
-        l_user3_var.grid(row=row_count, column=0, padx=1, pady=1)
+        user3 = tkinter.StringVar()
+        l_user3 = tkinter.Label(f_background, textvariable=user3, width=20)
+        l_user3.grid(row=row_count, column=0, padx=1, pady=1)
         row_count += 1
 
-        self.user4 = tkinter.StringVar()
-        l_user4_var = tkinter.Label(
-            f_background, textvariable=self.user4, width=20)
-        l_user4_var.grid(row=row_count, column=0, padx=1, pady=1)
+        user4 = tkinter.StringVar()
+        l_user4 = tkinter.Label(f_background, textvariable=user4, width=20)
+        l_user4.grid(row=row_count, column=0, padx=1, pady=1)
+
+        UserBox = namedtuple("UserBox", ["var", "label"])
+
+        self.user_vars = [
+            UserBox(user1, l_user1),
+            UserBox(user2, l_user2),
+            UserBox(user3, l_user3),
+            UserBox(user4, l_user4)
+        ]
 
         f_background.pack()
 
@@ -537,8 +542,11 @@ class UserUI(tkinter.Frame):
         if len(self.user_list) < 4 and name not in self.user_list:
             self.user_list.append(name)
 
-            if self.user1.get() == "":
-                self.user1.set(name)
+            for user in self.user_vars:
+
+                if user.var.get() == "":
+                    user.var.set(name)
+                    break
 
             elif self.user2.get() == "":
                 self.user2.set(name)
@@ -557,10 +565,8 @@ class UserUI(tkinter.Frame):
     def reset(self) -> None:
 
         self.user_list.clear()
-        self.user1.set("")
-        self.user2.set("")
-        self.user3.set("")
-        self.user4.set("")
+        for user in self.user_vars:
+            user.var.set("")
 
 
 class TyreInfo(tkinter.Frame):
