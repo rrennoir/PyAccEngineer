@@ -9,7 +9,7 @@ class UserUI(tkinter.Frame):
         tkinter.Frame.__init__(self, master=root)
         self.user_list = []
 
-        self.active_user = ""
+        self.active_user = None
 
         f_background = tkinter.Frame(self, background="Black")
         row_count = 0
@@ -73,7 +73,7 @@ class UserUI(tkinter.Frame):
     def reset(self) -> None:
 
         self.user_list.clear()
-        self.active_user = ""
+        self.active_user = None
         for user in self.user_vars:
             user.var.set("")
             user.label.config(bg="White")
