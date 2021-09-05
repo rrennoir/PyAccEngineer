@@ -396,6 +396,8 @@ class ConnectionWindow(tkinter.Toplevel):
         self.main_app = root
 
         self.credidentials = None
+        key_check = ("ip", "port", "username")
+
         if os.path.isfile("./connection.json"):
             fp = open("./connection.json", "r")
 
@@ -403,14 +405,14 @@ class ConnectionWindow(tkinter.Toplevel):
                 self.credidentials = json.load(fp)
 
                 if (self.credidentials is not dict or
-                    list(self.credidentials.keys()) != ["ip", "port",
-                                                        "username"]):
+                        tuple(self.credidentials.keys()) != key_check):
+
                     self.credidentials = None
 
             except json.JSONDecodeError as msg:
-                print(f"error: {msg}")
+                print(f"JSON Error: {msg}")
 
-        # Block other window
+        # Block other window as long as this one is open
         self.grab_set()
 
         self.protocol("WM_DELETE_WINDOW", self.on_close)
