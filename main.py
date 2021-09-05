@@ -404,7 +404,7 @@ class ConnectionWindow(tkinter.Toplevel):
             try:
                 self.credidentials = json.load(fp)
 
-                if (self.credidentials is not dict or
+                if (type(self.credidentials) is not dict or
                         tuple(self.credidentials.keys()) != key_check):
 
                     self.credidentials = None
