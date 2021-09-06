@@ -273,16 +273,18 @@ class App(tkinter.Tk):
                     index += lenght
                     self.user_ui.add_user(name)
 
+
+        if self.telemetry_ui.driver_swap or self.user_ui.active_user is None:
+
+            if self.telemetry_ui.current_driver is not None:
+                self.user_ui.set_active(self.telemetry_ui.current_driver)
+                self.telemetry_ui.driver_swap = False
+
         asm_data = self.strategy_ui.asm.get_data()
         if (asm_data is not None and self.client is not None
                 and delta_time > self.min_delta):
 
             self.last_time = time.time()
-
-            if self.telemetry_ui.driver_swap or self.user_ui.active_user == "":
-
-                self.user_ui.set_active(self.telemetry_ui.current_driver)
-                self.telemetry_ui.driver_swap = False
 
             mfd_pressure = asm_data.Graphics.mfd_tyre_pressure
             mfd_fuel = asm_data.Graphics.mfd_fuel_to_add

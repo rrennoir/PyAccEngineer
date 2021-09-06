@@ -242,7 +242,7 @@ class TelemetryUI(tkinter.Frame):
         f_info = tkinter.Frame(self)
         f_info.grid(row=0, column=0)
 
-        self.current_driver = ""
+        self.current_driver = None
         self.driver_swap = False
 
         # Fuel
