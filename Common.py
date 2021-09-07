@@ -8,15 +8,15 @@ from typing import ClassVar, Tuple
 
 class PacketType(Enum):
 
-    Connect = auto()
-    SmData = auto()
-    ServerData = auto()
-    Disconnect = auto()
-    ConnectionReply = auto()
-    Strategy = auto()
-    StrategyOK = auto()
-    Telemetry = auto()
-    UpdateUsers = auto()
+    Connect = 1
+    SmData = 2
+    ServerData = 3
+    Disconnect = 4
+    ConnectionReply = 5
+    Strategy = 6
+    StrategyOK = 7
+    Telemetry = 8
+    UpdateUsers = 9
 
     def to_bytes(self) -> bytes:
         """
