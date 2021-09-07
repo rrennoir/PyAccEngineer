@@ -73,7 +73,7 @@ class ClientInstance:
 
     def disconnect(self) -> None:
 
-        if self._listener_thread.isAlive():
+        if self._listener_thread.is_alive():
 
             self._send_data(PacketType.Disconnect.to_bytes())
             self._socket.shutdown(socket.SHUT_WR)
