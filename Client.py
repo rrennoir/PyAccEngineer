@@ -80,6 +80,24 @@ class ClientInstance:
 
     def disconnect(self) -> None:
 
+        self._send_data(PacketType.Disconnect.to_bytes())
+        self._socket.shutdown(socket.SHUT_WR)
+
+        data = None
+        while data != b"":
+
+            try:
+                data = self._socket.recv(1024)
+
+            except socket.timeout:
+                print(f"CLIENT: {msg}")
+
+            except ConnectionResetError as msg:
+                print(f"CLIENT: {msg}")
+
+            except ConnectionRefusedError as msg:
+                print(f"CLIENT: {msg}")
+
         if self._thread_event is not None:
             self._thread_event.set()
             self._listener_thread.join()
