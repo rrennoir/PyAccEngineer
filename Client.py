@@ -73,23 +73,25 @@ class ClientInstance:
 
     def disconnect(self) -> None:
 
-        self._send_data(PacketType.Disconnect.to_bytes())
-        self._socket.shutdown(socket.SHUT_WR)
+        if self._listener_thread.isAlive():
 
-        data = None
-        while data != b"":
+            self._send_data(PacketType.Disconnect.to_bytes())
+            self._socket.shutdown(socket.SHUT_WR)
 
-            try:
-                data = self._socket.recv(1024)
+            data = None
+            while data != b"":
 
-            except socket.timeout:
-                print(f"CLIENT: {msg}")
+                try:
+                    data = self._socket.recv(1024)
 
-            except ConnectionResetError as msg:
-                print(f"CLIENT: {msg}")
+                except socket.timeout:
+                    print(f"CLIENT: {msg}")
 
-            except ConnectionRefusedError as msg:
-                print(f"CLIENT: {msg}")
+                except ConnectionResetError as msg:
+                    print(f"CLIENT: {msg}")
+
+                except ConnectionRefusedError as msg:
+                    print(f"CLIENT: {msg}")
 
         if self._thread_event is not None:
             self._thread_event.set()
@@ -135,6 +137,7 @@ class ClientInstance:
 
         print("close socket")
         self._socket.close()
+        self._thread_event.set()
         print("client_listener STOPPED")
 
     def _handle_data(self, data: bytes) -> None:
