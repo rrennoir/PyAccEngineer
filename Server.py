@@ -147,11 +147,12 @@ class ServerInstance:
                         event: threading.Event, rx_queue: queue.Queue,
                         tx_queue: queue.Queue) -> None:
 
+        client_disconnect = False
         c_socket.settimeout(0.2)
         print(f"SERVER: Connected to {addr}")
 
         data = None
-        while not (event.is_set() or data == b""):
+        while not (event.is_set() or data == b"" or client_disconnect):
 
             try:
                 data = c_socket.recv(1024)
@@ -167,7 +168,8 @@ class ServerInstance:
                 packet_type = PacketType.from_bytes(data)
 
                 if packet_type == PacketType.Disconnect:
-                    print(f"SERVER: Client {addr} disconnected")
+                    client_disconnect = True
+                    print(f"SERVER: Client {addr} actively disconnected")
 
                 elif packet_type == PacketType.SmData:
                     if rx_queue.qsize() == 0:
@@ -194,16 +196,16 @@ class ServerInstance:
                     c_socket.send(buffer)
 
                 elif packet_type == PacketType.Strategy:
-                    c_socket.send(net_data)
-
+                    ServerInstance._send_data(c_socket, net_data)
                 elif packet_type == PacketType.StrategyOK:
-                    c_socket.send(net_data)
+                    ServerInstance._send_data(c_socket, net_data)
 
                 elif packet_type == PacketType.Telemetry:
-                    c_socket.send(net_data)
+                    ServerInstance._send_data(c_socket, net_data)
 
                 elif packet_type == PacketType.UpdateUsers:
-                    c_socket.send(net_data)
+                    ServerInstance._send_data(c_socket, net_data)
+
 
         if data == b"":
             print(f"SERVER: Lost connection with client {addr}")
@@ -211,8 +213,24 @@ class ServerInstance:
         c_socket.close()
         print("SERVER: client_handler STOPPED")
 
+    @staticmethod
+    def _send_data(c_socket: socket.socket, data: bytes) -> None:
+
+        try:
+            c_socket.send(data)
+
+        except socket.timeout as msg:
+            print(f"SERVER: {msg}")
+
+        except ConnectionRefusedError as msg:
+            print(f"SERVER: {msg}")
+
+        except ConnectionResetError as msg:
+            print(f"SERVER: {msg}")
+
     def disconnect(self) -> None:
 
-        print("server disconnect")
+        print("SERVER: Shutdown")
+
         self._server_event.set()
         self._server_thread.join()
