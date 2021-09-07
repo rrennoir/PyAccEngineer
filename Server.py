@@ -206,7 +206,6 @@ class ServerInstance:
                 elif packet_type == PacketType.UpdateUsers:
                     ServerInstance._send_data(c_socket, net_data)
 
-
         if data == b"":
             print(f"SERVER: Lost connection with client {addr}")
 
