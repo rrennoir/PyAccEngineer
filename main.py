@@ -273,7 +273,6 @@ class App(tkinter.Tk):
                     index += lenght
                     self.user_ui.add_user(name)
 
-
         if self.telemetry_ui.driver_swap or self.user_ui.active_user is None:
 
             if self.telemetry_ui.current_driver is not None:
