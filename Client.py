@@ -20,6 +20,7 @@ class ClientInstance:
         self._thread_event = None
         self._in_queue = in_queue
         self._out_queue = out_queue
+        self._error = ""
 
     def connect(self) -> Tuple[bool, str]:
 
@@ -41,19 +42,11 @@ class ClientInstance:
             print(f"CLIENT: {msg}")
             return (False, msg)
 
-        try:
-            name_lenght = len(self._username)
-            name_byte = struct.pack(f"!B {name_lenght}s", name_lenght,
-                                    self._username.encode("utf-8"))
-            self._socket.send(PacketType.Connect.to_bytes() + name_byte)
+        name_lenght = len(self._username)
+        name_byte = struct.pack(f"!B {name_lenght}s", name_lenght,
+                                self._username.encode("utf-8"))
 
-        except ConnectionResetError as msg:
-            print(f"CLIENT: {msg}")
-            return (False, msg)
-
-        except ConnectionRefusedError as msg:
-            print(f"CLIENT: {msg}")
-            return (False, msg)
+        self._send_data(PacketType.Connect.to_bytes() + name_byte)
 
         reply = self._socket.recv(64)
         packet_type = PacketType.from_bytes(reply)
@@ -101,6 +94,21 @@ class ClientInstance:
         if self._thread_event is not None:
             self._thread_event.set()
             self._listener_thread.join()
+
+    def _send_data(self, data: bytes) -> bool:
+
+        try:
+            self._socket.send(data)
+
+        except ConnectionResetError as msg:
+            print(f"CLIENT: {msg}")
+            self._error = msg
+            return False
+
+        except ConnectionRefusedError as msg:
+            print(f"CLIENT: {msg}")
+            self._error = msg
+            return False
 
     def _network_listener(self) -> None:
 
