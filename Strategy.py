@@ -358,7 +358,12 @@ class StrategySetter:
     @staticmethod
     def set_tyre_pressure(current: float, target: float) -> None:
 
-        while not math.isclose(current, target, rel_tol=1e-5):
+        # Fail safe incase of floating point weirdness
+        i = 0
+        max_iteration = abs((current - target) * 10) + 1
+
+        while (not math.isclose(current, target, rel_tol=1e-5)
+               and i < max_iteration):
 
             if current > target:
                 pyautogui.press("left")
@@ -369,6 +374,7 @@ class StrategySetter:
                 current += 0.1
 
             time.sleep(0.01)
+            i += 1
 
     @staticmethod
     def set_fuel(current: float, target: float) -> None:
