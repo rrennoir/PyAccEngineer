@@ -9,19 +9,18 @@
 
 ## Usage 
 
-simply run the main.py in the cmd / powershell
+Simply run the main.py in the cmd / powershell
 
 ```
 python main.py
 ```
 or run the powershell script
 
-One user connect as server and the others connect to it
+* One user connect as server and the others connect to it
 
-If the username chosen is the same as in acc ("name surname") then the user driving will be highlighted in green.
-
-Update value will refresh the information on the strategy page to the lastest value in game (mfd page)
-Set Strategy will send a command to the user who is currently driving and set the strategy accrodinly
+* If the username chosen is the same as in acc ("name surname") then the user driving will be highlighted in green.
+* Update value will refresh the information on the strategy page to the lastest value in game (mfd page)
+* Set Strategy will send a command to the user who is currently driving and set the strategy accrodinly
 
 done :D
 
