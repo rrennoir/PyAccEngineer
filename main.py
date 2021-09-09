@@ -134,7 +134,7 @@ class ConnectionWindow(tkinter.Toplevel):
 
             if self.as_server:
 
-                self.main_app.as_server(username)
+                self.main_app.as_server(port, username)
                 self.save_credidentials(ip, port, username)
                 self.on_close()
 
@@ -350,10 +350,10 @@ class App(tkinter.Tk):
 
         return (succes, msg)
 
-    def as_server(self, name: str) -> None:
+    def as_server(self, port: int, name: str) -> None:
 
-        self.server = ServerInstance()
-        self.connect_to_server("127.0.0.1", 4269, name)
+        self.server = ServerInstance(port)
+        self.connect_to_server("127.0.0.1", port, name)
         self.connected(True)
 
     def connected(self, state: bool) -> None:
