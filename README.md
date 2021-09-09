@@ -7,7 +7,9 @@
 * PyAutoGUI module
 * For users who are the server need port 4269 (or port you want) open (TCP), simple client have nothing to do with their ports
 
-## Usage simply run the main.py in the cmd / powershell
+## Usage 
+
+simply run the main.py in the cmd / powershell
 
 ```
 python main.py
