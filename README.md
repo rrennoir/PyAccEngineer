@@ -40,3 +40,9 @@ To stop the server simply press ctrl C in the terminal
 * When the strategy setter is started the driving user shouldn't alt tab (duh)
 * Tyre change must be on before the strategy setter is started
 * The app can't change driver (yet, I hope)
+
+##
+
+`Will you controle my pc for other things ?`
+
+No and if you don't trust me just read the code 😂
