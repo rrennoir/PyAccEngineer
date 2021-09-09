@@ -21,7 +21,7 @@ class ClientHandle:
 
 class ServerInstance:
 
-    def __init__(self) -> None:
+    def __init__(self, port: int) -> None:
 
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._socket.settimeout(0.05)
@@ -33,7 +33,7 @@ class ServerInstance:
         self._thread_pool: List[ClientHandle] = []
         self._users = []
 
-        self._socket.bind(("", 4269))
+        self._socket.bind(("", port))
         self._server_thread.start()
 
     def _server_listener(self) -> None:
