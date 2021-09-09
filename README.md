@@ -7,6 +7,16 @@
 * PyAutoGUI module
 * For users who are the server need port 4269 (or port you want) open (TCP), simple client have nothing to do with their ports
 
+## Download
+
+### With git
+
+`git clone https://github.com/rrennoir/PyAccEngineer.git -- recursive`
+
+### Basic download
+
+ Go to [Release](https://github.com/rrennoir/PyAccEngineer/releases) and download the latest PyAccEngineer.zip file :)
+
 ## Usage
 
 ### The Gui
