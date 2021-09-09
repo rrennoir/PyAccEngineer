@@ -99,7 +99,7 @@ class ServerInstance:
         if packet_type == PacketType.Connect:
 
             lenght = data[1]
-            name = struct.unpack(f"!{lenght}s", data[2:])[0].decode("utf-8")
+            name = data[2:lenght+2].decode("utf-8")
 
             packet_type = PacketType.ConnectionReply.to_bytes()
             if name not in [user[0] for user in self._users]:
@@ -137,8 +137,8 @@ class ServerInstance:
 
         for user in self._users:
 
-            lenght = struct.pack("!B", len(user[0]))
             name = user[0].encode("utf-8")
+            lenght = struct.pack("!B", len(name))
             buffer.append(lenght + name)
 
         self._thread_pool[0].rx_queue.put(b"".join(buffer))
