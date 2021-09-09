@@ -11,7 +11,7 @@
 
 ### With git
 
-`git clone https://github.com/rrennoir/PyAccEngineer.git -- recursive`
+`git clone https://github.com/rrennoir/PyAccEngineer.git --recursive`
 
 ### Basic download
 
