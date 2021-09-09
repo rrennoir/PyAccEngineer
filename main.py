@@ -216,6 +216,7 @@ class App(tkinter.Tk):
 
         self.client_loop()
 
+        self.eval('tk::PlaceWindow . center')
         self.mainloop()
 
         self.strategy_ui.close()
