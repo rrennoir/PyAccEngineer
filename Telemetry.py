@@ -55,6 +55,49 @@ class TyreInfo(tkinter.Frame):
 
         tkinter.Frame.__init__(self, master=root)
 
+        self.pressure_table = {
+            "Dry": {
+                "high": {
+                    "low": 28.1,
+                    "low_mid": 28.3,
+                    "high_mid": 28.7,
+                    "high": 29.9
+                },
+                "mid": {
+                    "low": 27.1,
+                    "low_mid": 27.3,
+                    "high_mid": 27.7,
+                    "high": 27.9
+                },
+                "low": {
+                    "low": 26.1,
+                    "low_mid": 26.3,
+                    "high_mid": 26.7,
+                    "high": 26.9
+                }
+            },
+            "Wet": {
+                "high": {
+                    "low": 30.8,
+                    "low_mid": 31.0,
+                    "high_mid": 31.5,
+                    "high": 31.7
+                },
+                "mid": {
+                    "low": 29.7,
+                    "low_mid": 29.5,
+                    "high_mid": 30.5,
+                    "high": 30.7
+                },
+                "low": {
+                    "low": 28.5,
+                    "low_mid": 28.7,
+                    "high_mid": 29.0,
+                    "high": 29.2
+                }
+            }
+        }
+
         self.tyre_pressure = tkinter.DoubleVar()
         self.tyre_temp = tkinter.DoubleVar()
         self.brake_temp = tkinter.DoubleVar()
@@ -148,16 +191,46 @@ class TyreInfo(tkinter.Frame):
 
     def update_tyre_hud(self, pressure: float) -> None:
 
+        pressure_table = self.pressure_table["Dry"]
+        mid_table = pressure_table["mid"]
+        high_table = pressure_table["high"]
+        low_table = pressure_table["low"]
+
+        color = "Grey"
         for band in self.tyre_band:
 
-            if 27.4 < pressure < 28.0:
-                color = rgbtohex(0, 255, 0)
+            if mid_table["low"] < pressure < mid_table["high"]:
 
-            elif 28.0 < pressure:
-                color = rgbtohex(255, 0, 0)
+                if mid_table["high_mid"] < pressure:
+                    color = rgbtohex(128, 255, 0)
 
-            elif pressure < 27.4:
-                color = rgbtohex(0, 0, 255)
+                elif mid_table["low_mid"] < pressure < mid_table["high_mid"]:
+                    color = rgbtohex(0, 255, 0)
+
+                else:
+                    color = rgbtohex(0, 255, 128)
+
+            elif mid_table["high"] < pressure:
+
+                if high_table["high_mid"] < pressure:
+                    color = rgbtohex(255, 0, 0)
+
+                elif high_table["low_mid"] < pressure < high_table["high_mid"]:
+                    color = rgbtohex(255, 128, 0)
+
+                elif pressure < high_table["low_mid"]:
+                    color = rgbtohex(255, 255, 0)
+
+            elif pressure < mid_table["low"]:
+
+                if low_table["high_mid"] < pressure:
+                    color = rgbtohex(0, 255, 255)
+
+                elif low_table["low_mid"] < pressure < low_table["high_mid"]:
+                    color = rgbtohex(0, 128, 255)
+
+                elif pressure < low_table["low_mid"]:
+                    color = rgbtohex(0, 0, 255)
 
             band.config(bg=color)
 
