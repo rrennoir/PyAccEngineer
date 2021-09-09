@@ -42,11 +42,15 @@ class ClientInstance:
             print(f"CLIENT: {msg}")
             return (False, msg)
 
-        name_lenght = len(self._username)
-        name_byte = struct.pack(f"!B {name_lenght}s", name_lenght,
-                                self._username.encode("utf-8"))
+        buffer = []
+        name_byte = self._username.encode("utf-8")
+        name_lenght = struct.pack("!B", len(name_byte))
 
-        self._send_data(PacketType.Connect.to_bytes() + name_byte)
+        buffer.append(PacketType.Connect.to_bytes())
+        buffer.append(name_lenght)
+        buffer.append(name_byte)
+
+        self._send_data(b"".join(buffer))
 
         reply = self._socket.recv(64)
         packet_type = PacketType.from_bytes(reply)
