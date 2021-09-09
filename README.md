@@ -1,6 +1,6 @@
 # PyAccEngineer
 
-## Requierement
+## Requirements
 
 * Need python 3.8 +
 * pywin32 module
