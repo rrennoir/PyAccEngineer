@@ -210,7 +210,9 @@ class Telemetry:
         lenght = data[0]
 
         if len(data[1:]) > 108:
-            print(len(data[1:]))
+            psize = len(data[1:])
+            print(f"Telemetry: Warning got packet of {psize} bytes")
+            data = data[:109]
 
         raw_data = struct.unpack(f"!{lenght}s 21f 3i", data[1:])
 
