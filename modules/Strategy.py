@@ -96,7 +96,7 @@ class StrategyUI(tkinter.Frame):
         app_row += 1
 
         # Strategy menu: Tyre set row
-        self.tyre_set_text = tkinter.IntVar()
+        self.tyre_set_text = tkinter.IntVar(value=1)
         l_tyre_set = tkinter.Label(f_settings, text="Tyre set: ", width=15)
         l_tyre_set.grid(row=app_row, column=0)
         bp_tyre_set = ButtonPannel(
@@ -406,6 +406,8 @@ class StrategySetter:
             time.sleep(0.01)
 
     def set_strategy(self, strategy: PitStop, sm: ACC_map) -> None:
+
+        print(f"Requested strategy: {strategy}")
 
         self.set_acc_forground()
 
