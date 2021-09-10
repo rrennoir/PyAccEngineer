@@ -397,7 +397,7 @@ class StrategySetter:
 
             if current > target:
                 pyautogui.press("left")
-                target -= 1
+                current -= 1
 
             else:
                 pyautogui.press("right")
