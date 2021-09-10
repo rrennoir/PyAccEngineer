@@ -39,7 +39,7 @@ python main.py
 Simply run the Server.py, by default port is 4269 use -p or --port to change it
 
 ```
-python Server.py -p 4269
+python headless_server.py -p 4269
 ```
 
 To stop the server simply press ctrl C in the terminal
