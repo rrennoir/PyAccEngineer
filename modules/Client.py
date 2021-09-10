@@ -4,7 +4,7 @@ import struct
 import threading
 from typing import Tuple
 
-from Common import NetworkQueue, PacketType
+from modules.Common import NetworkQueue, PacketType
 
 
 class ClientInstance:

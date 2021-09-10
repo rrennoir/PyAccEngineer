@@ -12,7 +12,7 @@ import win32com
 import win32com.client
 import win32gui
 
-from Common import CarInfo, PitStop
+from modules.Common import CarInfo, PitStop
 from SharedMemory.PyAccSharedMemory import ACC_map, accSharedMemory
 
 

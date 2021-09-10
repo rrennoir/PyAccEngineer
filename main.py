@@ -11,12 +11,12 @@ from functools import partial
 from tkinter import messagebox
 from typing import Tuple
 
-from Client import ClientInstance
-from Common import CarInfo, NetworkQueue, PitStop
-from Server import ServerInstance
-from Strategy import StrategyUI
-from Telemetry import Telemetry, TelemetryUI
-from Users import UserUI
+from modules.Client import ClientInstance
+from modules.Common import CarInfo, NetworkQueue, PitStop
+from modules.Server import ServerInstance
+from modules.Strategy import StrategyUI
+from modules.Telemetry import Telemetry, TelemetryUI
+from modules.Users import UserUI
 
 
 class ConnectionWindow(tkinter.Toplevel):
