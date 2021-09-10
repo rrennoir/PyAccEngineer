@@ -1,6 +1,6 @@
 # PyAccEngineer
 
-## Requierement
+## Requirements
 
 * Need python 3.8 +
 * pywin32 module
@@ -11,7 +11,7 @@
 
 ### With git
 
-`git clone https://github.com/rrennoir/PyAccEngineer.git -- recursive`
+`git clone https://github.com/rrennoir/PyAccEngineer.git --recursive`
 
 ### Basic download
 
