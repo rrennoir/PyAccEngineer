@@ -246,7 +246,7 @@ class Telemetry:
             struct.pack("!4f", *astuple(self.disc_wear)),
             struct.pack("!i", self.lap_time),
             struct.pack("!i", self.best_time),
-            struct.pack("!i", self.previous_time),
+            struct.pack("!i", self.previous_time)
         ]
 
         return b"".join(buffer)
@@ -256,10 +256,10 @@ class Telemetry:
 
         lenght = data[0]
 
-        if len(data[1:]) > 112:
+        if len(data[1:]) > (100 + lenght):
             psize = len(data[1:])
             print(f"Telemetry: Warning got packet of {psize} bytes")
-            data = data[:113]
+            data = data[:(101 + lenght)]
 
         raw_data = struct.unpack(f"!{lenght}s i 21f 3i", data[1:])
 
