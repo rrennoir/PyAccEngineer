@@ -1,2 +1,3 @@
 PyAutoGUI>=0.9.53
 pywin32>=227
+matplotlib>=3.3.4
