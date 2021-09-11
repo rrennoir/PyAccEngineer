@@ -13,6 +13,7 @@ from typing import Tuple
 
 from modules.Client import ClientInstance
 from modules.Common import CarInfo, NetworkQueue, PitStop
+from modules.TyreGraph import TyreGraph
 from modules.Server import ServerInstance
 from modules.Strategy import StrategyUI
 from modules.Telemetry import Telemetry, TelemetryUI
@@ -203,13 +204,16 @@ class App(tkinter.Tk):
         self.config(menu=self.menu_bar)
 
         self.strategy_ui = StrategyUI(self)
-        self.strategy_ui.grid(row=0, column=0, padx=5, pady=5)
+        self.strategy_ui.grid(row=1, column=0)
 
         self.telemetry_ui = TelemetryUI(self)
-        self.telemetry_ui.grid(row=1, column=0)
+        self.telemetry_ui.grid(row=1, column=1)
 
         self.user_ui = UserUI(self)
-        self.user_ui.grid(row=0, column=1)
+        self.user_ui.grid(row=0, column=0, columnspan=2)
+
+        self.tyre_graph = TyreGraph(self)
+        self.tyre_graph.grid(row=2, column=0, columnspan=2, pady=2)
 
         self.last_time = time.time()
         self.min_delta = 0.5
@@ -258,6 +262,9 @@ class App(tkinter.Tk):
                 telemetry = Telemetry.from_bytes(telemetry_bytes)
                 self.telemetry_ui.telemetry = telemetry
                 self.telemetry_ui.update_values()
+
+                tyre_pressure = astuple(telemetry.tyre_pressure)
+                self.tyre_graph.update_data(tyre_pressure, telemetry.lap)
 
             elif event_type == NetworkQueue.UpdateUsers:
 
@@ -377,6 +384,7 @@ class App(tkinter.Tk):
 
         self.strategy_ui.reset()
         self.user_ui.reset()
+        self.tyre_graph.reset()
 
     def stop_networking(self) -> None:
 
