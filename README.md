@@ -8,6 +8,7 @@
 - Need python 3.8+ (download at [python.org](https://www.python.org/downloads/) or [anaconda.com](https://www.anaconda.com/products/individual))
 - pywin32 module
 - PyAutoGUI module
+- matplotlib module
 - Server need open a TCP port (4269 is the default)
 
 ## Download
