@@ -7,46 +7,7 @@ from typing import List, Optional
 
 from SharedMemory.PyAccSharedMemory import Wheels
 
-
-def rgbtohex(r: int, g: int, b: int) -> str:
-    "Convert RGB values to hex"
-
-    return f'#{r:02x}{g:02x}{b:02x}'
-
-
-def string_time_from_ms(time_in_ms: int) -> str:
-
-    # if no time time_in_ms is equal to the maximum value of a 32bit int
-    if time_in_ms == 2147483647:
-        # simply return 00:00.000
-        time_in_ms = 0
-
-    minute = time_in_ms // 60_000
-    second = (time_in_ms % 60_000) // 1000
-    millisecond = (time_in_ms % 60_000) % 1000
-
-    if minute < 10:
-        minute_str = f"0{minute}"
-
-    else:
-        minute_str = str(minute)
-
-    if second < 10:
-        second_str = f"0{second}"
-
-    else:
-        second_str = str(second)
-
-    if millisecond < 100:
-        millisecond_str = f"0{millisecond}"
-
-    elif millisecond < 10:
-        millisecond_str = f"00{millisecond}"
-
-    else:
-        millisecond_str = str(millisecond)
-
-    return f"{minute_str}:{second_str}.{millisecond_str}"
+from modules.Common import rgbtohex, string_time_from_ms
 
 
 class TyreInfo(tkinter.Frame):

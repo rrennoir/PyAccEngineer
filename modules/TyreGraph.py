@@ -1,22 +1,17 @@
 import tkinter
+from typing import List
+
 import matplotlib
-import matplotlib.pyplot as plt
+from matplotlib import style
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
-import matplotlib.animation
-from typing import List, Tuple, Union
-from matplotlib import style
-from numpy import pad
 
-style.use("dark_background")
+from modules.Common import avg
 
 # Use tkinter backend
 matplotlib.use("TkAgg")
 
-
-def avg(value: Union[List, Tuple]) -> Union[float, int]:
-
-    return sum(value) / len(value)
+style.use("dark_background")
 
 
 class TyreGraph(tkinter.Frame):
