@@ -247,6 +247,7 @@ class TyreInfo(tkinter.Frame):
 class Telemetry:
 
     driver: str
+    lap: int
     fuel: float
     tyre_pressure: Wheels
     tyre_temp: Wheels
@@ -264,6 +265,7 @@ class Telemetry:
         buffer = [
             struct.pack("!B", driver_lenght),
             struct.pack(f"!{driver_lenght}s", self.driver.encode("utf-8")),
+            struct.pack("!i", self.lap),
             struct.pack("!f", self.fuel),
             struct.pack("!4f", *astuple(self.tyre_pressure)),
             struct.pack("!4f", *astuple(self.tyre_temp)),
@@ -282,12 +284,12 @@ class Telemetry:
 
         lenght = data[0]
 
-        if len(data[1:]) > 108:
+        if len(data[1:]) > 112:
             psize = len(data[1:])
             print(f"Telemetry: Warning got packet of {psize} bytes")
-            data = data[:109]
+            data = data[:113]
 
-        raw_data = struct.unpack(f"!{lenght}s 21f 3i", data[1:])
+        raw_data = struct.unpack(f"!{lenght}s i 21f 3i", data[1:])
 
         name = raw_data[0].decode("utf-8")
         rest = raw_data[1:]
@@ -295,14 +297,15 @@ class Telemetry:
         return Telemetry(
             name,
             rest[0],
-            Wheels(*rest[1:5]),
-            Wheels(*rest[5:9]),
-            Wheels(*rest[9:13]),
-            Wheels(*rest[13:17]),
-            Wheels(*rest[17:21]),
-            rest[21],
+            rest[1],
+            Wheels(*rest[2:6]),
+            Wheels(*rest[6:10]),
+            Wheels(*rest[10:14]),
+            Wheels(*rest[14:18]),
+            Wheels(*rest[18:22]),
             rest[22],
             rest[23],
+            rest[24],
         )
 
 

@@ -304,6 +304,7 @@ class App(tkinter.Tk):
 
             telemetry_data = Telemetry(
                 driver,
+                asm_data.Graphics.completed_lap,
                 asm_data.Physics.fuel,
                 asm_data.Physics.wheel_pressure,
                 asm_data.Physics.tyre_core_temp,
