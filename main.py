@@ -20,6 +20,9 @@ from modules.Telemetry import Telemetry, TelemetryUI
 from modules.Users import UserUI
 
 
+_VERSION_ = "1.2.1"
+
+
 class ConnectionWindow(tkinter.Toplevel):
 
     def __init__(self, root: App, as_server: bool = False):
@@ -177,7 +180,7 @@ class App(tkinter.Tk):
     def __init__(self) -> None:
 
         tkinter.Tk.__init__(self)
-        self.title("PyAccEngineer")
+        self.title(f"PyAccEngineer {_VERSION_}")
         self.config(bg="Grey")
         self.resizable(False, False)
 
