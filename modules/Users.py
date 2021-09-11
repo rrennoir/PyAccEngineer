@@ -10,32 +10,38 @@ class UserUI(tkinter.Frame):
         self.user_list = []
 
         self.active_user = None
+        self.font = ("Helvetica", 13)
 
-        f_background = tkinter.Frame(self, background="Black")
-        row_count = 0
+        f_background = tkinter.Frame(self, background="Grey")
+        column_count = 0
 
-        l_user = tkinter.Label(f_background, text="Users:", width=20)
-        l_user.grid(row=row_count, column=0, padx=1, pady=1)
-        row_count += 1
+        l_user = tkinter.Label(f_background, text="Users:", width=10)
+        l_user.config(font=self.font, bg="Black", fg="White")
+        l_user.grid(row=0, column=column_count, padx=2, pady=1)
+        column_count += 1
 
         user1 = tkinter.StringVar()
-        l_user1 = tkinter.Label(f_background, textvariable=user1, width=20)
-        l_user1.grid(row=row_count, column=0, padx=1, pady=1)
-        row_count += 1
+        l_user1 = tkinter.Label(f_background, textvariable=user1, width=24)
+        l_user1.config(font=self.font, bg="Black", fg="White")
+        l_user1.grid(row=0, column=column_count, padx=2, pady=1)
+        column_count += 1
 
         user2 = tkinter.StringVar()
-        l_user2 = tkinter.Label(f_background, textvariable=user2, width=20)
-        l_user2.grid(row=row_count, column=0, padx=1, pady=1)
-        row_count += 1
+        l_user2 = tkinter.Label(f_background, textvariable=user2, width=24)
+        l_user2.config(font=self.font, bg="Black", fg="White")
+        l_user2.grid(row=0, column=column_count, padx=2, pady=1)
+        column_count += 1
 
         user3 = tkinter.StringVar()
-        l_user3 = tkinter.Label(f_background, textvariable=user3, width=20)
-        l_user3.grid(row=row_count, column=0, padx=1, pady=1)
-        row_count += 1
+        l_user3 = tkinter.Label(f_background, textvariable=user3, width=24)
+        l_user3.config(font=self.font, bg="Black", fg="White")
+        l_user3.grid(row=0, column=column_count, padx=2, pady=1)
+        column_count += 1
 
         user4 = tkinter.StringVar()
-        l_user4 = tkinter.Label(f_background, textvariable=user4, width=20)
-        l_user4.grid(row=row_count, column=0, padx=1, pady=1)
+        l_user4 = tkinter.Label(f_background, textvariable=user4, width=24)
+        l_user4.config(font=self.font, bg="Black", fg="White")
+        l_user4.grid(row=0, column=column_count, padx=2, pady=1)
 
         UserBox = namedtuple("UserBox", ["var", "label"])
 
@@ -68,7 +74,7 @@ class UserUI(tkinter.Frame):
                 self.active_user = name
 
             else:
-                user.label.config(bg="White")
+                user.label.config(bg="Black")
 
     def reset(self) -> None:
 
@@ -76,4 +82,4 @@ class UserUI(tkinter.Frame):
         self.active_user = None
         for user in self.user_vars:
             user.var.set("")
-            user.label.config(bg="White")
+            user.label.config(bg="Black")
