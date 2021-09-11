@@ -1,4 +1,7 @@
-# PyAccEngineer
+# PyAccEngineer v1.2
+
+![app](https://i.imgur.com/CKuR1CS.png)
+
 
 ## Requirements
 
