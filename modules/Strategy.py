@@ -46,18 +46,20 @@ class ButtonPannel(tkinter.Frame):
 
     def __init__(self, root, var, command, step=[0.1, 0.5, 1.0]) -> None:
 
-        tkinter.Frame.__init__(self, root)
+        tkinter.Frame.__init__(self, root, background="Black")
 
         for index, element in enumerate(step):
             b_minus = tkinter.Button(
                 self, text=str(-element), width=5,
-                command=partial(command, -element))
+                command=partial(command, -element), bg="Black", fg="White")
             b_add = tkinter.Button(self, text=str(
-                element), width=5, command=partial(command, element))
+                element), width=5, command=partial(command, element),
+                bg="Black", fg="White")
             b_minus.grid(row=0, column=2 - index, padx=2, pady=1)
             b_add.grid(row=0, column=4 + index, padx=2, pady=1)
 
-        l_var = tkinter.Label(self, textvariable=var, width=10)
+        l_var = tkinter.Label(self, textvariable=var, width=10,
+                              bg="Black", fg="White")
         l_var.grid(row=0, column=3)
 
 
@@ -65,7 +67,7 @@ class StrategyUI(tkinter.Frame):
 
     def __init__(self, root):
 
-        tkinter.Frame.__init__(self, master=root)
+        tkinter.Frame.__init__(self, master=root, background="Black")
 
         self.asm = accSharedMemory(refresh=60)
         self.asm.start()
@@ -73,6 +75,8 @@ class StrategyUI(tkinter.Frame):
         self.server_data: CarInfo = None
         self.strategy = None
         self.strategy_ok = False
+
+        self.font = ("Helvetica", 13)
 
         self.data_queue = multiprocessing.Queue()
         self.strat_setter = StrategySetter(self.data_queue)
@@ -83,13 +87,14 @@ class StrategyUI(tkinter.Frame):
         self.max_static_fuel = 120
 
         f_settings = tkinter.Frame(self, bd=2, relief=tkinter.RIDGE,
-                                   padx=8, pady=32)
+                                   padx=8, pady=30, bg="Black")
 
         app_row = 0
 
         # Strategy Menu: Fuel Row
         self.fuel_text = tkinter.DoubleVar()
-        l_fuel = tkinter.Label(f_settings, text="Fuel: ", width=15)
+        l_fuel = tkinter.Label(f_settings, text="Fuel: ", width=15,
+                               bg="Black", fg="White")
         l_fuel.grid(row=app_row, column=0)
         bp_fuel = ButtonPannel(f_settings, self.fuel_text,
                                self.change_fuel, [1, 5, 10])
@@ -98,7 +103,8 @@ class StrategyUI(tkinter.Frame):
 
         # Strategy menu: Tyre set row
         self.tyre_set_text = tkinter.IntVar(value=1)
-        l_tyre_set = tkinter.Label(f_settings, text="Tyre set: ", width=15)
+        l_tyre_set = tkinter.Label(f_settings, text="Tyre set: ",
+                                   width=15, bg="Black", fg="White")
         l_tyre_set.grid(row=app_row, column=0)
         bp_tyre_set = ButtonPannel(
             f_settings, self.tyre_set_text, self.change_tyre_set, [1])
@@ -106,26 +112,29 @@ class StrategyUI(tkinter.Frame):
         app_row += 1
 
         # Strategy menu: Tyre compound
-        f_tyre_compound = tkinter.Frame(f_settings)
+        f_tyre_compound = tkinter.Frame(f_settings, bg="Black")
 
         self.tyre_compound_text = tkinter.StringVar(value="Dry")
-        l_tyre_set = tkinter.Label(
-            f_settings, text="Tyre compound: ", width=15)
+        l_tyre_set = tkinter.Label(f_settings, text="Tyre compound: ",
+                                   width=15, bg="Black", fg="White")
         l_tyre_set.grid(row=app_row, column=0)
 
-        b_minus = tkinter.Button(
-            f_tyre_compound, text="Dry", width=5, command=partial(
-                self.change_tyre_compound, "Dry"))
+        b_minus = tkinter.Button(f_tyre_compound, text="Dry", width=5,
+                                 command=partial(
+                                     self.change_tyre_compound, "Dry"),
+                                 bg="Black", fg="White")
 
-        b_add = tkinter.Button(
-            f_tyre_compound, text="Wet", width=5, command=partial(
-                self.change_tyre_compound, "Wet"))
+        b_add = tkinter.Button(f_tyre_compound, text="Wet",
+                               width=5, command=partial(
+                                   self.change_tyre_compound, "Wet"),
+                               bg="Black", fg="White")
 
         b_minus.grid(row=0, column=2, padx=2, pady=1)
         b_add.grid(row=0, column=4, padx=2, pady=1)
 
-        l_var = tkinter.Label(
-            f_tyre_compound, textvariable=self.tyre_compound_text, width=10)
+        l_var = tkinter.Label(f_tyre_compound,
+                              textvariable=self.tyre_compound_text,
+                              width=10, bg="Black", fg="White")
         l_var.grid(row=0, column=3)
         f_tyre_compound.grid(row=app_row, column=1)
         app_row += 1
@@ -134,7 +143,8 @@ class StrategyUI(tkinter.Frame):
 
         # Strategy menu: Front left tyre
         self.front_left_text = tkinter.DoubleVar()
-        l_tyre_fl = tkinter.Label(f_settings, text="Front left: ", width=15)
+        l_tyre_fl = tkinter.Label(f_settings, text="Front left: ",
+                                  width=15, bg="Black", fg="White")
         l_tyre_fl.grid(row=app_row, column=0)
         bp_tyre_fl = ButtonPannel(
             f_settings, self.front_left_text, self.change_pressure_fl,
@@ -144,7 +154,8 @@ class StrategyUI(tkinter.Frame):
 
         # Strategy menu: Front right tyre
         self.front_right_text = tkinter.DoubleVar()
-        l_tyre_fr = tkinter.Label(f_settings, text="Front right: ", width=15)
+        l_tyre_fr = tkinter.Label(f_settings, text="Front right: ",
+                                  width=15, bg="Black", fg="White")
         l_tyre_fr.grid(row=app_row, column=0)
         bp_tyre_fr = ButtonPannel(
             f_settings, self.front_right_text, self.change_pressure_fr,
@@ -154,7 +165,8 @@ class StrategyUI(tkinter.Frame):
 
         # Strategy menu: Rear left tyre
         self.rear_left_text = tkinter.DoubleVar()
-        l_tyre_rl = tkinter.Label(f_settings, text="Rear left: ", width=15)
+        l_tyre_rl = tkinter.Label(f_settings, text="Rear left: ",
+                                  width=15, bg="Black", fg="White")
         l_tyre_rl.grid(row=app_row, column=0)
         bp_tyre_rl = ButtonPannel(
             f_settings, self.rear_left_text, self.change_pressure_rl,
@@ -164,27 +176,29 @@ class StrategyUI(tkinter.Frame):
 
         # Strategy menu: Rear right tyre
         self.rear_right_text = tkinter.DoubleVar()
-        l_tyre_rr = tkinter.Label(f_settings, text="Rear right: ", width=15)
+        l_tyre_rr = tkinter.Label(f_settings, text="Rear right: ",
+                                  width=15, bg="Black", fg="White")
         l_tyre_rr.grid(row=app_row, column=0)
-        bp_tyre_rr = ButtonPannel(
-            f_settings, self.rear_right_text, self.change_pressure_rr,
-            tyre_steps)
+        bp_tyre_rr = ButtonPannel(f_settings, self.rear_right_text,
+                                  self.change_pressure_rr, tyre_steps)
         bp_tyre_rr.grid(row=app_row, column=1)
         app_row += 1
 
         f_settings.grid(row=0, padx=2, pady=2)
 
-        f_button_grid = tkinter.Frame(self, relief=tkinter.RIDGE, bd=2)
+        f_button_grid = tkinter.Frame(
+            self, relief=tkinter.RIDGE, bg="Black")
         f_button_grid.grid(row=1, pady=5)
 
         self.b_update_strat = tkinter.Button(
             f_button_grid, text="Update values",
-            command=self.update_values)
-        self.b_update_strat.pack(side=tkinter.LEFT, padx=83, pady=2)
+            command=self.update_values, bg="Black", fg="White", font=self.font)
+        self.b_update_strat.pack(side=tkinter.LEFT, padx=5, pady=2)
+
         self.b_set_strat = tkinter.Button(
             f_button_grid, text="Set Strategy",
-            command=self.set_strategy)
-        self.b_set_strat.pack(side=tkinter.RIGHT, padx=83, pady=2)
+            command=self.set_strategy, bg="Black", fg="White", font=self.font)
+        self.b_set_strat.pack(side=tkinter.RIGHT, padx=5, pady=2)
 
         self.update_values()
         self.check_reply()
