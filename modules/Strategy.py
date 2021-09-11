@@ -82,7 +82,8 @@ class StrategyUI(tkinter.Frame):
         self.mfd_tyre_set = 0
         self.max_static_fuel = 120
 
-        f_settings = tkinter.Frame(self, bd=2, relief=tkinter.RIDGE)
+        f_settings = tkinter.Frame(self, bd=2, relief=tkinter.RIDGE,
+                                   padx=8, pady=32)
 
         app_row = 0
 
