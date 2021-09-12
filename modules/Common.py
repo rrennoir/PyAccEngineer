@@ -63,6 +63,7 @@ class PacketType(Enum):
     StrategyOK = 7
     Telemetry = 8
     UpdateUsers = 9
+    Unkown = -1
 
     def to_bytes(self) -> bytes:
         """
@@ -77,7 +78,15 @@ class PacketType(Enum):
         Convert the first unsigned char of a bytes object into a PacketType
         """
 
-        return PacketType(struct.unpack("!B", data[:1])[0])
+        try:
+            packet = PacketType(struct.unpack("!B", data[:1])[0])
+
+        except ValueError as msg:
+
+            print(f"PacketType: {msg}")
+            packet = PacketType.Unkown
+
+        return packet
 
 
 class NetworkQueue(Enum):

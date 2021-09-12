@@ -20,7 +20,7 @@ from modules.Telemetry import Telemetry, TelemetryUI
 from modules.Users import UserUI
 
 
-_VERSION_ = "1.2.1"
+_VERSION_ = "1.2.2"
 
 
 class ConnectionWindow(tkinter.Toplevel):
