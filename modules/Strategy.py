@@ -44,28 +44,33 @@ def ACCWindowFinderCallback(hwnd: int, obj) -> bool:
 
 class ButtonPannel(tkinter.Frame):
 
-    def __init__(self, root, var, command, step=[0.1, 0.5, 1.0]) -> None:
+    def __init__(self, root, var, command, step=[0.1, 0.5, 1.0],
+                 font=("Helvetica", 13)) -> None:
 
         tkinter.Frame.__init__(self, root, background="Black")
 
         for index, element in enumerate(step):
             b_minus = tkinter.Button(
                 self, text=str(-element), width=5,
-                command=partial(command, -element), bg="Black", fg="White")
-            b_add = tkinter.Button(self, text=str(
-                element), width=5, command=partial(command, element),
-                bg="Black", fg="White")
-            b_minus.grid(row=0, column=2 - index, padx=2, pady=1)
-            b_add.grid(row=0, column=4 + index, padx=2, pady=1)
+                command=partial(command, -element),
+                bg="Black", fg="White", font=font, bd=5)
+
+            b_add = tkinter.Button(
+                self, text=str(element), width=5,
+                command=partial(command, element),
+                bg="Black", fg="White", font=font, bd=5)
+
+            b_minus.grid(row=0, column=2 - index, padx=4, pady=2)
+            b_add.grid(row=0, column=4 + index, padx=4, pady=2)
 
         l_var = tkinter.Label(self, textvariable=var, width=10,
-                              bg="Black", fg="White")
+                              bg="Black", fg="White", font=font)
         l_var.grid(row=0, column=3)
 
 
 class StrategyUI(tkinter.Frame):
 
-    def __init__(self, root):
+    def __init__(self, root, font):
 
         tkinter.Frame.__init__(self, master=root, background="Black")
 
@@ -76,7 +81,8 @@ class StrategyUI(tkinter.Frame):
         self.strategy = None
         self.strategy_ok = False
 
-        self.font = ("Helvetica", 13)
+        self.font = font
+        self.big_font = (font[0], font[1] + 5)
 
         self.data_queue = multiprocessing.Queue()
         self.strat_setter = StrategySetter(self.data_queue)
@@ -87,14 +93,14 @@ class StrategyUI(tkinter.Frame):
         self.max_static_fuel = 120
 
         f_settings = tkinter.Frame(self, bd=2, relief=tkinter.RIDGE,
-                                   padx=8, pady=45, bg="Black")
+                                   padx=10, pady=10, bg="Black")
 
         app_row = 0
 
         # Strategy Menu: Fuel Row
         self.fuel_text = tkinter.DoubleVar()
         l_fuel = tkinter.Label(f_settings, text="Fuel: ", width=15,
-                               bg="Black", fg="White")
+                               bg="Black", fg="White", font=self.font)
         l_fuel.grid(row=app_row, column=0)
         bp_fuel = ButtonPannel(f_settings, self.fuel_text,
                                self.change_fuel, [1, 5, 10])
@@ -104,7 +110,8 @@ class StrategyUI(tkinter.Frame):
         # Strategy menu: Tyre set row
         self.tyre_set_text = tkinter.IntVar(value=1)
         l_tyre_set = tkinter.Label(f_settings, text="Tyre set: ",
-                                   width=15, bg="Black", fg="White")
+                                   width=15, bg="Black", fg="White",
+                                   font=self.font)
         l_tyre_set.grid(row=app_row, column=0)
         bp_tyre_set = ButtonPannel(
             f_settings, self.tyre_set_text, self.change_tyre_set, [1])
@@ -116,25 +123,26 @@ class StrategyUI(tkinter.Frame):
 
         self.tyre_compound_text = tkinter.StringVar(value="Dry")
         l_tyre_set = tkinter.Label(f_settings, text="Tyre compound: ",
-                                   width=15, bg="Black", fg="White")
+                                   width=15, bg="Black", fg="White",
+                                   font=self.font)
         l_tyre_set.grid(row=app_row, column=0)
 
         b_minus = tkinter.Button(f_tyre_compound, text="Dry", width=5,
                                  command=partial(
                                      self.change_tyre_compound, "Dry"),
-                                 bg="Black", fg="White")
+                                 bg="Black", fg="White", font=self.font, bd=5)
 
         b_add = tkinter.Button(f_tyre_compound, text="Wet",
                                width=5, command=partial(
                                    self.change_tyre_compound, "Wet"),
-                               bg="Black", fg="White")
+                               bg="Black", fg="White", font=self.font, bd=5)
 
-        b_minus.grid(row=0, column=2, padx=2, pady=1)
-        b_add.grid(row=0, column=4, padx=2, pady=1)
+        b_minus.grid(row=0, column=2, padx=4, pady=2)
+        b_add.grid(row=0, column=4, padx=4, pady=2)
 
         l_var = tkinter.Label(f_tyre_compound,
                               textvariable=self.tyre_compound_text,
-                              width=10, bg="Black", fg="White")
+                              width=10, bg="Black", fg="White", font=self.font)
         l_var.grid(row=0, column=3)
         f_tyre_compound.grid(row=app_row, column=1)
         app_row += 1
@@ -144,7 +152,8 @@ class StrategyUI(tkinter.Frame):
         # Strategy menu: Front left tyre
         self.front_left_text = tkinter.DoubleVar()
         l_tyre_fl = tkinter.Label(f_settings, text="Front left: ",
-                                  width=15, bg="Black", fg="White")
+                                  width=15, bg="Black", fg="White",
+                                  font=self.font)
         l_tyre_fl.grid(row=app_row, column=0)
         bp_tyre_fl = ButtonPannel(
             f_settings, self.front_left_text, self.change_pressure_fl,
@@ -155,7 +164,8 @@ class StrategyUI(tkinter.Frame):
         # Strategy menu: Front right tyre
         self.front_right_text = tkinter.DoubleVar()
         l_tyre_fr = tkinter.Label(f_settings, text="Front right: ",
-                                  width=15, bg="Black", fg="White")
+                                  width=15, bg="Black", fg="White",
+                                  font=self.font)
         l_tyre_fr.grid(row=app_row, column=0)
         bp_tyre_fr = ButtonPannel(
             f_settings, self.front_right_text, self.change_pressure_fr,
@@ -166,7 +176,8 @@ class StrategyUI(tkinter.Frame):
         # Strategy menu: Rear left tyre
         self.rear_left_text = tkinter.DoubleVar()
         l_tyre_rl = tkinter.Label(f_settings, text="Rear left: ",
-                                  width=15, bg="Black", fg="White")
+                                  width=15, bg="Black", fg="White",
+                                  font=self.font)
         l_tyre_rl.grid(row=app_row, column=0)
         bp_tyre_rl = ButtonPannel(
             f_settings, self.rear_left_text, self.change_pressure_rl,
@@ -177,7 +188,8 @@ class StrategyUI(tkinter.Frame):
         # Strategy menu: Rear right tyre
         self.rear_right_text = tkinter.DoubleVar()
         l_tyre_rr = tkinter.Label(f_settings, text="Rear right: ",
-                                  width=15, bg="Black", fg="White")
+                                  width=15, bg="Black", fg="White",
+                                  font=self.font)
         l_tyre_rr.grid(row=app_row, column=0)
         bp_tyre_rr = ButtonPannel(f_settings, self.rear_right_text,
                                   self.change_pressure_rr, tyre_steps)
@@ -192,12 +204,16 @@ class StrategyUI(tkinter.Frame):
 
         self.b_update_strat = tkinter.Button(
             f_button_grid, text="Update values",
-            command=self.update_values, bg="Black", fg="White", font=self.font)
+            command=self.update_values, bg="Black",
+            fg="White", font=self.big_font)
+
         self.b_update_strat.pack(side=tkinter.LEFT, padx=5, pady=2)
 
         self.b_set_strat = tkinter.Button(
             f_button_grid, text="Set Strategy",
-            command=self.set_strategy, bg="Black", fg="White", font=self.font)
+            command=self.set_strategy, bg="Black",
+            fg="White", font=self.big_font)
+
         self.b_set_strat.pack(side=tkinter.RIGHT, padx=5, pady=2)
 
         self.update_values()
