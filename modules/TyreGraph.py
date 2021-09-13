@@ -194,7 +194,7 @@ class TyreGraph(tkinter.Frame):
 
         self.pressure.clear()
 
-        data_point = [i for i in range(len(self.pressures_fl))]
+        data_point = [i / 2 for i in range(0, len(self.pressures_fl))]
 
         self.pressure.plot(data_point, self.pressures_fl, label="Front left")
         self.pressure.plot(data_point, self.pressures_fr, label="Front right")
