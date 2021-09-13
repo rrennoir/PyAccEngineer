@@ -16,7 +16,7 @@ style.use("dark_background")
 
 class TyreGraph(tkinter.Frame):
 
-    def __init__(self, root) -> None:
+    def __init__(self, root, font) -> None:
 
         tkinter.Frame.__init__(self, master=root)
 
@@ -80,6 +80,55 @@ class TyreGraph(tkinter.Frame):
         l_rear_right_var.config(font=self.font)
         l_rear_right_var.grid(row=0, column=8, padx=2)
 
+        title = tkinter.Label(f_pressures, text="Pressure lost (aprox)",
+                              bg="Black", fg="White", width=17)
+        title.config(font=self.font)
+        title.grid(row=1, column=0, padx=2, pady=1)
+
+        self.p_lost_fl = tkinter.DoubleVar()
+        l_p_lost_fl = tkinter.Label(f_pressures, text="Front left",
+                                    bg="Black", fg="White", font=self.font,
+                                    width=12)
+        l_p_lost_fl_var = tkinter.Label(f_pressures,
+                                        textvariable=self.p_lost_fl,
+                                        bg="Black", fg="White", width=9,
+                                        font=self.font)
+        l_p_lost_fl.grid(row=1, column=1)
+        l_p_lost_fl_var.grid(row=1, column=2, padx=2, pady=1)
+
+        self.p_lost_fr = tkinter.DoubleVar()
+        l_p_lost_fr = tkinter.Label(f_pressures, text="Front right",
+                                    bg="Black", fg="White", font=self.font,
+                                    width=12)
+        l_p_lost_fr_var = tkinter.Label(f_pressures,
+                                        textvariable=self.p_lost_fr,
+                                        bg="Black", fg="White", width=9,
+                                        font=self.font)
+        l_p_lost_fr.grid(row=1, column=3)
+        l_p_lost_fr_var.grid(row=1, column=4, pady=1)
+
+        self.p_lost_rl = tkinter.DoubleVar()
+        l_p_lost_rl = tkinter.Label(f_pressures, text="Rear left",
+                                    bg="Black", fg="White", font=self.font,
+                                    width=12)
+        l_p_lost_rl_var = tkinter.Label(f_pressures,
+                                        textvariable=self.p_lost_rl,
+                                        bg="Black", fg="White", width=9,
+                                        font=self.font)
+        l_p_lost_rl.grid(row=1, column=5)
+        l_p_lost_rl_var.grid(row=1, column=6, pady=1)
+
+        self.p_lost_rr = tkinter.DoubleVar()
+        l_p_lost_rr = tkinter.Label(f_pressures, text="Rear right",
+                                    bg="Black", fg="White", font=self.font,
+                                    width=12)
+        l_p_lost_rr_var = tkinter.Label(f_pressures,
+                                        textvariable=self.p_lost_rr,
+                                        bg="Black", fg="White", width=9,
+                                        font=self.font)
+        l_p_lost_rr.grid(row=1, column=7)
+        l_p_lost_rr_var.grid(row=1, column=8, pady=1)
+
         self.figure = Figure(figsize=(10, 5), dpi=100)
         self.pressure = self.figure.add_subplot(111)
         self._set_graph_info()
@@ -93,21 +142,53 @@ class TyreGraph(tkinter.Frame):
         if lap != self.current_lap:
 
             if len(self.pressures_fl) != 0:
-                self.fl_var.set(f"{avg(self.pressures_fl):.2f} PSI")
-                self.fr_var.set(f"{avg(self.pressures_fr):.2f} PSI")
-                self.rl_var.set(f"{avg(self.pressures_rl):.2f} PSI")
-                self.rr_var.set(f"{avg(self.pressures_rr):.2f} PSI")
+                self.fl_var.set(f"{avg(self.pressures_fl):.2f}")
+                self.fr_var.set(f"{avg(self.pressures_fr):.2f}")
+                self.rl_var.set(f"{avg(self.pressures_rl):.2f}")
+                self.rr_var.set(f"{avg(self.pressures_rr):.2f}")
 
             self._reset_data()
             self.current_lap = lap
 
         else:
+            self._check_pressure_loss(pressure)
+
             self.pressures_fl.append(pressure[0])
             self.pressures_fr.append(pressure[1])
             self.pressures_rl.append(pressure[2])
             self.pressures_rr.append(pressure[3])
 
         self._draw_plot()
+
+    def _check_pressure_loss(self, pressures: List[float]) -> None:
+
+        if len(self.pressures_fl) == 0:
+            return
+
+        delta = 0.05
+
+        diff_lf = self.pressures_fl[-1] - pressures[0]
+        if diff_lf > delta:
+            self.p_lost_fl.set(f"{self.p_lost_fl.get() + diff_lf:.2f}")
+
+        diff_lf = self.pressures_fr[-1] - pressures[1]
+        if diff_lf > delta:
+            self.p_lost_fr.set(f"{self.p_lost_fr.get() + diff_lf:.2f}")
+
+        diff_lf = self.pressures_rl[-1] - pressures[2]
+        if diff_lf > delta:
+            self.p_lost_rl.set(f"{self.p_lost_rl.get() + diff_lf:.2f}")
+
+        diff_lf = self.pressures_rr[-1] - pressures[3]
+        if diff_lf > delta:
+            self.p_lost_rr.set(f"{self.p_lost_rr.get() + diff_lf:.2f}")
+
+    def reset_pressure_loss(self) -> None:
+
+        self.p_lost_fl.set(0)
+        self.p_lost_fr.set(0)
+        self.p_lost_rl.set(0)
+        self.p_lost_rr.set(0)
 
     def _draw_plot(self) -> None:
 

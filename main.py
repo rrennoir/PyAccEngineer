@@ -180,6 +180,8 @@ class App(tkinter.Tk):
     def __init__(self) -> None:
 
         tkinter.Tk.__init__(self)
+
+        self.font = ("Helvetica", 13)
         self.title(f"PyAccEngineer {_VERSION_}")
         self.config(bg="Grey")
         self.resizable(False, False)
