@@ -260,20 +260,32 @@ class StrategyUI(tkinter.Frame):
 
     def change_pressure_fl(self, change) -> None:
 
+        if self.tyres is None:
+            return
+
         self.tyres[0] = clamp(self.tyres[0] + change, 20.3, 35.0)
         self.front_left_text.set(f"{self.tyres[0]:.1f}")
 
     def change_pressure_fr(self, change) -> None:
+
+        if self.tyres is None:
+            return
 
         self.tyres[1] = clamp(self.tyres[1] + change, 20.3, 35.0)
         self.front_right_text.set(f"{self.tyres[1]:.1f}")
 
     def change_pressure_rl(self, change) -> None:
 
+        if self.tyres is None:
+            return
+
         self.tyres[2] = clamp(self.tyres[2] + change, 20.3, 35.0)
         self.rear_left_text.set(f"{self.tyres[2]:.1f}")
 
     def change_pressure_rr(self, change) -> None:
+
+        if self.tyres is None:
+            return
 
         self.tyres[3] = clamp(self.tyres[3] + change, 20.3, 35.0)
         self.rear_right_text.set(f"{self.tyres[3]:.1f}")
