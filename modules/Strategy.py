@@ -87,7 +87,7 @@ class StrategyUI(tkinter.Frame):
         self.max_static_fuel = 120
 
         f_settings = tkinter.Frame(self, bd=2, relief=tkinter.RIDGE,
-                                   padx=8, pady=30, bg="Black")
+                                   padx=8, pady=45, bg="Black")
 
         app_row = 0
 

@@ -221,6 +221,8 @@ class Telemetry:
     driver: str
     lap: int
     fuel: float
+    fuel_per_lap: float
+    fuel_estimated_laps: float
     tyre_pressure: Wheels
     tyre_temp: Wheels
     brake_temp: Wheels
@@ -236,9 +238,11 @@ class Telemetry:
 
         buffer = [
             struct.pack("!B", driver_lenght),
-            struct.pack(f"!{driver_lenght}s", self.driver.encode("utf-8")),
+            self.driver.encode("utf-8"),
             struct.pack("!i", self.lap),
             struct.pack("!f", self.fuel),
+            struct.pack("!f", self.fuel_per_lap),
+            struct.pack("!f", self.fuel_estimated_laps),
             struct.pack("!4f", *astuple(self.tyre_pressure)),
             struct.pack("!4f", *astuple(self.tyre_temp)),
             struct.pack("!4f", *astuple(self.brake_temp)),
@@ -256,12 +260,12 @@ class Telemetry:
 
         lenght = data[0]
 
-        if len(data[1:]) > (100 + lenght):
+        if len(data[1:]) > (108 + lenght):
             psize = len(data[1:])
             print(f"Telemetry: Warning got packet of {psize} bytes")
-            data = data[:(101 + lenght)]
+            data = data[:(109 + lenght)]
 
-        raw_data = struct.unpack(f"!{lenght}s i 21f 3i", data[1:])
+        raw_data = struct.unpack(f"!{lenght}s i 23f 3i", data[1:])
 
         name = raw_data[0].decode("utf-8")
         rest = raw_data[1:]
@@ -270,14 +274,16 @@ class Telemetry:
             name,
             rest[0],
             rest[1],
-            Wheels(*rest[2:6]),
-            Wheels(*rest[6:10]),
-            Wheels(*rest[10:14]),
-            Wheels(*rest[14:18]),
-            Wheels(*rest[18:22]),
-            rest[22],
-            rest[23],
+            rest[2],
+            rest[3],
+            Wheels(*rest[4:8]),
+            Wheels(*rest[8:12]),
+            Wheels(*rest[12:16]),
+            Wheels(*rest[16:20]),
+            Wheels(*rest[20:24]),
             rest[24],
+            rest[25],
+            rest[26],
         )
 
 
@@ -289,28 +295,23 @@ class TelemetryUI(tkinter.Frame):
 
         self.telemetry: Optional[Telemetry] = None
 
-        f_info = tkinter.Frame(self, bg="Black")
-        f_info.grid(row=0, column=0)
+        f_info = tkinter.Frame(self, bg="Grey")
+        f_info.grid(row=0, column=0, padx=1, pady=1)
+
+        f_info2 = tkinter.Frame(self, bg="Grey")
+        f_info2.grid(row=1, column=0, padx=1, pady=1)
 
         self.current_driver = None
         self.driver_swap = False
-
-        # Fuel
-        self.fuel_var = tkinter.DoubleVar()
-        l_fuel = tkinter.Label(f_info, text="Fuel: ", bg="Black", fg="White")
-        l_fuel_var = tkinter.Label(f_info, textvariable=self.fuel_var,
-                                   bg="Black", fg="White")
-        l_fuel.pack(side=tkinter.LEFT)
-        l_fuel_var.pack(side=tkinter.LEFT)
 
         # Lap time
         self.lap_time_var = tkinter.StringVar(value="00:00.000")
         l_lap_time = tkinter.Label(f_info, text="Lap time: ",
                                    bg="Black", fg="White")
         l_lap_time_var = tkinter.Label(f_info, textvariable=self.lap_time_var,
-                                       bg="Black", fg="White")
-        l_lap_time.pack(side=tkinter.LEFT)
-        l_lap_time_var.pack(side=tkinter.LEFT)
+                                       bg="Black", fg="White", width=10)
+        l_lap_time.grid(row=0, column=0, padx=1, pady=1)
+        l_lap_time_var.grid(row=0, column=1, padx=1, pady=1)
 
         # best time
         self.best_time_var = tkinter.StringVar(value="00:00.000")
@@ -318,9 +319,9 @@ class TelemetryUI(tkinter.Frame):
                                     bg="Black", fg="White")
         l_best_time_var = tkinter.Label(f_info,
                                         textvariable=self.best_time_var,
-                                        bg="Black", fg="White")
-        l_best_time.pack(side=tkinter.LEFT)
-        l_best_time_var.pack(side=tkinter.LEFT)
+                                        bg="Black", fg="White", width=10)
+        l_best_time.grid(row=0, column=2, padx=1, pady=1)
+        l_best_time_var.grid(row=0, column=3, padx=1, pady=1)
 
         # Previous time
         self.prev_time_var = tkinter.StringVar(value="00:00.000")
@@ -328,12 +329,48 @@ class TelemetryUI(tkinter.Frame):
                                     bg="Black", fg="White")
         l_prev_time_var = tkinter.Label(f_info,
                                         textvariable=self.prev_time_var,
+                                        bg="Black", fg="White", width=10)
+        l_prev_time.grid(row=0, column=4, padx=1, pady=1)
+        l_prev_time_var.grid(row=0, column=5, padx=1, pady=1)
+
+        # Lap
+        self.lap_var = tkinter.IntVar()
+        l_lap = tkinter.Label(f_info2, text="Lap: ", bg="Black", fg="White")
+        l_lap_var = tkinter.Label(f_info2, textvariable=self.lap_var,
+                                  bg="Black", fg="White", width=5)
+        l_lap.grid(row=0, column=0, padx=1, pady=1)
+        l_lap_var.grid(row=0, column=1, padx=1, pady=1)
+
+        # Fuel
+        self.fuel_var = tkinter.DoubleVar()
+        l_fuel = tkinter.Label(f_info2, text="Fuel: ", bg="Black", fg="White")
+        l_fuel_var = tkinter.Label(f_info2, textvariable=self.fuel_var,
+                                   bg="Black", fg="White", width=5)
+        l_fuel.grid(row=0, column=2, padx=1, pady=1)
+        l_fuel_var.grid(row=0, column=3, padx=1, pady=1)
+
+        # Fuel per lap
+        self.fuel_per_lap_var = tkinter.DoubleVar()
+        l_fuel_per_lap = tkinter.Label(f_info2, text="Fuel per lap: ",
+                                       bg="Black", fg="White")
+        l_fuel_per_lap_var = tkinter.Label(f_info2,
+                                           textvariable=self.fuel_per_lap_var,
+                                           bg="Black", fg="White", width=5)
+        l_fuel_per_lap.grid(row=0, column=4, padx=1, pady=1)
+        l_fuel_per_lap_var.grid(row=0, column=5, padx=1, pady=1)
+
+        # Lap left
+        self.fuel_lap_left_var = tkinter.DoubleVar()
+        l_fuel_lap_left = tkinter.Label(f_info2, text="Lap left with fuel: ",
                                         bg="Black", fg="White")
-        l_prev_time.pack(side=tkinter.LEFT)
-        l_prev_time_var.pack(side=tkinter.LEFT)
+        l_fuel_lap_left_var = tkinter.Label(
+            f_info2, textvariable=self.fuel_lap_left_var,
+            bg="Black", fg="White", width=5)
+        l_fuel_lap_left.grid(row=0, column=6, padx=1, pady=1)
+        l_fuel_lap_left_var.grid(row=0, column=7, padx=1, pady=1)
 
         tyre_frame = tkinter.Frame(self, bg="Black")
-        tyre_frame.grid(row=1, column=0)
+        tyre_frame.grid(row=2, column=0)
 
         self.front_left = TyreInfo(tyre_frame, "FL", False)
         self.front_left.grid(row=0, column=0, padx=10, pady=10)
@@ -351,7 +388,11 @@ class TelemetryUI(tkinter.Frame):
 
         if self.telemetry is not None:
 
+            self.lap_var.set(self.telemetry.lap)
             self.fuel_var.set(f"{self.telemetry.fuel:.1f}")
+            self.fuel_per_lap_var.set(f"{self.telemetry.fuel_per_lap:.2f}")
+            self.fuel_lap_left_var.set(
+                f"{self.telemetry.fuel_estimated_laps:.1f}")
 
             pressure = astuple(self.telemetry.tyre_pressure)
             tyre_temp = astuple(self.telemetry.tyre_temp)

@@ -20,7 +20,7 @@ from modules.Telemetry import Telemetry, TelemetryUI
 from modules.Users import UserUI
 
 
-_VERSION_ = "1.2.2"
+_VERSION_ = "1.2.3"
 
 
 class ConnectionWindow(tkinter.Toplevel):
@@ -316,6 +316,8 @@ class App(tkinter.Tk):
                 driver,
                 asm_data.Graphics.completed_lap,
                 asm_data.Physics.fuel,
+                asm_data.Graphics.fuel_per_lap,
+                asm_data.Graphics.fuel_estimated_laps,
                 asm_data.Physics.wheel_pressure,
                 asm_data.Physics.tyre_core_temp,
                 asm_data.Physics.brake_temp,
