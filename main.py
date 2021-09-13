@@ -269,6 +269,9 @@ class App(tkinter.Tk):
                 tyre_pressure = astuple(telemetry.tyre_pressure)
                 self.tyre_graph.update_data(tyre_pressure, telemetry.lap)
 
+                if telemetry.in_pit:
+                    self.tyre_graph.reset_pressure_loss()
+
             elif event_type == NetworkQueue.UpdateUsers:
 
                 user_update = self.client_queue_out.get()
@@ -325,7 +328,8 @@ class App(tkinter.Tk):
                 asm_data.Physics.disc_life,
                 asm_data.Graphics.current_time,
                 asm_data.Graphics.best_time,
-                asm_data.Graphics.last_time
+                asm_data.Graphics.last_time,
+                asm_data.Graphics.is_in_pit
             )
 
             self.client_queue_in.put(NetworkQueue.Telemetry)

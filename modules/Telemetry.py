@@ -231,6 +231,7 @@ class Telemetry:
     lap_time: int
     best_time: int
     previous_time: int
+    in_pit: bool
 
     def to_bytes(self) -> bytes:
 
@@ -250,7 +251,8 @@ class Telemetry:
             struct.pack("!4f", *astuple(self.disc_wear)),
             struct.pack("!i", self.lap_time),
             struct.pack("!i", self.best_time),
-            struct.pack("!i", self.previous_time)
+            struct.pack("!i", self.previous_time),
+            struct.pack("!?", self.in_pit)
         ]
 
         return b"".join(buffer)
@@ -260,12 +262,12 @@ class Telemetry:
 
         lenght = data[0]
 
-        if len(data[1:]) > (108 + lenght):
+        if len(data[1:]) > (109 + lenght):
             psize = len(data[1:])
             print(f"Telemetry: Warning got packet of {psize} bytes")
-            data = data[:(109 + lenght)]
+            data = data[:(110 + lenght)]
 
-        raw_data = struct.unpack(f"!{lenght}s i 23f 3i", data[1:])
+        raw_data = struct.unpack(f"!{lenght}s i 23f 3i ?", data[1:])
 
         name = raw_data[0].decode("utf-8")
         rest = raw_data[1:]
@@ -284,6 +286,7 @@ class Telemetry:
             rest[24],
             rest[25],
             rest[26],
+            rest[27],
         )
 
 
