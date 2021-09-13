@@ -8,19 +8,18 @@ import time
 import tkinter
 from dataclasses import astuple
 from functools import partial
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 from typing import Tuple
 
 from modules.Client import ClientInstance
 from modules.Common import CarInfo, NetworkQueue, PitStop
-from modules.TyreGraph import TyreGraph
 from modules.Server import ServerInstance
 from modules.Strategy import StrategyUI
 from modules.Telemetry import Telemetry, TelemetryUI
+from modules.TyreGraph import TyreGraph
 from modules.Users import UserUI
 
-
-_VERSION_ = "1.2.3"
+_VERSION_ = "1.3.0"
 
 
 class ConnectionWindow(tkinter.Toplevel):
@@ -182,6 +181,10 @@ class App(tkinter.Tk):
         tkinter.Tk.__init__(self)
 
         self.font = ("Helvetica", 13)
+
+        s = ttk.Style()
+        s.configure('TNotebook.Tab', font=self.font)
+
         self.title(f"PyAccEngineer {_VERSION_}")
         self.config(bg="Grey")
         self.resizable(False, False)
@@ -208,17 +211,24 @@ class App(tkinter.Tk):
 
         self.config(menu=self.menu_bar)
 
-        self.strategy_ui = StrategyUI(self)
-        self.strategy_ui.grid(row=1, column=0)
+        tab_control = ttk.Notebook(self)
+        tab_control.grid(row=1, column=0, pady=3)
 
-        self.telemetry_ui = TelemetryUI(self)
-        self.telemetry_ui.grid(row=1, column=1)
+        self.user_ui = UserUI(self, self.font)
+        self.user_ui.grid(row=0, column=0)
 
-        self.user_ui = UserUI(self)
-        self.user_ui.grid(row=0, column=0, columnspan=2)
+        self.strategy_ui = StrategyUI(tab_control, self.font)
+        self.strategy_ui.pack(fill=tkinter.BOTH, expand=1)
 
-        self.tyre_graph = TyreGraph(self)
-        self.tyre_graph.grid(row=2, column=0, columnspan=2, pady=2)
+        self.telemetry_ui = TelemetryUI(tab_control, self.font)
+        self.telemetry_ui.pack(fill=tkinter.BOTH, expand=1)
+
+        self.tyre_graph = TyreGraph(tab_control, self.font)
+        self.tyre_graph.pack(fill=tkinter.BOTH, expand=1)
+
+        tab_control.add(self.strategy_ui, text="Strategy")
+        tab_control.add(self.telemetry_ui, text="Telemetry")
+        tab_control.add(self.tyre_graph, text="Pressures")
 
         self.last_time = time.time()
         self.min_delta = 0.5

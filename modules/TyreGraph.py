@@ -26,56 +26,57 @@ class TyreGraph(tkinter.Frame):
         self.pressures_rr = []
 
         self.current_lap = 0
-        self.font = ("Helvetica", 13)
+        self.font = font
 
-        f_lap_avg = tkinter.Frame(self, bg="Grey", pady=2)
-        f_lap_avg.pack(side=tkinter.TOP)
+        f_pressures = tkinter.Frame(self, bg="Grey", pady=2)
+        f_pressures.pack(side=tkinter.TOP)
 
-        title = tkinter.Label(f_lap_avg, text="Last lap average",
+        title = tkinter.Label(f_pressures, text="Last lap average",
                               bg="Black", fg="White", width=17)
         title.config(font=self.font)
         title.grid(row=0, column=0, padx=2)
 
-        l_front_left = tkinter.Label(f_lap_avg, text="Front left",
+        l_front_left = tkinter.Label(f_pressures, text="Front left",
                                      bg="Black", fg="White", width=12)
         l_front_left.config(font=self.font)
         l_front_left.grid(row=0, column=1, padx=2)
 
-        self.fl_var = tkinter.StringVar(value="0.0 PSI")
-        l_front_left_var = tkinter.Label(f_lap_avg,  textvariable=self.fl_var,
+        self.fl_var = tkinter.StringVar(value="0.0")
+        l_front_left_var = tkinter.Label(f_pressures, textvariable=self.fl_var,
                                          width=9, bg="Black", fg="White")
         l_front_left_var.config(font=self.font)
         l_front_left_var.grid(row=0, column=2, padx=2)
 
-        l_front_right = tkinter.Label(f_lap_avg, text="Front right",
+        l_front_right = tkinter.Label(f_pressures, text="Front right",
                                       bg="Black", fg="White", width=12)
         l_front_right.config(font=self.font)
         l_front_right.grid(row=0, column=3, padx=2)
 
-        self.fr_var = tkinter.StringVar(value="0.0 PSI")
-        l_front_right_var = tkinter.Label(f_lap_avg,  textvariable=self.fr_var,
+        self.fr_var = tkinter.StringVar(value="0.0")
+        l_front_right_var = tkinter.Label(f_pressures,
+                                          textvariable=self.fr_var,
                                           width=9, bg="Black", fg="White")
         l_front_right_var.config(font=self.font)
         l_front_right_var.grid(row=0, column=4, padx=2)
 
-        l_rear_left = tkinter.Label(f_lap_avg, text="Rear left",
+        l_rear_left = tkinter.Label(f_pressures, text="Rear left",
                                     bg="Black", fg="White", width=12)
         l_rear_left.config(font=self.font)
         l_rear_left.grid(row=0, column=5, padx=2)
 
-        self.rl_var = tkinter.StringVar(value="0.0 PSI")
-        l_rear_left_var = tkinter.Label(f_lap_avg,  textvariable=self.rl_var,
+        self.rl_var = tkinter.StringVar(value="0.0")
+        l_rear_left_var = tkinter.Label(f_pressures,  textvariable=self.rl_var,
                                         width=9, bg="Black", fg="White")
         l_rear_left_var.config(font=self.font)
         l_rear_left_var.grid(row=0, column=6, padx=2)
 
-        l_rear_right = tkinter.Label(f_lap_avg, text="Rear right",
+        l_rear_right = tkinter.Label(f_pressures, text="Rear right",
                                      bg="Black", fg="White", width=12)
         l_rear_right.config(font=self.font)
         l_rear_right.grid(row=0, column=7, padx=2)
 
-        self.rr_var = tkinter.StringVar(value="0.0 PSI")
-        l_rear_right_var = tkinter.Label(f_lap_avg, textvariable=self.rr_var,
+        self.rr_var = tkinter.StringVar(value="0.0")
+        l_rear_right_var = tkinter.Label(f_pressures, textvariable=self.rr_var,
                                          width=9, bg="Black", fg="White")
         l_rear_right_var.config(font=self.font)
         l_rear_right_var.grid(row=0, column=8, padx=2)

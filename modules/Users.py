@@ -4,13 +4,13 @@ from collections import namedtuple
 
 class UserUI(tkinter.Frame):
 
-    def __init__(self, root):
+    def __init__(self, root, font):
 
         tkinter.Frame.__init__(self, master=root)
         self.user_list = []
 
         self.active_user = None
-        self.font = ("Helvetica", 13)
+        self.font = font
 
         f_background = tkinter.Frame(self, background="Grey")
         column_count = 0
