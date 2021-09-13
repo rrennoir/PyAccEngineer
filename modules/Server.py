@@ -227,6 +227,9 @@ class ServerInstance:
         except ConnectionResetError as msg:
             print(f"SERVER: {msg}")
 
+        except BrokenPipeError as msg:
+            print(f"SERVER: {msg}")
+
     def disconnect(self) -> None:
 
         print("SERVER: Shutdown")

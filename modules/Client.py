@@ -116,6 +116,16 @@ class ClientInstance:
             self._error = msg
             return False
 
+        except ConnectionResetError as msg:
+            print(f"CLIENT: {msg}")
+            self._error = msg
+            return False
+
+        except BrokenPipeError as msg:
+            print(f"CLIENT: {msg}")
+            self._error = msg
+            return False
+
     def _network_listener(self) -> None:
 
         data = None
@@ -181,18 +191,18 @@ class ClientInstance:
             if item_type == NetworkQueue.CarInfoData:
 
                 info: bytes = self._in_queue.get()
-                self._socket.send(PacketType.SmData.to_bytes() + info)
+                self._send_data(PacketType.SmData.to_bytes() + info)
 
             elif item_type == NetworkQueue.StrategySet:
 
                 strategy: bytes = self._in_queue.get()
-                buffer = PacketType.Strategy.to_bytes() + strategy
-                self._socket.send(buffer)
+                self._send_data(PacketType.Strategy.to_bytes() + strategy)
 
             elif item_type == NetworkQueue.StrategyDone:
-                self._socket.send(PacketType.StrategyOK.to_bytes())
+
+                self._send_data(PacketType.StrategyOK.to_bytes())
 
             elif item_type == NetworkQueue.Telemetry:
 
                 telemetry = self._in_queue.get()
-                self._socket.send(PacketType.Telemetry.to_bytes() + telemetry)
+                self._send_data(PacketType.Telemetry.to_bytes() + telemetry)
