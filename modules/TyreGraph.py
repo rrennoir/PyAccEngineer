@@ -159,7 +159,8 @@ class TyreGraph(tkinter.Frame):
             self.pressures_rl.append(pressure[2])
             self.pressures_rr.append(pressure[3])
 
-        self._draw_plot()
+        if len(self.pressures_fl) % 2 == 0:
+            self._draw_plot()
 
     def _check_pressure_loss(self, pressures: List[float]) -> None:
 
