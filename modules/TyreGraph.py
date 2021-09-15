@@ -1,5 +1,6 @@
-import tkinter
 import copy
+import pathlib
+import tkinter
 from dataclasses import astuple
 from tkinter import ttk
 from typing import List
@@ -450,7 +451,8 @@ class PrevLapsGraph(tkinter.Frame):
         if self.lap_selector.get() == "":
             return
 
-        self.figure.savefig("./test.png")
+        if pathlib.path.isdir("./Pressure_Graph"):
+            self.figure.savefig("./Pressure_Graph/test.png")
 
     def close(self) -> None:
 

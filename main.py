@@ -19,7 +19,7 @@ from modules.Telemetry import Telemetry, TelemetryUI
 from modules.TyreGraph import PrevLapsGraph, TyreGraph
 from modules.Users import UserUI
 
-_VERSION_ = "1.3.1"
+_VERSION_ = "1.4.0"
 
 
 class ConnectionWindow(tkinter.Toplevel):
@@ -197,7 +197,8 @@ class App(tkinter.Tk):
         self.iconbitmap("./Assets/Icon/techSupport.ico")
 
         s = ttk.Style()
-        s.configure('.', font=self.font, background="Black", foreground="White")
+        s.configure('.', font=self.font, background="Black",
+                    foreground="White")
         s.configure('TNotebook.Tab', font=self.font, foreground="Black")
         s.configure('TButton', font=self.font, foreground="White")
         s.configure('TCombobox', foreground="Black")
