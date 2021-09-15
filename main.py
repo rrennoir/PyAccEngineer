@@ -204,6 +204,7 @@ class App(tkinter.Tk):
         self.resizable(False, False)
 
         self.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.c_loop_id = None
 
         # Networking
         self.server = None
@@ -376,7 +377,7 @@ class App(tkinter.Tk):
             self.client_queue_in.put(NetworkQueue.StrategyDone)
             self.strategy_ui.strategy_ok = False
 
-        self.after(10, self.client_loop)
+        self.c_loop_id = self.after(10, self.client_loop)
 
     def open_connection_window(self, as_server: bool = False) -> None:
 
@@ -442,7 +443,12 @@ class App(tkinter.Tk):
 
     def on_close(self) -> None:
 
+        self.after_cancel(self.c_loop_id)
+        self.strategy_ui.close()
+        self.tyre_graph.close()
+
         self.disconnect()
+
         self.destroy()
 
 

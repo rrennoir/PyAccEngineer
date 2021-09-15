@@ -77,6 +77,8 @@ class StrategyUI(tkinter.Frame):
         self.asm = accSharedMemory(refresh=60)
         self.asm.start()
 
+        self.check_reply_id = None
+
         self.server_data: CarInfo = None
         self.strategy = None
         self.strategy_ok = False
@@ -227,7 +229,7 @@ class StrategyUI(tkinter.Frame):
         elif self.strat_setter.data_requested():
             self.data_queue.put(self.asm.get_data())
 
-        self.after(60, self.check_reply)
+        self.check_reply_id = self.after(60, self.check_reply)
 
     def update_values(self) -> None:
 
@@ -252,6 +254,7 @@ class StrategyUI(tkinter.Frame):
 
         self.strat_setter.stop()
         self.asm.stop()
+        self.after_cancel(self.check_reply_id)
 
     def set_strategy(self) -> None:
 
