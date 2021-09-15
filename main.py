@@ -190,6 +190,7 @@ class App(tkinter.Tk):
 
             self.font = self.font = ("Segoe UI", 11)
 
+        self.iconbitmap("./Assets/Icon/techSupport.ico")
 
         s = ttk.Style()
         s.configure('TNotebook.Tab', font=self.font)
