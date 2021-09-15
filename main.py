@@ -197,7 +197,10 @@ class App(tkinter.Tk):
         self.iconbitmap("./Assets/Icon/techSupport.ico")
 
         s = ttk.Style()
-        s.configure('TNotebook.Tab', font=self.font)
+        s.configure('.', font=self.font, background="Black", foreground="White")
+        s.configure('TNotebook.Tab', font=self.font, foreground="Black")
+        s.configure('TButton', font=self.font, foreground="White")
+        s.configure('TCombobox', foreground="Black")
 
         self.title(f"PyAccEngineer {_VERSION_}")
         self.config(bg="Grey")
