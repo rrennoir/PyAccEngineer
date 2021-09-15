@@ -1,6 +1,7 @@
 import tkinter
 import copy
 from dataclasses import astuple
+from tkinter import ttk
 from typing import List
 
 import matplotlib
@@ -174,6 +175,10 @@ class TyreGraph(tkinter.Frame):
         if len(self.pressures_fl) == 0:
             return
 
+        if len(self.data_point) != len(self.pressures_fl):
+            print("update incomplet")
+            return
+
         self.plot_line_fl.set_data(self.data_point, self.pressures_fl)
         self.plot_line_fr.set_data(self.data_point, self.pressures_fr)
         self.plot_line_rl.set_data(self.data_point, self.pressures_rl)
@@ -332,3 +337,149 @@ class TyreGraph(tkinter.Frame):
         canvas.get_tk_widget().pack(side=tkinter.BOTTOM)
         self.ani = animation.FuncAnimation(self.figure, self._animate,
                                            interval=500, blit=False)
+
+
+class PrevLapsGraph(tkinter.Frame):
+
+    def __init__(self, root, font: tuple, config: dict) -> None:
+
+        tkinter.Frame.__init__(self, master=root, background="Black")
+
+        self.laps = copy.copy(TyreGraph.previous_laps)
+
+        self.app_config = config
+
+        self._update_list_id = None
+
+        self.figure = pyplot.figure(figsize=(9, 5), dpi=100)
+        self.graph = self.figure.add_subplot(1, 1, 1)
+
+        f_lap_select = ttk.Frame(self)
+        f_lap_select.grid(row=0, column=0)
+
+        l_lap = ttk.Label(f_lap_select, text="Lap", width=6)
+        l_lap.grid(row=0, column=0)
+
+        self.lap_selector = ttk.Combobox(f_lap_select, values=[""],
+                                         state="readonly")
+        self.lap_selector.bind("<<ComboboxSelected>>", self._plot)
+
+        self.lap_selector.grid(row=0, column=1)
+
+        self.b_save = ttk.Button(self, text="Save graph", state="disabled",
+                                 command=self._save_graph)
+        self.b_save.grid(row=0, column=1)
+
+        self.canvas = FigureCanvasTkAgg(self.figure, self)
+        self.canvas.get_tk_widget().grid(row=1, column=0, columnspan=2)
+
+        self.graph.set_title(f"Pressures over time for lap None")
+        self.graph.set_xlabel("Time (Seconds)")
+        self.graph.set_ylabel("Pressures (PSI)")
+        self.graph.legend()
+
+        self._update_list_id = self.after(1000, self._update_list)
+
+    def _update_list(self) -> None:
+
+        laps = TyreGraph.previous_laps
+
+        if self.laps != laps:
+
+            print(self.b_save.state())
+
+            if self.b_save.instate("disabled"):
+                self.b_save.state("normal")
+
+            laps_key = list(laps.keys())
+
+            for key in laps_key:
+                if key not in self.lap_selector["values"]:
+                    self.lap_selector["values"] = (
+                        *self.lap_selector["values"], key)
+
+            self.laps = copy.copy(laps)
+
+        self._update_list_id = self.after(1000, self._update_list)
+
+    def _plot(self, _) -> None:
+
+        key = self.lap_selector.get()
+
+        if key == "":
+            return
+
+        lap_data = self.laps[key]
+
+        print(f"ploting for {key}")
+
+        data_point = [i * self.app_config["saved_graph_step"]
+                      for i in range(len(lap_data["front left"]))]
+
+        self.graph.clear()
+
+        self.graph.plot(data_point, lap_data["front left"],
+                        label="Front left")
+        self.graph.plot(data_point, lap_data["front right"],
+                        label="Front right")
+        self.graph.plot(data_point, lap_data["rear left"],
+                        label="Rear left")
+        self.graph.plot(data_point, lap_data["rear right"],
+                        label="Rear right")
+
+        min_all = self._find_lowest_pressure()
+        max_all = self._find_higest_pressure()
+
+        self.graph.set_ylim(min_all - 0.2, max_all + 0.2)
+
+        if len(data_point) == 1:
+            self.graph.set_xlim(0, 1)
+
+        else:
+            self.graph.set_xlim(0, data_point[-1])
+
+        self.graph.set_title(f"Pressures over time for lap {key}")
+        self.graph.set_xlabel("Time (Seconds)")
+        self.graph.set_ylabel("Pressures (PSI)")
+        self.graph.legend()
+
+        self.canvas.draw()
+
+    def _save_graph(self) -> None:
+
+        if self.lap_selector.get() == "":
+            return
+
+        self.figure.savefig("./test.png")
+
+    def close(self) -> None:
+
+        self.after_cancel(self._update_list_id)
+
+    def _find_higest_pressure(self) -> None:
+
+        key = self.lap_selector.get()
+
+        fl_max = max(self.laps[key]["front left"])
+        fr_max = max(self.laps[key]["front right"])
+        rl_max = max(self.laps[key]["rear left"])
+        rr_max = max(self.laps[key]["rear right"])
+
+        max_font = max(fl_max, fr_max)
+        max_rear = max(rl_max, rr_max)
+
+        return max(max_font, max_rear)
+
+    def _find_lowest_pressure(self) -> None:
+
+        key = self.lap_selector.get()
+
+        fl_min = min(self.laps[key]["front left"])
+        fr_min = min(self.laps[key]["front right"])
+        rl_min = min(self.laps[key]["rear left"])
+        rr_min = min(self.laps[key]["rear right"])
+
+        min_font = min(fl_min, fr_min)
+        min_rear = min(rl_min, rr_min)
+
+        return min(min_font, min_rear)

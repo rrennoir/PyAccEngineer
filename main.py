@@ -16,7 +16,7 @@ from modules.Common import CarInfo, NetworkQueue, PitStop
 from modules.Server import ServerInstance
 from modules.Strategy import StrategyUI
 from modules.Telemetry import Telemetry, TelemetryUI
-from modules.TyreGraph import TyreGraph
+from modules.TyreGraph import PrevLapsGraph, TyreGraph
 from modules.Users import UserUI
 
 _VERSION_ = "1.3.1"
@@ -246,9 +246,13 @@ class App(tkinter.Tk):
         self.tyre_graph = TyreGraph(tab_control, self.font, gui_config)
         self.tyre_graph.pack(fill=tkinter.BOTH, expand=1)
 
+        self.prev_lap_graph = PrevLapsGraph(tab_control, self.font, gui_config)
+        self.prev_lap_graph.pack(fill=tkinter.BOTH, expand=1)
+
         tab_control.add(self.strategy_ui, text="Strategy")
         tab_control.add(self.telemetry_ui, text="Telemetry")
         tab_control.add(self.tyre_graph, text="Pressures")
+        tab_control.add(self.prev_lap_graph, text="Previous Laps")
 
         self.last_time = time.time()
         self.min_delta = 0.5
@@ -445,6 +449,7 @@ class App(tkinter.Tk):
         self.after_cancel(self.c_loop_id)
         self.strategy_ui.close()
         self.tyre_graph.close()
+        self.prev_lap_graph.close()
 
         self.disconnect()
 
