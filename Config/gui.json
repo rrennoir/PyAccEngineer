@@ -8,5 +8,6 @@
         "rear_left": "#592F93",
         "rear_right": "#FEF102"
     },
+    "live_graph_inverval": 1,
     "saved_graph_step": 5
 }

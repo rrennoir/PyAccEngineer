@@ -379,7 +379,8 @@ class PrevLapsGraph(tkinter.Frame):
         self.graph.set_ylabel("Pressures (PSI)")
         self.graph.legend()
 
-        self._update_list_id = self.after(1000, self._update_list)
+        self._update_list_id = self.after(
+            self.app_config["live_graph_inverval"] * 1000, self._update_list)
 
     def _update_list(self) -> None:
 
@@ -401,7 +402,8 @@ class PrevLapsGraph(tkinter.Frame):
 
             self.laps = copy.copy(laps)
 
-        self._update_list_id = self.after(1000, self._update_list)
+        self._update_list_id = self.after(
+            self.app_config["live_graph_inverval"] * 1000, self._update_list)
 
     def _plot(self, _) -> None:
 
