@@ -18,7 +18,7 @@ style.use("dark_background")
 
 class TyreGraph(tkinter.Frame):
 
-    def __init__(self, root, font) -> None:
+    def __init__(self, root, font: tuple, config: dict) -> None:
 
         tkinter.Frame.__init__(self, master=root)
 
@@ -32,6 +32,8 @@ class TyreGraph(tkinter.Frame):
         self.current_lap = 0
         self.font = font
 
+        self.app_config = config
+
         self.fl_var = tkinter.StringVar(value="0.0")
         self.fr_var = tkinter.StringVar(value="0.0")
         self.rl_var = tkinter.StringVar(value="0.0")
@@ -43,24 +45,32 @@ class TyreGraph(tkinter.Frame):
         self.p_lost_rr = tkinter.DoubleVar()
 
         self.figure = pyplot.figure(figsize=(9, 5), dpi=100)
-        self.pressure = self.figure.add_subplot(1, 1, 1)
+        self.graph = self.figure.add_subplot(1, 1, 1)
 
-        self.plot_line_fl,  = self.pressure.plot(
-            self.data_point, self.pressures_fl, "r", label="Front left")
+        self.plot_line_fl,  = self.graph.plot(
+            self.data_point, self.pressures_fl,
+            self.app_config["graph_colour"]["front_left"],
+            label="Front left")
 
-        self.plot_line_fr,  = self.pressure.plot(
-            self.data_point, self.pressures_fr, "g", label="Front right")
+        self.plot_line_fr,  = self.graph.plot(
+            self.data_point, self.pressures_fr,
+            self.app_config["graph_colour"]["front_right"],
+            label="Front right")
 
-        self.plot_line_rl,  = self.pressure.plot(
-            self.data_point, self.pressures_rl, "b", label="Rear left")
+        self.plot_line_rl,  = self.graph.plot(
+            self.data_point, self.pressures_rl,
+            self.app_config["graph_colour"]["rear_left"],
+            label="Rear left")
 
-        self.plot_line_rr,  = self.pressure.plot(
-            self.data_point, self.pressures_rr, "w", label="Rear right")
+        self.plot_line_rr,  = self.graph.plot(
+            self.data_point, self.pressures_rr,
+            self.app_config["graph_colour"]["rear_right"],
+            label="Rear right")
 
-        self.pressure.set_title("Pressures over time")
-        self.pressure.set_xlabel("Time (Seconds)")
-        self.pressure.set_ylabel("Pressures (PSI)")
-        self.pressure.legend()
+        self.graph.set_title("Pressures over time")
+        self.graph.set_xlabel("Time (Seconds)")
+        self.graph.set_ylabel("Pressures (PSI)")
+        self.graph.legend()
 
         self._build_UI()
 
@@ -140,13 +150,13 @@ class TyreGraph(tkinter.Frame):
         min_all = self._find_lowest_pressure()
         max_all = self._find_higest_pressure()
 
-        self.pressure.set_ylim(min_all - 0.2, max_all + 0.2)
+        self.graph.set_ylim(min_all - 0.2, max_all + 0.2)
 
         if len(self.data_point) == 1:
-            self.pressure.set_xlim(0, 1)
+            self.graph.set_xlim(0, 1)
 
         else:
-            self.pressure.set_xlim(0, self.data_point[-1])
+            self.graph.set_xlim(0, self.data_point[-1])
 
     def _find_higest_pressure(self) -> None:
 
