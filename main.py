@@ -215,13 +215,15 @@ class App(tkinter.Tk):
 
         self.menu_bar = tkinter.Menu(self)
         self.menu_bar.add_command(label="Connect",
-                                  command=self.open_connection_window)
+                                  command=self.open_connection_window,
+                                  font=self.font)
 
         self.menu_bar.add_command(label="As Server",
                                   command=partial(self.open_connection_window,
-                                                  True))
+                                                  True),  font=self.font)
         self.menu_bar.add_command(label="Disconnect",
-                                  command=self.disconnect, state="disabled")
+                                  command=self.disconnect, state="disabled",
+                                  font=self.font)
 
         self.config(menu=self.menu_bar)
 
