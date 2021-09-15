@@ -11,9 +11,9 @@ import pyautogui
 import win32com
 import win32com.client
 import win32gui
+from SharedMemory.PyAccSharedMemory import ACC_map, accSharedMemory
 
 from modules.Common import CarInfo, PitStop
-from SharedMemory.PyAccSharedMemory import ACC_map, accSharedMemory
 
 
 def clamp(number: Union[float, int],
@@ -45,7 +45,7 @@ def ACCWindowFinderCallback(hwnd: int, obj) -> bool:
 class ButtonPannel(tkinter.Frame):
 
     def __init__(self, root, var, command, step=[0.1, 0.5, 1.0],
-                 font=("Helvetica", 13)) -> None:
+                 font=("Segoe UI", 11)) -> None:
 
         tkinter.Frame.__init__(self, root, background="Black")
 
@@ -105,7 +105,7 @@ class StrategyUI(tkinter.Frame):
                                bg="Black", fg="White", font=self.font)
         l_fuel.grid(row=app_row, column=0)
         bp_fuel = ButtonPannel(f_settings, self.fuel_text,
-                               self.change_fuel, [1, 5, 10])
+                               self.change_fuel, [1, 5, 10], font=self.font)
         bp_fuel.grid(row=app_row, column=1)
         app_row += 1
 
