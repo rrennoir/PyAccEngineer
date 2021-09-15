@@ -180,7 +180,16 @@ class App(tkinter.Tk):
 
         tkinter.Tk.__init__(self)
 
-        self.font = ("Helvetica", 13)
+        try:
+            with open("./Config/gui.json", "r") as fp:
+
+                gui_config = json.load(fp)
+                self.font = (gui_config["font"], gui_config["font_size"])
+
+        except FileNotFoundError:
+
+            self.font = self.font = ("Segoe UI", 11)
+
 
         s = ttk.Style()
         s.configure('TNotebook.Tab', font=self.font)
