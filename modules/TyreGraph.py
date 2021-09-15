@@ -1,4 +1,5 @@
 import tkinter
+import copy
 from dataclasses import astuple
 from typing import List
 
@@ -17,6 +18,8 @@ style.use("dark_background")
 
 
 class TyreGraph(tkinter.Frame):
+
+    previous_laps = {}
 
     def __init__(self, root, font: tuple, config: dict) -> None:
 
@@ -85,6 +88,35 @@ class TyreGraph(tkinter.Frame):
                 self.fr_var.set(f"{avg(self.pressures_fr):.2f}")
                 self.rl_var.set(f"{avg(self.pressures_rl):.2f}")
                 self.rr_var.set(f"{avg(self.pressures_rr):.2f}")
+
+                lap_pressure = {
+                    "front left": [],
+                    "front right": [],
+                    "rear left": [],
+                    "rear right": []
+                }
+
+                for index, pressure in enumerate(self.pressures_fl):
+
+                    if index % self.app_config["saved_graph_step"] == 0:
+                        lap_pressure["front left"].append(pressure)
+
+                for index, pressure in enumerate(self.pressures_fr):
+
+                    if index % self.app_config["saved_graph_step"] == 0:
+                        lap_pressure["front right"].append(pressure)
+
+                for index, pressure in enumerate(self.pressures_rl):
+
+                    if index % self.app_config["saved_graph_step"] == 0:
+                        lap_pressure["rear left"].append(pressure)
+
+                for index, pressure in enumerate(self.pressures_rr):
+
+                    if index % self.app_config["saved_graph_step"] == 0:
+                        lap_pressure["rear right"].append(pressure)
+
+                TyreGraph.previous_laps[str(telemetry.lap)] = lap_pressure
 
             self._reset_pressures()
             self.current_lap = telemetry.lap
