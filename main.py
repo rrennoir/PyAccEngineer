@@ -19,7 +19,7 @@ from modules.Telemetry import Telemetry, TelemetryUI
 from modules.TyreGraph import TyreGraph
 from modules.Users import UserUI
 
-_VERSION_ = "1.3.0"
+_VERSION_ = "1.3.1"
 
 
 class ConnectionWindow(tkinter.Toplevel):
@@ -255,7 +255,7 @@ class App(tkinter.Tk):
         self.eval('tk::PlaceWindow . center')
         self.mainloop()
 
-        self.strategy_ui.close()
+        print("APP: Main UI shutdown")
 
     def client_loop(self) -> None:
 
@@ -295,11 +295,7 @@ class App(tkinter.Tk):
                 self.telemetry_ui.telemetry = telemetry
                 self.telemetry_ui.update_values()
 
-                tyre_pressure = astuple(telemetry.tyre_pressure)
-                self.tyre_graph.update_data(tyre_pressure, telemetry.lap)
-
-                if telemetry.in_pit:
-                    self.tyre_graph.reset_pressure_loss()
+                self.tyre_graph.update_data(telemetry)
 
             elif event_type == NetworkQueue.UpdateUsers:
 
