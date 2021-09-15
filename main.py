@@ -357,7 +357,8 @@ class App(tkinter.Tk):
                 asm_data.Graphics.current_time,
                 asm_data.Graphics.best_time,
                 asm_data.Graphics.last_time,
-                asm_data.Graphics.is_in_pit
+                asm_data.Graphics.is_in_pit,
+                asm_data.Graphics.is_in_pit_lane,
             )
 
             self.client_queue_in.put(NetworkQueue.Telemetry)
