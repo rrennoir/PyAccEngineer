@@ -85,7 +85,8 @@ class TyreInfo(tkinter.Frame):
         self.tyre = tkinter.Frame(self, background="Black")
         self.tyre.grid(row=row_count, rowspan=6, column=tyre_column)
         for band_row in range(6):
-            temp = tkinter.Label(self.tyre, width=10, background="Green")
+            temp = tkinter.Label(self.tyre, width=10,
+                                 background="Green", font=font)
             temp.grid(row=band_row, column=0)
             self.tyre_band.append(temp)
 
