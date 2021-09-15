@@ -29,12 +29,13 @@ class ConnectionWindow(tkinter.Toplevel):
 
         self.title("Connection window")
         self.main_app = root
+        self.connection_path = "./Config/connection.json"
 
         self.credidentials = None
         key_check = ("ip", "port", "username")
 
-        if os.path.isfile("./connection.json"):
-            fp = open("./connection.json", "r")
+        if os.path.isfile(self.connection_path):
+            fp = open(self.connection_path, "r")
 
             try:
                 self.credidentials = json.load(fp)
@@ -46,6 +47,9 @@ class ConnectionWindow(tkinter.Toplevel):
 
             except json.JSONDecodeError as msg:
                 print(f"JSON Error: {msg}")
+
+        else:
+            print(f"{self.connection_path} not found")
 
         # Block other window as long as this one is open
         self.grab_set()
@@ -159,7 +163,7 @@ class ConnectionWindow(tkinter.Toplevel):
 
     def save_credidentials(self, ip: str, port: int, username: str) -> None:
 
-        with open("./connection.json", "w") as fp:
+        with open(self.connection_path, "w") as fp:
 
             connection = {
                 "ip": ip,
