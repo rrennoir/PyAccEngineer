@@ -20,22 +20,26 @@ class UserUI(ttk.Frame):
         column_count += 1
 
         user1 = tkinter.StringVar()
-        l_user1 = ttk.Label(f_background, textvariable=user1, width=23)
+        l_user1 = ttk.Label(f_background, textvariable=user1, width=23,
+                            anchor=tkinter.CENTER)
         l_user1.grid(row=0, column=column_count, padx=1, pady=1)
         column_count += 1
 
         user2 = tkinter.StringVar()
-        l_user2 = ttk.Label(f_background, textvariable=user2, width=23)
+        l_user2 = ttk.Label(f_background, textvariable=user2, width=23,
+                            anchor=tkinter.CENTER)
         l_user2.grid(row=0, column=column_count, padx=1, pady=1)
         column_count += 1
 
         user3 = tkinter.StringVar()
-        l_user3 = ttk.Label(f_background, textvariable=user3, width=23)
+        l_user3 = ttk.Label(f_background, textvariable=user3, width=23,
+                            anchor=tkinter.CENTER)
         l_user3.grid(row=0, column=column_count, padx=1, pady=1)
         column_count += 1
 
         user4 = tkinter.StringVar()
-        l_user4 = ttk.Label(f_background, textvariable=user4, width=23)
+        l_user4 = ttk.Label(f_background, textvariable=user4, width=23,
+                            anchor=tkinter.CENTER)
         l_user4.grid(row=0, column=column_count, padx=1, pady=1)
 
         UserBox = namedtuple("UserBox", ["var", "label"])
