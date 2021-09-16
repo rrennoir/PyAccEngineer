@@ -49,7 +49,7 @@ class TyreGraph(tkinter.Frame):
         self.p_lost_rl = tkinter.DoubleVar()
         self.p_lost_rr = tkinter.DoubleVar()
 
-        self.figure = pyplot.figure(figsize=(9, 5), dpi=100)
+        self.figure = pyplot.figure(figsize=(8, 4), dpi=100)
         self.graph = self.figure.add_subplot(1, 1, 1)
 
         self.plot_line_fl,  = self.graph.plot(
@@ -76,6 +76,7 @@ class TyreGraph(tkinter.Frame):
         self.graph.set_xlabel("Time (Seconds)")
         self.graph.set_ylabel("Pressures (PSI)")
         self.graph.legend()
+        self.graph.grid(color="#696969", linestyle='-', linewidth=1)
 
         self._build_UI()
 
@@ -240,99 +241,68 @@ class TyreGraph(tkinter.Frame):
 
     def _build_UI(self) -> None:
 
-        f_pressures = tkinter.Frame(self, bg="Grey", pady=2)
+        f_pressures = ttk.Frame(self, style="PressureInfo.TFrame")
         f_pressures.pack(side=tkinter.TOP)
 
-        title = tkinter.Label(f_pressures, text="Last lap average",
-                              bg="Black", fg="White", width=17)
-        title.config(font=self.font)
-        title.grid(row=0, column=0, padx=2)
+        # Row Label
+        title = ttk.Label(f_pressures, text="Last lap average", width=36)
+        title.grid(row=1, column=0, padx=1, pady=1)
 
-        l_front_left = tkinter.Label(f_pressures, text="Front left",
-                                     bg="Black", fg="White", width=12)
-        l_front_left.config(font=self.font)
-        l_front_left.grid(row=0, column=1, padx=2)
+        title = ttk.Label(f_pressures,
+                          text="Pressure lost on this tyre set (aprox)",
+                          width=36)
+        title.grid(row=2, column=0, padx=1, pady=1)
 
-        l_front_left_var = tkinter.Label(f_pressures, textvariable=self.fl_var,
-                                         width=9, bg="Black", fg="White")
-        l_front_left_var.config(font=self.font)
-        l_front_left_var.grid(row=0, column=2, padx=2)
+        # Colum Label
+        l_front_left = ttk.Label(f_pressures, text="Front left", width=15,
+                                 anchor=tkinter.CENTER)
+        l_front_left.grid(row=0, column=1, padx=1, pady=1)
 
-        l_front_right = tkinter.Label(f_pressures, text="Front right",
-                                      bg="Black", fg="White", width=12)
-        l_front_right.config(font=self.font)
-        l_front_right.grid(row=0, column=3, padx=2)
+        l_front_right = ttk.Label(f_pressures, text="Front right", width=15,
+                                  anchor=tkinter.CENTER)
+        l_front_right.grid(row=0, column=2, padx=1, pady=1)
 
-        l_front_right_var = tkinter.Label(f_pressures,
-                                          textvariable=self.fr_var,
-                                          width=9, bg="Black", fg="White")
-        l_front_right_var.config(font=self.font)
-        l_front_right_var.grid(row=0, column=4, padx=2)
+        l_rear_left = ttk.Label(f_pressures, text="Rear left", width=15,
+                                anchor=tkinter.CENTER)
+        l_rear_left.grid(row=0, column=3, padx=1, pady=1)
 
-        l_rear_left = tkinter.Label(f_pressures, text="Rear left",
-                                    bg="Black", fg="White", width=12)
-        l_rear_left.config(font=self.font)
-        l_rear_left.grid(row=0, column=5, padx=2)
+        l_rear_right = ttk.Label(f_pressures, text="Rear right", width=15,
+                                 anchor=tkinter.CENTER)
+        l_rear_right.grid(row=0, column=4, padx=1, pady=1)
 
-        l_rear_left_var = tkinter.Label(f_pressures,  textvariable=self.rl_var,
-                                        width=9, bg="Black", fg="White")
-        l_rear_left_var.config(font=self.font)
-        l_rear_left_var.grid(row=0, column=6, padx=2)
+        # Pressure avg values
+        l_fl_var = ttk.Label(f_pressures, textvariable=self.fl_var,
+                             width=15, anchor=tkinter.CENTER)
+        l_fl_var.grid(row=1, column=1, padx=1)
 
-        l_rear_right = tkinter.Label(f_pressures, text="Rear right",
-                                     bg="Black", fg="White", width=12)
-        l_rear_right.config(font=self.font)
-        l_rear_right.grid(row=0, column=7, padx=2)
+        l_fr_var = ttk.Label(f_pressures, textvariable=self.fr_var,
+                             width=15, anchor=tkinter.CENTER)
+        l_fr_var.grid(row=1, column=2, padx=1)
 
-        l_rear_right_var = tkinter.Label(f_pressures, textvariable=self.rr_var,
-                                         width=9, bg="Black", fg="White")
-        l_rear_right_var.config(font=self.font)
-        l_rear_right_var.grid(row=0, column=8, padx=2)
+        l_rl_var = ttk.Label(f_pressures,  textvariable=self.rl_var,
+                             width=15, anchor=tkinter.CENTER)
+        l_rl_var.grid(row=1, column=3, padx=1)
 
-        title = tkinter.Label(f_pressures, text="Pressure lost (aprox)",
-                              bg="Black", fg="White", width=17)
-        title.config(font=self.font)
-        title.grid(row=1, column=0, padx=2, pady=1)
+        l_rr_var = ttk.Label(f_pressures, textvariable=self.rr_var,
+                             width=15, anchor=tkinter.CENTER)
+        l_rr_var.grid(row=1, column=4, padx=1)
 
-        l_p_lost_fl = tkinter.Label(f_pressures, text="Front left",
-                                    bg="Black", fg="White", font=self.font,
-                                    width=12)
-        l_p_lost_fl_var = tkinter.Label(f_pressures,
-                                        textvariable=self.p_lost_fl,
-                                        bg="Black", fg="White", width=9,
-                                        font=self.font)
-        l_p_lost_fl.grid(row=1, column=1)
-        l_p_lost_fl_var.grid(row=1, column=2, padx=2, pady=1)
+        # Pressure lost values
+        l_lost_fl = ttk.Label(f_pressures, textvariable=self.p_lost_fl,
+                              width=15, anchor=tkinter.CENTER)
+        l_lost_fl.grid(row=2, column=1, padx=1, pady=1)
 
-        l_p_lost_fr = tkinter.Label(f_pressures, text="Front right",
-                                    bg="Black", fg="White", font=self.font,
-                                    width=12)
-        l_p_lost_fr_var = tkinter.Label(f_pressures,
-                                        textvariable=self.p_lost_fr,
-                                        bg="Black", fg="White", width=9,
-                                        font=self.font)
-        l_p_lost_fr.grid(row=1, column=3)
-        l_p_lost_fr_var.grid(row=1, column=4, pady=1)
+        l_lost_fr = ttk.Label(f_pressures, textvariable=self.p_lost_fr,
+                              width=15, anchor=tkinter.CENTER)
+        l_lost_fr.grid(row=2, column=2, pady=1)
 
-        l_p_lost_rl = tkinter.Label(f_pressures, text="Rear left",
-                                    bg="Black", fg="White", font=self.font,
-                                    width=12)
-        l_p_lost_rl_var = tkinter.Label(f_pressures,
-                                        textvariable=self.p_lost_rl,
-                                        bg="Black", fg="White", width=9,
-                                        font=self.font)
-        l_p_lost_rl.grid(row=1, column=5)
-        l_p_lost_rl_var.grid(row=1, column=6, pady=1)
+        l_lost_rl = ttk.Label(f_pressures, textvariable=self.p_lost_rl,
+                              width=15, anchor=tkinter.CENTER)
+        l_lost_rl.grid(row=2, column=3, pady=1)
 
-        l_p_lost_rr = tkinter.Label(f_pressures, text="Rear right",
-                                    bg="Black", fg="White", font=self.font,
-                                    width=12)
-        l_p_lost_rr_var = tkinter.Label(f_pressures,
-                                        textvariable=self.p_lost_rr,
-                                        bg="Black", fg="White", width=9,
-                                        font=self.font)
-        l_p_lost_rr.grid(row=1, column=7)
-        l_p_lost_rr_var.grid(row=1, column=8, pady=1)
+        l_lost_rr = ttk.Label(f_pressures, textvariable=self.p_lost_rr,
+                              width=15, anchor=tkinter.CENTER)
+        l_lost_rr.grid(row=2, column=4)
 
         canvas = FigureCanvasTkAgg(self.figure, self)
         canvas.get_tk_widget().pack(side=tkinter.BOTTOM)
@@ -340,11 +310,11 @@ class TyreGraph(tkinter.Frame):
                                            interval=500, blit=False)
 
 
-class PrevLapsGraph(tkinter.Frame):
+class PrevLapsGraph(ttk.Frame):
 
-    def __init__(self, root, font: tuple, config: dict) -> None:
+    def __init__(self, root, config: dict) -> None:
 
-        tkinter.Frame.__init__(self, master=root, background="Black")
+        ttk.Frame.__init__(self, master=root)
 
         self.laps = copy.copy(TyreGraph.previous_laps)
 
@@ -352,7 +322,7 @@ class PrevLapsGraph(tkinter.Frame):
 
         self._update_list_id = None
 
-        self.figure = pyplot.figure(figsize=(9, 5), dpi=100)
+        self.figure = pyplot.figure(figsize=(8, 4), dpi=100)
         self.graph = self.figure.add_subplot(1, 1, 1)
 
         f_lap_select = ttk.Frame(self)
@@ -377,7 +347,6 @@ class PrevLapsGraph(tkinter.Frame):
         self.graph.set_title(f"Pressures over time for lap None")
         self.graph.set_xlabel("Time (Seconds)")
         self.graph.set_ylabel("Pressures (PSI)")
-        self.graph.legend()
 
         self._update_list_id = self.after(
             self.app_config["live_graph_inverval"] * 1000, self._update_list)

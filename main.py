@@ -242,21 +242,21 @@ class App(tkinter.Tk):
         self.config(menu=self.menu_bar)
 
         tab_control = ttk.Notebook(self)
-        tab_control.grid(row=1, column=0, pady=3)
+        tab_control.grid(row=0, column=0, pady=3)
 
-        self.user_ui = UserUI(self, self.font)
-        self.user_ui.grid(row=0, column=0)
+        self.user_ui = UserUI(self)
+        self.user_ui.grid(row=1, column=0)
 
-        self.strategy_ui = StrategyUI(tab_control, self.font)
+        self.strategy_ui = StrategyUI(tab_control, self.gui_config)
         self.strategy_ui.pack(fill=tkinter.BOTH, expand=1)
 
         self.telemetry_ui = TelemetryUI(tab_control, self.font)
         self.telemetry_ui.pack(fill=tkinter.BOTH, expand=1)
 
-        self.tyre_graph = TyreGraph(tab_control, self.font, gui_config)
+        self.tyre_graph = TyreGraph(tab_control, self.font, self.gui_config)
         self.tyre_graph.pack(fill=tkinter.BOTH, expand=1)
 
-        self.prev_lap_graph = PrevLapsGraph(tab_control, self.font, gui_config)
+        self.prev_lap_graph = PrevLapsGraph(tab_control, self.gui_config)
         self.prev_lap_graph.pack(fill=tkinter.BOTH, expand=1)
 
         tab_control.add(self.strategy_ui, text="Strategy")
