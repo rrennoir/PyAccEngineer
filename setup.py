@@ -14,5 +14,5 @@ setup(
     description = "Acc pit Engineer",
     author = "Ryan Rennoir",
     options = {"build_exe": build_exe_options},
-    executables = [Executable("main.py", base=base, icon="Assets/Icon/techSupport.ico")]
+    executables = [Executable("main.py", base=base, icon="Assets/Icon/techSupport.ico", targetName="PyAccEngineer")]
 )
