@@ -187,21 +187,30 @@ class App(tkinter.Tk):
         try:
             with open("./Config/gui.json", "r") as fp:
 
-                gui_config = json.load(fp)
-                self.font = (gui_config["font"], gui_config["font_size"])
+                self.gui_config = json.load(fp)
 
         except FileNotFoundError:
+            print("APP: './Config/gui.json' not found.")
+            return
 
-            self.font = self.font = ("Segoe UI", 11)
-
+        self.font = (self.gui_config["font"], self.gui_config["font_size"])
         self.iconbitmap("./Assets/Icon/techSupport.ico")
 
-        s = ttk.Style()
-        s.configure('.', font=self.font, background="Black",
-                    foreground="White")
-        s.configure('TNotebook.Tab', font=self.font, foreground="Black")
-        s.configure('TButton', font=self.font, foreground="White")
-        s.configure('TCombobox', foreground="Black")
+        s = ttk.Style(self)
+        s.configure('.',
+                    font=self.font,
+                    background=self.gui_config["background_colour"],
+                    foreground=self.gui_config["foreground_colour"])
+
+        s.configure('TNotebook.Tab', foreground="#000000")
+        s.configure('TButton', foreground="#000000")
+        s.configure('TCombobox', foreground="#000000")
+
+        s.configure("ActiveDriver.TLabel",
+                    background=self.gui_config["active_driver_colour"])
+
+        s.configure("Users.TFrame", background="#000000")
+        s.configure("PressureInfo.TFrame", background="#000000")
 
         self.title(f"PyAccEngineer {_VERSION_}")
         self.config(bg="Grey")

@@ -1,6 +1,9 @@
 {
     "font": "Segoe UI",
     "font_size": 11,
+    "background_colour": "#424242",
+    "foreground_colour": "#ffffff",
+    "active_driver_colour": "#11bd11",
     "graph_colour": 
     {
         "front_left": "#592F93",
