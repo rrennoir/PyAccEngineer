@@ -226,7 +226,7 @@ class StrategyUI(tkinter.Frame):
         b_driver_m.grid(row=0, column=0)
 
         l_driver_var = ttk.Label(f_drivers, textvariable=self.driver_var,
-                                 width=20)
+                                 width=20, anchor=tkinter.CENTER)
         l_driver_var.grid(row=0, column=1)
 
         b_driver_p = ttk.Button(f_drivers, text="Next", width=10,
