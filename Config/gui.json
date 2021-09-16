@@ -3,9 +3,9 @@
     "font_size": 11,
     "graph_colour": 
     {
-        "front_left": "#F58225",
+        "front_left": "#592F93",
         "front_right": "#0465B2",
-        "rear_left": "#592F93",
+        "rear_left": "#F58225",
         "rear_right": "#FEF102"
     },
     "live_graph_inverval": 1,
