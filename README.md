@@ -46,6 +46,16 @@ python headless_server.py -p 4269
 
 To stop the server simply press ctrl C in the terminal
 
+### Build Windows Executable ###
+
+```pip install
+--upgrade cx_Freeze
+```
+```python
+setup.py build
+```
+
+
 ## Warnings
 
 - At least one pit strategy must be set or different from the default
