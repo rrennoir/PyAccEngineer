@@ -356,10 +356,8 @@ class PrevLapsGraph(ttk.Frame):
 
         if self.laps != laps:
 
-            print(self.b_save.state())
-
-            if self.b_save.instate("disabled"):
-                self.b_save.state("normal")
+            if self.b_save["state"] == "disabled":
+                self.b_save["state"] = "active"
 
             laps_key = list(laps.keys())
 
