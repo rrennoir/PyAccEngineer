@@ -346,6 +346,7 @@ class PrevLapsGraph(ttk.Frame):
         self.graph.set_title(f"Pressures over time for lap None")
         self.graph.set_xlabel("Time (Seconds)")
         self.graph.set_ylabel("Pressures (PSI)")
+        self.graph.grid(color="#696969", linestyle='-', linewidth=1)
 
         self._update_list_id = self.after(
             self.app_config["live_graph_inverval"] * 1000, self._update_list)
@@ -388,12 +389,16 @@ class PrevLapsGraph(ttk.Frame):
         self.graph.clear()
 
         self.graph.plot(data_point, lap_data["front left"],
+                        self.app_config["graph_colour"]["front_left"],
                         label="Front left")
         self.graph.plot(data_point, lap_data["front right"],
+                        self.app_config["graph_colour"]["front_right"],
                         label="Front right")
         self.graph.plot(data_point, lap_data["rear left"],
+                        self.app_config["graph_colour"]["rear_left"],
                         label="Rear left")
         self.graph.plot(data_point, lap_data["rear right"],
+                        self.app_config["graph_colour"]["rear_right"],
                         label="Rear right")
 
         min_all = self._find_lowest_pressure()
