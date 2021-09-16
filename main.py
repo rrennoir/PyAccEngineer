@@ -248,21 +248,21 @@ class App(tkinter.Tk):
         self.font = (self.gui_config["font"], self.gui_config["font_size"])
         self.iconbitmap("./Assets/Icon/techSupport.ico")
 
-        s = ttk.Style(self)
-        s.configure('.',
-                    font=self.font,
-                    background=self.gui_config["background_colour"],
-                    foreground=self.gui_config["foreground_colour"])
+        app_style = ttk.Style(self)
+        app_style.configure('.',
+                            font=self.font,
+                            background=self.gui_config["background_colour"],
+                            foreground=self.gui_config["foreground_colour"])
 
-        s.configure('TNotebook.Tab', foreground="#000000")
-        s.configure('TButton', foreground="#000000")
-        s.configure('TCombobox', foreground="#000000")
+        app_style.configure('TNotebook.Tab', foreground="#000000")
+        app_style.configure('TButton', foreground="#000000")
+        app_style.configure('TCombobox', foreground="#000000")
 
-        s.configure("ActiveDriver.TLabel",
-                    background=self.gui_config["active_driver_colour"])
+        app_style.configure("ActiveDriver.TLabel",
+                            background=self.gui_config["active_driver_colour"])
 
-        s.configure("Users.TFrame", background="#000000")
-        s.configure("PressureInfo.TFrame", background="#000000")
+        app_style.configure("Users.TFrame", background="#000000")
+        app_style.configure("PressureInfo.TFrame", background="#000000")
 
         self.title(f"PyAccEngineer {_VERSION_}")
         self.config(bg="Grey")
