@@ -52,6 +52,16 @@ def string_time_from_ms(time_in_ms: int) -> str:
     return f"{minute_str}:{second_str}.{millisecond_str}"
 
 
+@dataclass
+class Credidentials:
+
+    ip: str
+    port: int
+    username: str
+    driverID: int
+    driverNb: int
+
+
 class PacketType(Enum):
 
     Connect = 1
@@ -131,7 +141,7 @@ class PitStop:
     tyre_set: int
     tyre_compound: str
     tyre_pressures: Tuple[float]
-    next_driver: int = 0
+    driver_offset: int = 0
     brake_pad: int = 1
     repairs_bodywork: bool = True
     repairs_suspension: bool = True
@@ -145,7 +155,7 @@ class PitStop:
         buffer.append(struct.pack("!i", self.tyre_set))
         buffer.append(struct.pack("!3s", self.tyre_compound.encode("utf-8")))
         buffer.append(struct.pack("!4f", *self.tyre_pressures))
-        buffer.append(struct.pack("!i", self.next_driver))
+        buffer.append(struct.pack("!i", self.driver_offset))
         buffer.append(struct.pack("!i", self.brake_pad))
         buffer.append(struct.pack("!?", self.repairs_bodywork))
         buffer.append(struct.pack("!?", self.repairs_suspension))

@@ -4,18 +4,20 @@ import struct
 import threading
 from typing import Tuple
 
-from modules.Common import NetworkQueue, PacketType
+from modules.Common import NetworkQueue, PacketType, Credidentials
 
 
 class ClientInstance:
 
-    def __init__(self, ip: str, port: int, username: str,
-                 in_queue: queue.Queue, out_queue: queue.Queue) -> None:
+    def __init__(self, credis: Credidentials, in_queue: queue.Queue,
+                 out_queue: queue.Queue) -> None:
 
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._server_ip = ip
-        self._server_port = port
-        self._username = username
+        self._server_ip = credis.ip
+        self._server_port = credis.port
+        self._username = credis.username
+        self._driverID = credis.driverID
+        self._team_size = credis.driverNb
         self._listener_thread = None
         self._thread_event = None
         self._in_queue = in_queue
@@ -49,6 +51,8 @@ class ClientInstance:
         buffer.append(PacketType.Connect.to_bytes())
         buffer.append(name_lenght)
         buffer.append(name_byte)
+        buffer.append(struct.pack("!i", self._driverID))
+        buffer.append(struct.pack("!B", self._team_size))
 
         self._send_data(b"".join(buffer))
 
@@ -79,6 +83,9 @@ class ClientInstance:
 
         if self._listener_thread.is_alive():
 
+            self._thread_event.set()
+            self._listener_thread.join()
+
             self._send_data(PacketType.Disconnect.to_bytes())
             self._socket.shutdown(socket.SHUT_WR)
 
@@ -88,7 +95,7 @@ class ClientInstance:
                 try:
                     data = self._socket.recv(1024)
 
-                except socket.timeout:
+                except socket.timeout as msg:
                     print(f"CLIENT: {msg}")
 
                 except ConnectionResetError as msg:
@@ -97,9 +104,8 @@ class ClientInstance:
                 except ConnectionRefusedError as msg:
                     print(f"CLIENT: {msg}")
 
-        if self._thread_event is not None:
-            self._thread_event.set()
-            self._listener_thread.join()
+        print("close socket")
+        self._socket.close()
 
     def _send_data(self, data: bytes) -> bool:
 
@@ -149,8 +155,6 @@ class ClientInstance:
         if data == b"":
             print("CLIENT: Lost connection to server.")
 
-        print("close socket")
-        self._socket.close()
         self._thread_event.set()
         print("client_listener STOPPED")
 

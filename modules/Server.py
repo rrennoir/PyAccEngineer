@@ -32,8 +32,17 @@ class ServerInstance:
         self.connection = None
         self._thread_pool: List[ClientHandle] = []
         self._users = []
+        self._team_size = None
+        self.error = None
 
-        self._socket.bind(("", port))
+        try:
+            self._socket.bind(("", port))
+
+        except OSError as msg:
+            self.error = msg
+            print(f"SERVER: {msg}")
+            return
+
         self._server_thread.start()
 
     def _server_listener(self) -> None:
@@ -73,6 +82,9 @@ class ServerInstance:
 
                         self._update_user_connected()
 
+                if len(self._thread_pool) == 0:
+                    self._team_size = None
+
         self._socket.close()
         handler_event.set()
         print("Closing threads")
@@ -100,6 +112,8 @@ class ServerInstance:
 
             lenght = data[1]
             name = data[2:lenght+2].decode("utf-8")
+            driverID = struct.unpack("!i", data[lenght+2:lenght+6])[0]
+            self._team_size = struct.unpack("!B", data[lenght+6:])[0]
 
             packet_type = PacketType.ConnectionReply.to_bytes()
             if name not in [user[0] for user in self._users]:
@@ -117,7 +131,7 @@ class ServerInstance:
                                           tx_queue, addr, name)
                 new_client.thread.start()
 
-                self._users.append((name, addr))
+                self._users.append((name, addr, driverID))
                 self._thread_pool.append(new_client)
 
                 self._update_user_connected()
@@ -134,11 +148,14 @@ class ServerInstance:
         buffer = []
         buffer.append(PacketType.UpdateUsers.to_bytes())
         buffer.append(struct.pack("!B", len(self._users)))
+        buffer.append(struct.pack("!B", self._team_size))
 
         for user in self._users:
 
             name = user[0].encode("utf-8")
             lenght = struct.pack("!B", len(name))
+            driverID = struct.pack("!i", user[2])
+            buffer.append(lenght + name + driverID)
             buffer.append(lenght + name)
 
         self._thread_pool[0].rx_queue.put(b"".join(buffer))

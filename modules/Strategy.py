@@ -6,7 +6,7 @@ import tkinter
 from tkinter import ttk
 from dataclasses import astuple
 from functools import partial
-from typing import Union
+from typing import Union, List
 
 import pyautogui
 import win32com
@@ -90,6 +90,11 @@ class StrategyUI(tkinter.Frame):
         self.mfd_tyre_set = 0
         self.max_static_fuel = 120
 
+        self.driver_set = False
+        self.current_driver = ""
+        self.driver_list = []
+        self.team_size = None
+
         self.fuel_text = tkinter.DoubleVar()
         self.tyre_set_text = tkinter.IntVar(value=1)
         self.tyre_compound_text = tkinter.StringVar(value="Dry")
@@ -98,6 +103,8 @@ class StrategyUI(tkinter.Frame):
         self.front_right_text = tkinter.DoubleVar()
         self.rear_left_text = tkinter.DoubleVar()
         self.rear_right_text = tkinter.DoubleVar()
+
+        self.driver_var = tkinter.StringVar()
 
         self._build_ui()
 
@@ -207,7 +214,99 @@ class StrategyUI(tkinter.Frame):
         bp_tyre_rr.grid(row=app_row, column=1)
         app_row += 1
 
+        # Strategy menu: Driver selector
+        f_drivers = ttk.Frame(f_settings)
+        f_drivers.grid(row=app_row, column=1)
+
+        l_driver = ttk.Label(f_settings, text="Driver:")
+        l_driver.grid(row=app_row, column=0)
+
+        b_driver_m = ttk.Button(f_drivers, text="Previous", width=10,
+                                command=self._prev_driver)
+        b_driver_m.grid(row=0, column=0)
+
+        l_driver_var = ttk.Label(f_drivers, textvariable=self.driver_var,
+                                 width=20)
+        l_driver_var.grid(row=0, column=1)
+
+        b_driver_p = ttk.Button(f_drivers, text="Next", width=10,
+                                command=self._next_driver)
+        b_driver_p.grid(row=0, column=2)
+
         f_settings.grid(row=0, padx=2, pady=2)
+
+    def add_driver(self, driver: str, driverID: int) -> None:
+
+        self.driver_list.append((driver, driverID))
+
+    def set_driver(self, driver: str) -> None:
+
+        self.current_driver = driver
+        self.driver_set = False
+        self.driver_var.set(driver)
+
+    def reset_drivers(self) -> None:
+
+        self.driver_list.clear()
+
+    def _next_driver(self) -> None:
+
+        if len(self.driver_list) < 2:
+            return
+
+        set_driver = self.driver_var.get()
+        for driver in self.driver_list:
+
+            if driver[0] == set_driver:
+                current_id = driver[1]
+
+        found = False
+        next_id = current_id + 1
+        while not found:
+
+            for driver in self.driver_list:
+                if driver[1] == next_id:
+                    next_driver = driver[0]
+                    found = True
+
+            next_id += 1
+            if next_id > self.team_size:
+                next_id = 1
+
+        self.driver_var.set(next_driver)
+
+    def _prev_driver(self) -> None:
+
+        if len(self.driver_list) < 2:
+            print("np")
+            return
+
+        set_driver = self.driver_var.get()
+        for driver in self.driver_list:
+
+            if driver[0] == set_driver:
+                current_id = driver[1]
+
+        found = False
+        next_id = current_id - 1
+        while not found:
+
+            for driver in self.driver_list:
+                if driver[1] == next_id:
+                    next_driver = driver[0]
+                    found = True
+
+            next_id -= 1
+            print(next_id)
+            if next_id < 1:
+                next_id = 5
+
+        self.driver_var.set(next_driver)
+
+    def set_team_size(self, size: int) -> None:
+
+        if self.team_size is None:
+            self.team_size = size
 
     def check_reply(self) -> None:
 
@@ -246,9 +345,29 @@ class StrategyUI(tkinter.Frame):
 
     def set_strategy(self) -> None:
 
+        selected_driver = self.driver_var.get()
+
+        if selected_driver != self.current_driver:
+
+            current_id = 0
+            selected_id = 0
+            for driver in self.driver_list:
+
+                if driver[0] == self.current_driver:
+                    current_id = driver[1]
+
+                if driver[0] == selected_driver:
+                    selected_id = driver[1]
+
+            driver_offset = selected_id - current_id
+            self.current_driver = selected_driver
+
+        else:
+            driver_offset = 0
+
         self.strategy = PitStop(
             self.mfd_fuel, self.mfd_tyre_set, self.tyre_compound_text.get(),
-            self.tyres)
+            self.tyres, driver_offset)
         self.b_set_strat.config(state="disabled")
 
     def is_strategy_applied(self, state: bool) -> None:
@@ -315,6 +434,7 @@ class StrategyUI(tkinter.Frame):
 
         self.b_set_strat.config(state="active")
         self.b_update_strat.config(state="active")
+        self.team_size = None
 
 
 class StrategySetter:
@@ -521,6 +641,22 @@ class StrategySetter:
             self.set_tyre_pressure(tyre_pressure,
                                    strategy.tyre_pressures[tyre_index])
             pyautogui.press("down")
+            time.sleep(0.01)
+
+        pyautogui.press("down")
+        time.sleep(0.01)
+
+        for _ in range(abs(strategy.driver_offset)):
+
+            if strategy.driver_offset < 0:
+                pyautogui.press("left")
+                print("left")
+            else:
+                pyautogui.press("right")
+                print("right")
+
+            print(strategy.driver_offset)
+
             time.sleep(0.01)
 
     @staticmethod

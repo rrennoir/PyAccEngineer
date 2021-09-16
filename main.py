@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import ipaddress
 import json
-import os
 import queue
+import struct
 import time
+from pathlib import Path
 import tkinter
 from dataclasses import astuple
 from functools import partial
@@ -12,7 +13,7 @@ from tkinter import messagebox, ttk
 from typing import Tuple
 
 from modules.Client import ClientInstance
-from modules.Common import CarInfo, NetworkQueue, PitStop
+from modules.Common import CarInfo, NetworkQueue, PitStop, Credidentials
 from modules.Server import ServerInstance
 from modules.Strategy import StrategyUI
 from modules.Telemetry import Telemetry, TelemetryUI
@@ -32,9 +33,9 @@ class ConnectionWindow(tkinter.Toplevel):
         self.connection_path = "./Config/connection.json"
 
         self.credidentials = None
-        key_check = ("ip", "port", "username")
+        key_check = ("ip", "port", "username", "driverID", "teamSize")
 
-        if os.path.isfile(self.connection_path):
+        if Path(self.connection_path).is_file():
             fp = open(self.connection_path, "r")
 
             try:
@@ -42,14 +43,17 @@ class ConnectionWindow(tkinter.Toplevel):
 
                 if (type(self.credidentials) is not dict or
                         tuple(self.credidentials.keys()) != key_check):
-
                     self.credidentials = None
 
             except json.JSONDecodeError as msg:
+                self.credidentials = None
                 print(f"JSON Error: {msg}")
+
+            fp.close()
 
         else:
             print(f"{self.connection_path} not found")
+            self.credidentials = None
 
         # Block other window as long as this one is open
         self.grab_set()
@@ -75,6 +79,16 @@ class ConnectionWindow(tkinter.Toplevel):
                                     anchor=tkinter.E, width=10)
         self.l_port.grid(row=1, column=0, padx=5, pady=2)
 
+        self.l_driverID = tkinter.Label(self.f_connection_info,
+                                        text="Driver ID:",
+                                        anchor=tkinter.E, width=10)
+        self.l_driverID.grid(row=3, column=0, padx=5, pady=2)
+
+        self.l_driverNb = tkinter.Label(self.f_connection_info,
+                                        text="N° of drivers:",
+                                        anchor=tkinter.E, width=10)
+        self.l_driverNb.grid(row=4, column=0, padx=5, pady=2)
+
         self.e_ip = tkinter.Entry(self.f_connection_info, width=30)
         self.e_ip.grid(row=0, column=1, padx=5, pady=2)
 
@@ -84,6 +98,12 @@ class ConnectionWindow(tkinter.Toplevel):
         self.e_username = tkinter.Entry(self.f_connection_info, width=30)
         self.e_username.grid(row=2, column=1, padx=5, pady=2)
 
+        self.e_driverID = tkinter.Entry(self.f_connection_info, width=30)
+        self.e_driverID.grid(row=3, column=1, padx=5, pady=2)
+
+        self.e_driverNb = tkinter.Entry(self.f_connection_info, width=30)
+        self.e_driverNb.grid(row=4, column=1, padx=5, pady=2)
+
         self.b_connect = tkinter.Button(
             self, text="Connect", command=self.connect)
         self.b_connect.grid(row=1, padx=10, pady=5)
@@ -92,11 +112,15 @@ class ConnectionWindow(tkinter.Toplevel):
 
             if self.as_server:
                 self.e_ip.insert(tkinter.END, "127.0.0.1")
+                self.e_ip.config(state="disabled")
 
             else:
                 self.e_ip.insert(tkinter.END, self.credidentials["ip"])
+
             self.e_port.insert(tkinter.END, self.credidentials["port"])
             self.e_username.insert(tkinter.END, self.credidentials["username"])
+            self.e_driverID.insert(tkinter.END, self.credidentials["driverID"])
+            self.e_driverNb.insert(tkinter.END, self.credidentials["teamSize"])
 
         else:
             self.e_port.insert(tkinter.END, "4269")
@@ -104,6 +128,7 @@ class ConnectionWindow(tkinter.Toplevel):
 
             if self.as_server:
                 self.e_ip.insert(tkinter.END, "127.0.0.1")
+                self.e_ip.config(state="disabled")
 
     def connect(self) -> None:
 
@@ -133,24 +158,49 @@ class ConnectionWindow(tkinter.Toplevel):
             self.e_username.config(background="Red")
             error_message += "Invalide username\n"
 
+        driverID = self.e_driverID.get()
+        if driverID != "" and driverID.isnumeric():
+            self.e_driverID.config(background="White")
+
+        else:
+            self.e_driverID.config(background="Red")
+            error_message += "Invalide driver ID\n"
+
+        team_size = self.e_driverNb.get()
+        if team_size != "" and team_size.isnumeric():
+            self.e_driverNb.config(background="White")
+
+        else:
+            self.e_driverNb.config(background="Red")
+            error_message += "N° of drivers\n"
+
         if error_message == "":
 
-            ip = self.e_ip.get()
-            port = int(self.e_port.get())
-            username = self.e_username.get()
+            credits = Credidentials(
+                ip=self.e_ip.get(),
+                port=int(self.e_port.get()),
+                username=self.e_username.get(),
+                driverID=int(self.e_driverID.get()),
+                driverNb=int(self.e_driverNb.get()),
+            )
 
             if self.as_server:
 
-                self.main_app.as_server(port, username)
-                self.save_credidentials(ip, port, username)
-                self.on_close()
-
-            else:
-                connected, msg = self.main_app.connect_to_server(ip, port,
-                                                                 username)
+                connected, msg = self.main_app.as_server(credits)
 
                 if connected:
-                    self.save_credidentials(ip, port, username)
+                    self.save_credidentials(credits)
+                    self.on_close()
+
+                else:
+                    messagebox.showerror("Error", msg)
+                    self.b_connect.config(state="active")
+
+            else:
+                connected, msg = self.main_app.connect_to_server(credits)
+
+                if connected:
+                    self.save_credidentials(credits)
                     self.on_close()
 
                 else:
@@ -161,14 +211,16 @@ class ConnectionWindow(tkinter.Toplevel):
             messagebox.showerror("Error", error_message)
             self.b_connect.config(state="active")
 
-    def save_credidentials(self, ip: str, port: int, username: str) -> None:
+    def save_credidentials(self, credits: Credidentials) -> None:
 
         with open(self.connection_path, "w") as fp:
 
             connection = {
-                "ip": ip,
-                "port": port,
-                "username": username
+                "ip": credits.ip,
+                "port": credits.port,
+                "username": credits.username,
+                "driver_id": credits.driverID,
+                "driver_nb": credits.driverNb
             }
             json.dump(connection, fp)
 
@@ -318,22 +370,32 @@ class App(tkinter.Tk):
 
                 user_update = self.client_queue_out.get()
                 nb_users = user_update[0]
+                team_size = user_update[1]
                 self.user_ui.reset()
+                self.strategy_ui.reset_drivers()
 
-                index = 1
+                index = 2
                 for _ in range(nb_users):
 
                     lenght = user_update[index]
                     index += 1
                     name = user_update[index:index+lenght].decode("utf-8")
                     index += lenght
-                    self.user_ui.add_user(name)
+                    driverID = struct.unpack("!i",
+                                             user_update[index:index+4])[0]
+
+                    index += 4
+                    self.user_ui.add_user(name, driverID)
+                    self.strategy_ui.add_driver(name, driverID)
+
+                self.strategy_ui.set_team_size(team_size)
 
         if self.telemetry_ui.driver_swap or self.user_ui.active_user is None:
 
             if self.telemetry_ui.current_driver is not None:
                 self.user_ui.set_active(self.telemetry_ui.current_driver)
                 self.telemetry_ui.driver_swap = False
+                self.strategy_ui.set_driver(self.telemetry_ui.current_driver)
 
         asm_data = self.strategy_ui.asm.get_data()
         if (asm_data is not None and self.client is not None
@@ -396,11 +458,10 @@ class App(tkinter.Tk):
 
         self.connection_window = ConnectionWindow(self, as_server)
 
-    def connect_to_server(self, ip, port: int,
-                          username: str) -> Tuple[bool, str]:
+    def connect_to_server(self, credits: Credidentials) -> Tuple[bool, str]:
 
-        self.client = ClientInstance(
-            ip, port, username, self.client_queue_in, self.client_queue_out)
+        self.client = ClientInstance(credits, self.client_queue_in,
+                                     self.client_queue_out)
 
         succes, msg = self.client.connect()
         if succes:
@@ -411,11 +472,23 @@ class App(tkinter.Tk):
 
         return (succes, msg)
 
-    def as_server(self, port: int, name: str) -> None:
+    def as_server(self, credis: Credidentials) -> Tuple[bool, str]:
 
-        self.server = ServerInstance(port)
-        self.connect_to_server("127.0.0.1", port, name)
-        self.connected(True)
+        self.server = ServerInstance(credis.port)
+
+        if self.server.error is None:
+            succes, msg = self.connect_to_server(credis)
+
+            if succes:
+                self.connected(True)
+
+            return succes, msg
+
+        else:
+            error = self.server.error
+            self.server = None
+
+            return False, error
 
     def connected(self, state: bool) -> None:
 

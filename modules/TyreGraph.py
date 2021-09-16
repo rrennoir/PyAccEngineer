@@ -424,7 +424,7 @@ class PrevLapsGraph(ttk.Frame):
         if self.lap_selector.get() == "":
             return
 
-        if pathlib.path.isdir("./Pressure_Graph"):
+        if pathlib.Path.isdir("./Pressure_Graph"):
             self.figure.savefig("./Pressure_Graph/test.png")
 
     def close(self) -> None:

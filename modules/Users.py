@@ -42,18 +42,24 @@ class UserUI(ttk.Frame):
                             anchor=tkinter.CENTER)
         l_user4.grid(row=0, column=column_count, padx=1, pady=1)
 
+        user5 = tkinter.StringVar()
+        l_user5 = ttk.Label(f_background, textvariable=user5, width=24,
+                            anchor=tkinter.CENTER)
+        l_user5.grid(row=0, column=column_count, padx=1, pady=1)
+
         UserBox = namedtuple("UserBox", ["var", "label"])
 
         self.user_vars = [
             UserBox(user1, l_user1),
             UserBox(user2, l_user2),
             UserBox(user3, l_user3),
-            UserBox(user4, l_user4)
+            UserBox(user4, l_user4),
+            UserBox(user5, l_user5),
         ]
 
         f_background.pack()
 
-    def add_user(self, name: str) -> None:
+    def add_user(self, name: str, driverID: int) -> None:
 
         if len(self.user_list) < 4 and name not in self.user_list:
             self.user_list.append(name)
@@ -61,14 +67,14 @@ class UserUI(ttk.Frame):
             for user in self.user_vars:
 
                 if user.var.get() == "":
-                    user.var.set(name)
+                    user.var.set(f"{name} ({driverID})")
                     break
 
     def set_active(self, name: str) -> None:
 
         for user in self.user_vars:
 
-            if user.var.get() == name:
+            if user.var.get()[:-4] == name:
                 user.label.configure(style="ActiveDriver.TLabel")
                 self.active_user = name
 
