@@ -250,7 +250,7 @@ class App(tkinter.Tk):
         self.strategy_ui = StrategyUI(tab_control, self.gui_config)
         self.strategy_ui.pack(fill=tkinter.BOTH, expand=1)
 
-        self.telemetry_ui = TelemetryUI(tab_control, self.font)
+        self.telemetry_ui = TelemetryUI(tab_control)
         self.telemetry_ui.pack(fill=tkinter.BOTH, expand=1)
 
         self.tyre_graph = TyreGraph(tab_control, self.gui_config)
