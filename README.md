@@ -48,11 +48,11 @@ To stop the server simply press ctrl C in the terminal
 
 ### Build Windows Executable ###
 
-```pip
-install --upgrade cx_Freeze
 ```
-```python
-setup.py build
+pip install --upgrade cx_Freeze
+```
+```
+python setup.py build
 ```
 
 
