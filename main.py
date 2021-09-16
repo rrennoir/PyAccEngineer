@@ -253,7 +253,7 @@ class App(tkinter.Tk):
         self.telemetry_ui = TelemetryUI(tab_control, self.font)
         self.telemetry_ui.pack(fill=tkinter.BOTH, expand=1)
 
-        self.tyre_graph = TyreGraph(tab_control, self.font, self.gui_config)
+        self.tyre_graph = TyreGraph(tab_control, self.gui_config)
         self.tyre_graph.pack(fill=tkinter.BOTH, expand=1)
 
         self.prev_lap_graph = PrevLapsGraph(tab_control, self.gui_config)

@@ -23,7 +23,7 @@ class TyreGraph(tkinter.Frame):
 
     previous_laps = {}
 
-    def __init__(self, root, font: tuple, config: dict) -> None:
+    def __init__(self, root, config: dict) -> None:
 
         tkinter.Frame.__init__(self, master=root)
 
@@ -35,7 +35,6 @@ class TyreGraph(tkinter.Frame):
         self.in_pit_lane = False
 
         self.current_lap = 0
-        self.font = font
 
         self.app_config = config
 
