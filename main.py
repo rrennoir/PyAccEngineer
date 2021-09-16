@@ -20,6 +20,9 @@ from modules.Telemetry import Telemetry, TelemetryUI
 from modules.TyreGraph import PrevLapsGraph, TyreGraph
 from modules.Users import UserUI
 
+from multiprocessing import freeze_support
+
+
 _VERSION_ = "1.4.0"
 
 
@@ -543,6 +546,7 @@ def main():
 
     App()
 
+freeze_support()
 
 if __name__ == "__main__":
 

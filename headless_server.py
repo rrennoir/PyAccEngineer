@@ -6,6 +6,7 @@ from typing import List
 
 from modules.Server import ServerInstance
 
+from multiprocessing import freeze_support
 
 def headless(argv: List[str]) -> None:
 
@@ -52,6 +53,7 @@ def headless(argv: List[str]) -> None:
     server.disconnect()
     print("SERVER: exiting")
 
+freeze_support()
 
 if __name__ == "__main__":
 
