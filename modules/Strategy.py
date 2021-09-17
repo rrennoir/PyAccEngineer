@@ -45,17 +45,18 @@ def ACCWindowFinderCallback(hwnd: int, obj) -> bool:
 
 class ButtonPannel(ttk.Frame):
 
-    def __init__(self, root, var, callback, steps=[0.1, 0.5, 1.0]) -> None:
+    def __init__(self, root, var, command, steps=[0.1, 0.5, 1.0]) -> None:
 
         ttk.Frame.__init__(self, root)
 
-        for index, step in enumerate(steps):
+        for index, element in enumerate(steps):
+            b_minus = ttk.Button(
+                    self, text=str(-element), width=5,
+                    command=partial(command, -element))
 
-            b_minus = ttk.Button(self, text=str(-step), width=5,
-                                 command=lambda: callback(-step))
-
-            b_add = ttk.Button(self, text=str(step), width=5,
-                               command=lambda: callback(step))
+            b_add = ttk.Button(
+                    self, text=str(element), width=5,
+                    command=partial(command, element))        
 
             b_minus.grid(row=0, column=2 - index, padx=4, pady=2)
             b_add.grid(row=0, column=4 + index, padx=4, pady=2)
