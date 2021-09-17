@@ -62,7 +62,7 @@ class ButtonPannel(ttk.Frame):
 
         l_var = ttk.Label(self, textvariable=var, width=10,
                           anchor=tkinter.CENTER)
-        l_var.grid(row=0, column=3)
+        l_var.grid(row=0, column=3, padx=4, pady=2)
 
 
 class StrategyUI(tkinter.Frame):
@@ -170,7 +170,7 @@ class StrategyUI(tkinter.Frame):
         l_var = ttk.Label(f_tyre_compound,
                           textvariable=self.tyre_compound_text, width=10,
                           anchor=tkinter.CENTER)
-        l_var.grid(row=0, column=3)
+        l_var.grid(row=0, column=3, padx=4, pady=2)
 
         f_tyre_compound.grid(row=app_row, column=1)
         app_row += 1
@@ -224,15 +224,15 @@ class StrategyUI(tkinter.Frame):
 
         b_driver_m = ttk.Button(f_drivers, text="Previous", width=10,
                                 command=self._prev_driver)
-        b_driver_m.grid(row=0, column=0)
+        b_driver_m.grid(row=0, column=0, padx=4, pady=2)
 
         l_driver_var = ttk.Label(f_drivers, textvariable=self.driver_var,
                                  width=20, anchor=tkinter.CENTER)
-        l_driver_var.grid(row=0, column=1)
+        l_driver_var.grid(row=0, column=1, padx=4, pady=2)
 
         b_driver_p = ttk.Button(f_drivers, text="Next", width=10,
                                 command=self._next_driver)
-        b_driver_p.grid(row=0, column=2)
+        b_driver_p.grid(row=0, column=2, padx=4, pady=2)
 
         f_settings.grid(row=0, padx=2, pady=2)
 
