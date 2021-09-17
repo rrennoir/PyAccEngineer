@@ -299,11 +299,17 @@ class App(tkinter.Tk):
         self.user_ui = UserUI(self)
         self.user_ui.grid(row=1, column=0)
 
-        self.strategy_ui = StrategyUI(tab_control, self.gui_config)
-        self.strategy_ui.pack(fill=tkinter.BOTH, expand=1)
+        # Center StrategyUI in the notebook frame
+        f_strategy_ui = ttk.Frame(tab_control)
+        f_strategy_ui.pack(fill=tkinter.BOTH, expand=1)
+        self.strategy_ui = StrategyUI(f_strategy_ui, self.gui_config)
+        self.strategy_ui.place(anchor=tkinter.CENTER, in_=f_strategy_ui, relx=.5, rely=.5)
 
-        self.telemetry_ui = TelemetryUI(tab_control)
-        self.telemetry_ui.pack(fill=tkinter.BOTH, expand=1)
+        # Center TelemetryUI in the notebook frame
+        f_telemetry_ui = ttk.Frame(tab_control)
+        f_telemetry_ui.pack(fill=tkinter.BOTH, expand=1)
+        self.telemetry_ui = TelemetryUI(f_telemetry_ui)
+        self.telemetry_ui.place(anchor=tkinter.CENTER, in_=f_telemetry_ui, relx=.5, rely=.5)
 
         self.tyre_graph = TyreGraph(tab_control, self.gui_config)
         self.tyre_graph.pack(fill=tkinter.BOTH, expand=1)
@@ -311,8 +317,8 @@ class App(tkinter.Tk):
         self.prev_lap_graph = PrevLapsGraph(tab_control, self.gui_config)
         self.prev_lap_graph.pack(fill=tkinter.BOTH, expand=1)
 
-        tab_control.add(self.strategy_ui, text="Strategy")
-        tab_control.add(self.telemetry_ui, text="Telemetry")
+        tab_control.add(f_strategy_ui, text="Strategy")
+        tab_control.add(f_telemetry_ui, text="Telemetry")
         tab_control.add(self.tyre_graph, text="Pressures")
         tab_control.add(self.prev_lap_graph, text="Previous Laps")
 
