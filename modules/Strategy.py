@@ -132,7 +132,7 @@ class StrategyUI(tkinter.Frame):
 
         # Strategy Menu: Fuel Row
 
-        l_fuel = ttk.Label(f_settings, text="Fuel", width=15,
+        l_fuel = ttk.Label(f_settings, text="Fuel", width=13,
                            anchor=tkinter.E)
         l_fuel.grid(row=app_row, column=0, padx=10)
 
@@ -143,7 +143,7 @@ class StrategyUI(tkinter.Frame):
         app_row += 1
 
         # Strategy menu: Tyre set
-        l_tyre_set = ttk.Label(f_settings, text="Tyre set", width=15,
+        l_tyre_set = ttk.Label(f_settings, text="Tyre set", width=13,
                                anchor=tkinter.E)
         l_tyre_set.grid(row=app_row, column=0, padx=10)
 
@@ -155,7 +155,7 @@ class StrategyUI(tkinter.Frame):
         # Strategy menu: Tyre compound
         f_tyre_compound = ttk.Frame(f_settings)
 
-        l_tyre_set = ttk.Label(f_settings, text="Tyre compound", width=15,
+        l_tyre_set = ttk.Label(f_settings, text="Tyre compound", width=13,
                                anchor=tkinter.E)
         l_tyre_set.grid(row=app_row, column=0, padx=10)
 
@@ -176,7 +176,7 @@ class StrategyUI(tkinter.Frame):
         app_row += 1
 
         # Strategy menu: Front left tyre
-        l_tyre_fl = ttk.Label(f_settings, text="Front left", width=15,
+        l_tyre_fl = ttk.Label(f_settings, text="Front left", width=13,
                               anchor=tkinter.E)
         l_tyre_fl.grid(row=app_row, column=0, padx=10)
         bp_tyre_fl = ButtonPannel(f_settings, self.front_left_text,
@@ -185,7 +185,7 @@ class StrategyUI(tkinter.Frame):
         app_row += 1
 
         # Strategy menu: Front right tyre
-        l_tyre_fr = ttk.Label(f_settings, text="Front right", width=15,
+        l_tyre_fr = ttk.Label(f_settings, text="Front right", width=13,
                               anchor=tkinter.E)
         l_tyre_fr.grid(row=app_row, column=0, padx=10)
 
@@ -195,7 +195,7 @@ class StrategyUI(tkinter.Frame):
         app_row += 1
 
         # Strategy menu: Rear left tyre
-        l_tyre_rl = ttk.Label(f_settings, text="Rear left", width=15,
+        l_tyre_rl = ttk.Label(f_settings, text="Rear left", width=13,
                               anchor=tkinter.E)
         l_tyre_rl.grid(row=app_row, column=0, padx=10)
 
@@ -205,7 +205,7 @@ class StrategyUI(tkinter.Frame):
         app_row += 1
 
         # Strategy menu: Rear right tyre
-        l_tyre_rr = ttk.Label(f_settings, text="Rear right", width=15,
+        l_tyre_rr = ttk.Label(f_settings, text="Rear right", width=13,
                               anchor=tkinter.E)
         l_tyre_rr.grid(row=app_row, column=0, padx=10)
 
@@ -218,8 +218,9 @@ class StrategyUI(tkinter.Frame):
         f_drivers = ttk.Frame(f_settings)
         f_drivers.grid(row=app_row, column=1)
 
-        l_driver = ttk.Label(f_settings, text="Driver:")
-        l_driver.grid(row=app_row, column=0)
+        l_driver = ttk.Label(f_settings, text="Driver", width=13,
+                             anchor=tkinter.E)
+        l_driver.grid(row=app_row, column=0, padx=10)
 
         b_driver_m = ttk.Button(f_drivers, text="Previous", width=10,
                                 command=self._prev_driver)
