@@ -14,7 +14,7 @@ class ClientInstance:
 
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._server_ip = credis.ip
-        self._server_port = credis.port
+        self._server_port = credis.tcp_port
         self._username = credis.username
         self._driverID = credis.driverID
         self._team_size = credis.driverNb

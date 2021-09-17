@@ -33,7 +33,8 @@ class ConnectionWindow(tkinter.Toplevel):
         self.connection_path = "./Config/connection.json"
 
         self.credidentials = None
-        key_check = ("ip", "port", "username", "driverID", "teamSize")
+        key_check = ("ip", "tcp_port", "udp_port", "username",
+                     "driverID", "teamSize")
 
         if Path(self.connection_path).is_file():
             fp = open(self.connection_path, "r")
@@ -43,6 +44,10 @@ class ConnectionWindow(tkinter.Toplevel):
 
                 if (type(self.credidentials) is not dict or
                         tuple(self.credidentials.keys()) != key_check):
+
+                    print(type(self.credidentials))
+                    print(tuple(self.credidentials.keys()) != key_check)
+                    print(f"Invalid connection.json file")
                     self.credidentials = None
 
             except json.JSONDecodeError as msg:
@@ -66,69 +71,75 @@ class ConnectionWindow(tkinter.Toplevel):
             self, bd=2, relief=tkinter.RIDGE)
         self.f_connection_info.grid()
 
-        self.l_ip = tkinter.Label(self.f_connection_info, text="IP:",
+        self.l_ip = tkinter.Label(self.f_connection_info, text="IP",
                                   anchor=tkinter.E, width=10)
         self.l_ip.grid(row=0, column=0, padx=5, pady=2)
 
-        self.l_username = tkinter.Label(self.f_connection_info,
-                                        text="Username:",
-                                        anchor=tkinter.E, width=10)
-        self.l_username.grid(row=2, column=0, padx=5, pady=2)
+        self.l_tcp_port = tkinter.Label(self.f_connection_info,
+                                        text="TCP port", anchor=tkinter.E,
+                                        width=10)
+        self.l_tcp_port.grid(row=1, column=0, padx=5, pady=2)
 
-        self.l_port = tkinter.Label(self.f_connection_info, text="Port:",
-                                    anchor=tkinter.E, width=10)
-        self.l_port.grid(row=1, column=0, padx=5, pady=2)
+        self.l_udp_port = tkinter.Label(self.f_connection_info,
+                                        text="UDP port", anchor=tkinter.E,
+                                        width=10)
+        self.l_udp_port.grid(row=2, column=0, padx=5, pady=2)
+
+        self.l_username = tkinter.Label(self.f_connection_info,
+                                        text="Username",
+                                        anchor=tkinter.E, width=10)
+        self.l_username.grid(row=3, column=0, padx=5, pady=2)
 
         self.l_driverID = tkinter.Label(self.f_connection_info,
-                                        text="Driver ID:",
+                                        text="Driver ID",
                                         anchor=tkinter.E, width=10)
-        self.l_driverID.grid(row=3, column=0, padx=5, pady=2)
+        self.l_driverID.grid(row=4, column=0, padx=5, pady=2)
 
         self.l_driverNb = tkinter.Label(self.f_connection_info,
-                                        text="N° of drivers:",
+                                        text="N° of drivers",
                                         anchor=tkinter.E, width=10)
-        self.l_driverNb.grid(row=4, column=0, padx=5, pady=2)
+        self.l_driverNb.grid(row=5, column=0, padx=5, pady=2)
 
         self.e_ip = tkinter.Entry(self.f_connection_info, width=30)
         self.e_ip.grid(row=0, column=1, padx=5, pady=2)
 
-        self.e_port = tkinter.Entry(self.f_connection_info, width=30)
-        self.e_port.grid(row=1, column=1, padx=5, pady=2)
+        self.e_tcp_port = tkinter.Entry(self.f_connection_info, width=30)
+        self.e_tcp_port.grid(row=1, column=1, padx=5, pady=2)
+
+        self.e_udp_port = tkinter.Entry(self.f_connection_info, width=30)
+        self.e_udp_port.grid(row=2, column=1, padx=5, pady=2)
 
         self.e_username = tkinter.Entry(self.f_connection_info, width=30)
-        self.e_username.grid(row=2, column=1, padx=5, pady=2)
+        self.e_username.grid(row=3, column=1, padx=5, pady=2)
 
         self.e_driverID = tkinter.Entry(self.f_connection_info, width=30)
-        self.e_driverID.grid(row=3, column=1, padx=5, pady=2)
+        self.e_driverID.grid(row=4, column=1, padx=5, pady=2)
 
         self.e_driverNb = tkinter.Entry(self.f_connection_info, width=30)
-        self.e_driverNb.grid(row=4, column=1, padx=5, pady=2)
+        self.e_driverNb.grid(row=5, column=1, padx=5, pady=2)
 
-        self.b_connect = tkinter.Button(
-            self, text="Connect", command=self.connect)
+        self.b_connect = tkinter.Button(self, text="Connect",
+                                        command=self.connect)
         self.b_connect.grid(row=1, padx=10, pady=5)
 
         if self.credidentials is not None:
 
-            if self.as_server:
-                self.e_ip.insert(tkinter.END, "127.0.0.1")
-                self.e_ip.config(state="disabled")
-
-            else:
+            if not self.as_server:
                 self.e_ip.insert(tkinter.END, self.credidentials["ip"])
 
-            self.e_port.insert(tkinter.END, self.credidentials["port"])
+            self.e_tcp_port.insert(tkinter.END, self.credidentials["tcp_port"])
+            self.e_udp_port.insert(tkinter.END, self.credidentials["udp_port"])
             self.e_username.insert(tkinter.END, self.credidentials["username"])
             self.e_driverID.insert(tkinter.END, self.credidentials["driverID"])
             self.e_driverNb.insert(tkinter.END, self.credidentials["teamSize"])
 
         else:
-            self.e_port.insert(tkinter.END, "4269")
-            self.e_username.insert(tkinter.END, "Ready Player One")
+            self.e_tcp_port.insert(tkinter.END, "4269")
+            self.e_udp_port.insert(tkinter.END, "4270")
 
-            if self.as_server:
-                self.e_ip.insert(tkinter.END, "127.0.0.1")
-                self.e_ip.config(state="disabled")
+        if self.as_server:
+            self.e_ip.insert(tkinter.END, "127.0.0.1")
+            self.e_ip.config(state="disabled")
 
     def connect(self) -> None:
 
@@ -144,12 +155,19 @@ class ConnectionWindow(tkinter.Toplevel):
             self.e_ip.config(background="Red")
             error_message += "Invalide IP address\n"
 
-        if self.e_port.get().isnumeric():
-            self.e_port.config(background="White")
+        if self.e_tcp_port.get().isnumeric():
+            self.e_tcp_port.config(background="White")
 
         else:
-            self.e_port.config(background="Red")
-            error_message += "Invalide port\n"
+            self.e_tcp_port.config(background="Red")
+            error_message += "Invalide TCP port\n"
+
+        if self.e_udp_port.get().isnumeric():
+            self.e_udp_port.config(background="White")
+
+        else:
+            self.e_udp_port.config(background="Red")
+            error_message += "Invalide UDP port\n"
 
         if self.e_username.get() != "":
             self.e_username.config(background="White")
@@ -178,7 +196,8 @@ class ConnectionWindow(tkinter.Toplevel):
 
             credits = Credidentials(
                 ip=self.e_ip.get(),
-                port=int(self.e_port.get()),
+                tcp_port=int(self.e_tcp_port.get()),
+                udp_port=int(self.e_udp_port.get()),
                 username=self.e_username.get(),
                 driverID=int(self.e_driverID.get()),
                 driverNb=int(self.e_driverNb.get()),
@@ -217,10 +236,11 @@ class ConnectionWindow(tkinter.Toplevel):
 
             connection = {
                 "ip": credits.ip,
-                "port": credits.port,
+                "tcp_port": credits.tcp_port,
+                "udp_port": credits.udp_port,
                 "username": credits.username,
-                "driver_id": credits.driverID,
-                "driver_nb": credits.driverNb
+                "driverID": credits.driverID,
+                "teamSize": credits.driverNb
             }
             json.dump(connection, fp)
 
@@ -303,13 +323,15 @@ class App(tkinter.Tk):
         f_strategy_ui = ttk.Frame(tab_control)
         f_strategy_ui.pack(fill=tkinter.BOTH, expand=1)
         self.strategy_ui = StrategyUI(f_strategy_ui, self.gui_config)
-        self.strategy_ui.place(anchor=tkinter.CENTER, in_=f_strategy_ui, relx=.5, rely=.5)
+        self.strategy_ui.place(anchor=tkinter.CENTER, in_=f_strategy_ui,
+                               relx=.5, rely=.5)
 
         # Center TelemetryUI in the notebook frame
         f_telemetry_ui = ttk.Frame(tab_control)
         f_telemetry_ui.pack(fill=tkinter.BOTH, expand=1)
         self.telemetry_ui = TelemetryUI(f_telemetry_ui)
-        self.telemetry_ui.place(anchor=tkinter.CENTER, in_=f_telemetry_ui, relx=.5, rely=.5)
+        self.telemetry_ui.place(anchor=tkinter.CENTER, in_=f_telemetry_ui,
+                                relx=.5, rely=.5)
 
         self.tyre_graph = TyreGraph(tab_control, self.gui_config)
         self.tyre_graph.pack(fill=tkinter.BOTH, expand=1)
@@ -480,7 +502,7 @@ class App(tkinter.Tk):
 
     def as_server(self, credis: Credidentials) -> Tuple[bool, str]:
 
-        self.server = ServerInstance(credis.port)
+        self.server = ServerInstance(credis.tcp_port)
 
         if self.server.error is None:
             succes, msg = self.connect_to_server(credis)

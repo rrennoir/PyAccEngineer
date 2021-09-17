@@ -56,7 +56,8 @@ def string_time_from_ms(time_in_ms: int) -> str:
 class Credidentials:
 
     ip: str
-    port: int
+    tcp_port: int
+    udp_port: int
     username: str
     driverID: int
     driverNb: int
