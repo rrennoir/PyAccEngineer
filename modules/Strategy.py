@@ -378,6 +378,9 @@ class StrategyUI(tkinter.Frame):
 
     def set_strategy(self) -> None:
 
+        if self.tyres is None:
+            return
+
         selected_driver = self.driver_var.get()
 
         if selected_driver != self.current_driver:
