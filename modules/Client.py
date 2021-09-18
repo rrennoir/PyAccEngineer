@@ -71,6 +71,14 @@ class ClientInstance:
                     target=self._network_listener)
                 self._listener_thread.start()
 
+                buffer = [
+                    PacketType.ConnectUDP.to_bytes(),
+                    name_lenght,
+                    name_byte
+                ]
+
+                self._send_udp(b"".join(buffer))
+
                 return (True, "Connected")
 
             else:
@@ -131,7 +139,7 @@ class ClientInstance:
     def _send_udp(self, data: bytes) -> bool:
 
         try:
-            self._tcp_socket.sendto(data, (self._server_ip, self._udp_port))
+            self._udp_socket.sendto(data, (self._server_ip, self._udp_port))
 
         except ConnectionResetError as msg:
             print(f"CLIENT: {msg}")

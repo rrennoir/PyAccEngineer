@@ -73,6 +73,7 @@ class PacketType(Enum):
     StrategyOK = 7
     Telemetry = 8
     UpdateUsers = 9
+    ConnectUDP = 10
     Unkown = -1
 
     def to_bytes(self) -> bytes:
