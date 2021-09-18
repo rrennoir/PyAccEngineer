@@ -33,7 +33,7 @@ class ClientInstance:
             self._tcp_socket.settimeout(3)
             self._tcp_socket.connect((self._server_ip, self._tcp_port))
             self._udp_socket.bind(("", 4271))
-            self._udp_socket.settimeout(0.1)
+            self._udp_socket.settimeout(0.01)
 
             print(f"CLIENT: Connected to {self._server_ip}")
 
@@ -135,7 +135,6 @@ class ClientInstance:
     def _send_udp(self, data: bytes) -> bool:
 
         try:
-            print(f"{(self._server_ip, self._udp_port)=}")
             self._tcp_socket.sendto(data, (self._server_ip, self._udp_port))
 
         except ConnectionResetError as msg:
@@ -157,7 +156,16 @@ class ClientInstance:
         while not (self._thread_event.is_set() or data == b""):
 
             try:
-                data, _ = self._udp_socket.recvfrom(1024)
+                udp_data, _ = self._udp_socket.recvfrom(1024)
+
+            except socket.timeout:
+                udp_data = None
+
+            except ConnectionResetError:
+                udp_data = b""
+
+            try:
+                data = self._tcp_socket.recv(1024)
 
             except socket.timeout:
                 data = None
@@ -165,19 +173,15 @@ class ClientInstance:
             except ConnectionResetError:
                 data = b""
 
-            if data is None and data == b"":
-
-                try:
-                    data = self._tcp_socket.recv(1024)
-
-                except socket.timeout:
-                    data = None
-
-                except ConnectionResetError:
-                    data = b""
-
             if data is not None and len(data) > 0:
                 self._handle_data(data)
+
+            if udp_data is not None and len(udp_data) > 0:
+                packet_type = PacketType.from_bytes(udp_data)
+                if packet_type == PacketType.Telemetry:
+
+                    self._out_queue.put(NetworkQueue.Telemetry)
+                    self._out_queue.put(udp_data[1:])
 
             self._check_app_state()
 

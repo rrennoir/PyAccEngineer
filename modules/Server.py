@@ -24,9 +24,9 @@ class ServerInstance:
     def __init__(self, tcp_port: int, udp_port: int) -> None:
 
         self._tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._tcp_socket.settimeout(0.05)
+        self._tcp_socket.settimeout(0.01)
         self._udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self._udp_socket.settimeout(0.05)
+        self._udp_socket.settimeout(0.01)
         self._server_thread = threading.Thread(target=self._server_listener)
         self._server_event = threading.Event()
         self.server_queue = queue.Queue()
@@ -69,7 +69,6 @@ class ServerInstance:
                 for client_thread in self._thread_pool:
 
                     if client_thread.rx_queue.qsize() > 0:
-                        print(client_thread.rx_queue.qsize())
 
                         data = client_thread.rx_queue.get()
                         for thread in self._thread_pool:
@@ -244,6 +243,7 @@ class ServerInstance:
                     self._send_udp(net_data, addr)
 
                 elif packet_type == PacketType.UpdateUsers:
+                    print("update user")
                     ServerInstance._send_data(c_socket, net_data)
 
         if data == b"":
