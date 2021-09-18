@@ -324,7 +324,7 @@ class App(tkinter.Tk):
         tab_control.add(self.prev_lap_graph, text="Previous Laps")
 
         self.last_time = time.time()
-        self.min_delta = 0.5
+        self.min_delta = 0.1
 
         self.client_loop()
 

@@ -216,7 +216,7 @@ class ServerInstance:
                         tx_queue: queue.Queue) -> None:
 
         client_disconnect = False
-        c_socket.settimeout(0.2)
+        c_socket.settimeout(0.01)
         print(f"SERVER: Connected to {addr}")
 
         udp_addr = None
@@ -294,6 +294,8 @@ class ServerInstance:
         print("SERVER: client_handler STOPPED")
 
     def _send_udp(self, data: bytes, addr: tuple) -> None:
+
+        print(f"sending udp to {addr}")
 
         try:
             self._udp_socket.sendto(data, addr)
