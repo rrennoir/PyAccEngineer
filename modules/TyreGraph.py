@@ -2,6 +2,7 @@ import copy
 import pathlib
 import tkinter
 from dataclasses import astuple
+from datetime import datetime
 from tkinter import ttk
 from typing import List
 
@@ -421,8 +422,15 @@ class PrevLapsGraph(ttk.Frame):
         if self.lap_selector.get() == "":
             return
 
-        if pathlib.Path.isdir("./Pressure_Graph"):
-            self.figure.savefig("./Pressure_Graph/test.png")
+        lap = self.lap_selector.get()
+        time = datetime.now().strftime("%y.%m.%d_%H.%M.%S")
+
+        save_dir = pathlib.Path("./Pressure_Graph")
+        save_dir.mkdir(parents=True, exist_ok=True)
+
+        path = save_dir / f"{time}_{lap}.png"
+
+        self.figure.savefig(str(path))
 
     def close(self) -> None:
 
