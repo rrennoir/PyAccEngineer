@@ -1,9 +1,37 @@
 from __future__ import annotations
 
 import struct
+import sys
 from dataclasses import astuple, dataclass
 from enum import Enum, auto
 from typing import ClassVar, Tuple, List, Union
+
+
+EPSILON = sys.float_info.epsilon  # Smallest possible difference.
+
+
+def convert_to_rgb(minval, maxval, val, colours):
+
+    # "colours" is a series of RGB colors delineating a series of
+    # adjacent linear color gradients between each pair.
+    # Determine where the given value falls proportionality within
+    # the range from minval->maxval and scale that fractional value
+    # by the total number in the "colors" pallette.
+    i_f = float(val-minval) / float(maxval-minval) * (len(colours)-1)
+
+    # Determine the lower index of the pair of color indices this
+    # value corresponds and its fractional distance between the lower
+    # and the upper colors.
+    i, f = int(i_f // 1), i_f % 1  # Split into whole & fractional parts.
+
+    # Does it fall exactly on one of the color points?
+    if f < EPSILON:
+        return colours[i]
+
+    # Otherwise return a color within the range between them.
+    else:
+        (r1, g1, b1), (r2, g2, b2) = colours[i], colours[i+1]
+        return int(r1 + f*(r2-r1)), int(g1 + f*(g2-g1)), int(b1 + f*(b2-b1))
 
 
 def rgbtohex(r: int, g: int, b: int) -> str:

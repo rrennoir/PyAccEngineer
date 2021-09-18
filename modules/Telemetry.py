@@ -8,7 +8,7 @@ from typing import List, Optional
 
 from SharedMemory.PyAccSharedMemory import Wheels
 
-from modules.Common import rgbtohex, string_time_from_ms
+from modules.Common import rgbtohex, string_time_from_ms, convert_to_rgb
 
 
 class TyreInfo(ttk.Frame):
@@ -17,48 +17,7 @@ class TyreInfo(ttk.Frame):
 
         ttk.Frame.__init__(self, master=root)
 
-        self.pressure_table = {
-            "Dry": {
-                "high": {
-                    "low": 28.1,
-                    "low_mid": 28.3,
-                    "high_mid": 28.7,
-                    "high": 29.9
-                },
-                "mid": {
-                    "low": 27.1,
-                    "low_mid": 27.3,
-                    "high_mid": 27.7,
-                    "high": 27.9
-                },
-                "low": {
-                    "low": 26.1,
-                    "low_mid": 26.3,
-                    "high_mid": 26.7,
-                    "high": 26.9
-                }
-            },
-            "Wet": {
-                "high": {
-                    "low": 30.8,
-                    "low_mid": 31.0,
-                    "high_mid": 31.5,
-                    "high": 31.7
-                },
-                "mid": {
-                    "low": 29.7,
-                    "low_mid": 29.5,
-                    "high_mid": 30.5,
-                    "high": 30.7
-                },
-                "low": {
-                    "low": 28.5,
-                    "low_mid": 28.7,
-                    "high_mid": 29.0,
-                    "high": 29.2
-                }
-            }
-        }
+        self.colours = [(32, 32, 255), (32, 255, 32), (255, 32, 32)]
 
         self.tyre_pressure = tkinter.DoubleVar()
         self.tyre_temp = tkinter.DoubleVar()
@@ -159,34 +118,31 @@ class TyreInfo(ttk.Frame):
 
     def update_tyre_hud(self, pressure: float) -> None:
 
-        pressure_table = self.pressure_table["Dry"]
-        mid_table = pressure_table["mid"]
-        high_table = pressure_table["high"]
-        low_table = pressure_table["low"]
+        if pressure > 29:
+            colour = self.colours[2]
 
-        colour = "Grey"
+        elif pressure < 26:
+            colour = self.colours[0]
 
-        if mid_table["low"] < pressure < mid_table["high"]:
+        else:
+            colour = convert_to_rgb(26, 29, pressure, self.colours)
 
-            if mid_table["high_mid"] < pressure:
-                colour = rgbtohex(128, 255, 0)
+        self.tyre_canvas.itemconfig(self.tyre_rect, fill=rgbtohex(*colour))
 
-            elif mid_table["low_mid"] < pressure < mid_table["high_mid"]:
-                colour = rgbtohex(0, 255, 0)
+    def update_brake_hud(self, brake_temp: float) -> None:
 
-            else:
-                colour = rgbtohex(0, 255, 128)
+        if brake_temp > 1000:
+            colour = self.colours[2]
 
-        elif mid_table["high"] < pressure:
+        elif brake_temp < 100:
+            colour = self.colours[0]
 
-            if high_table["high_mid"] < pressure:
-                colour = rgbtohex(255, 0, 0)
+        else:
+            colour = convert_to_rgb(100, 1000, brake_temp, self.colours)
 
-            elif high_table["low_mid"] < pressure < high_table["high_mid"]:
-                colour = rgbtohex(255, 128, 0)
+        self.tyre_canvas.itemconfig(self.brake_rect, fill=rgbtohex(*colour))
 
-            elif pressure < high_table["low_mid"]:
-                colour = rgbtohex(255, 255, 0)
+    def reset_value(self) -> None:
 
         elif pressure < mid_table["low"]:
 
