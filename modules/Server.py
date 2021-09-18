@@ -39,7 +39,7 @@ class ServerInstance:
 
         try:
             self._tcp_socket.bind(("", tcp_port))
-            self._udp_socket.bind(("", 4270))
+            self._udp_socket.bind(("", udp_port))
 
         except OSError as msg:
             self.error = msg
@@ -243,7 +243,6 @@ class ServerInstance:
                     self._send_udp(net_data, addr)
 
                 elif packet_type == PacketType.UpdateUsers:
-                    print("update user")
                     ServerInstance._send_data(c_socket, net_data)
 
         if data == b"":

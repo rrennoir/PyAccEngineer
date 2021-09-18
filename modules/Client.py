@@ -27,8 +27,6 @@ class ClientInstance:
 
     def connect(self) -> Tuple[bool, str]:
 
-        print(f"{self._tcp_port} {self._udp_port}")
-
         try:
             self._tcp_socket.settimeout(3)
             self._tcp_socket.connect((self._server_ip, self._tcp_port))

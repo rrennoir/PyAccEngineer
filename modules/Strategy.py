@@ -253,6 +253,7 @@ class StrategyUI(tkinter.Frame):
     def _next_driver(self) -> None:
 
         if len(self.driver_list) < 2:
+            print("no more than 2 driver connected")
             return
 
         set_driver = self.driver_var.get()
@@ -279,7 +280,7 @@ class StrategyUI(tkinter.Frame):
     def _prev_driver(self) -> None:
 
         if len(self.driver_list) < 2:
-            print("np")
+            print("no more than 2 driver connected")
             return
 
         set_driver = self.driver_var.get()

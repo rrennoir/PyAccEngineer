@@ -45,8 +45,6 @@ class ConnectionWindow(tkinter.Toplevel):
                 if (type(self.credidentials) is not dict or
                         tuple(self.credidentials.keys()) != key_check):
 
-                    print(type(self.credidentials))
-                    print(tuple(self.credidentials.keys()) != key_check)
                     print(f"Invalid connection.json file")
                     self.credidentials = None
 
