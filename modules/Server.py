@@ -257,6 +257,9 @@ class ServerInstance:
             if tx_queue.qsize() > 0:
                 net_data = tx_queue.get()
 
+                if tx_queue.qsize() > 10:
+                    print("tx_queue is late")
+
                 packet_type = PacketType.from_bytes(net_data)
                 if packet_type == PacketType.SmData:
                     buffer = PacketType.ServerData.to_bytes() + net_data[1:]
@@ -270,6 +273,7 @@ class ServerInstance:
 
                 elif (packet_type == PacketType.Telemetry
                       and udp_addr is not None):
+
                     self._send_udp(net_data, udp_addr)
 
                 elif packet_type == PacketType.UpdateUsers:
@@ -281,6 +285,7 @@ class ServerInstance:
                     port = struct.unpack("!i", net_data[lenght+2:lenght+6])[0]
 
                     udp_addr = (t_addr, port)
+                    print(udp_addr)
 
         if data == b"":
             print(f"SERVER: Lost connection with client {addr}")
@@ -291,7 +296,7 @@ class ServerInstance:
     def _send_udp(self, data: bytes, addr: tuple) -> None:
 
         try:
-            self._udp_socket.sendto(data, (addr[0], 4271))
+            self._udp_socket.sendto(data, addr)
 
         except ConnectionResetError as msg:
             print(f"SERVER: {msg}")
