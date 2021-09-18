@@ -345,7 +345,7 @@ class App(tkinter.Tk):
         tab_control.add(self.prev_lap_graph, text="Previous Laps")
 
         self.last_time = time.time()
-        self.min_delta = 0.5
+        self.min_delta = 0.1
 
         self.client_loop()
 
@@ -502,7 +502,7 @@ class App(tkinter.Tk):
 
     def as_server(self, credis: Credidentials) -> Tuple[bool, str]:
 
-        self.server = ServerInstance(credis.tcp_port)
+        self.server = ServerInstance(credis.tcp_port, credis.udp_port)
 
         if self.server.error is None:
             succes, msg = self.connect_to_server(credis)

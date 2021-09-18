@@ -21,10 +21,12 @@ class ClientHandle:
 
 class ServerInstance:
 
-    def __init__(self, port: int) -> None:
+    def __init__(self, tcp_port: int, udp_port: int) -> None:
 
-        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._socket.settimeout(0.05)
+        self._tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._tcp_socket.settimeout(0.05)
+        self._udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self._udp_socket.settimeout(0.05)
         self._server_thread = threading.Thread(target=self._server_listener)
         self._server_event = threading.Event()
         self.server_queue = queue.Queue()
@@ -36,7 +38,8 @@ class ServerInstance:
         self.error = None
 
         try:
-            self._socket.bind(("", port))
+            self._tcp_socket.bind(("", tcp_port))
+            self._udp_socket.bind(("", 4270))
 
         except OSError as msg:
             self.error = msg
@@ -47,29 +50,35 @@ class ServerInstance:
 
     def _server_listener(self) -> None:
 
-        self._socket.listen()
+        self._tcp_socket.listen()
         handler_event = threading.Event()
         dead_thread_timer = time.time()
         while not self._server_event.is_set():
 
             if len(self._thread_pool) < 4:
                 try:
-                    c_socket, addr = self._socket.accept()
+                    c_socket, addr = self._tcp_socket.accept()
                     print("SERVER: Accepting new connection")
                     self._new_connection(c_socket, addr, handler_event)
 
                 except socket.timeout:
                     pass
 
+                udp_data = self._get_udp_data()
+
                 for client_thread in self._thread_pool:
 
                     if client_thread.rx_queue.qsize() > 0:
+                        print(client_thread.rx_queue.qsize())
 
                         data = client_thread.rx_queue.get()
                         for thread in self._thread_pool:
                             thread.tx_queue.put(data)
 
-            if time.time() - dead_thread_timer > 5:
+                    if udp_data is not None and udp_data != b"":
+                        client_thread.tx_queue.put(udp_data)
+
+            if time.time() - dead_thread_timer > 2:
                 dead_thread_timer = time.time()
                 for client_thread in reversed(self._thread_pool):
                     if not client_thread.thread.is_alive():
@@ -85,7 +94,8 @@ class ServerInstance:
                 if len(self._thread_pool) == 0:
                     self._team_size = None
 
-        self._socket.close()
+        self._tcp_socket.close()
+        self._udp_socket.close()
         handler_event.set()
         print("Closing threads")
         for client_thread in self._thread_pool:
@@ -159,6 +169,19 @@ class ServerInstance:
 
         self._thread_pool[0].rx_queue.put(b"".join(buffer))
 
+    def _get_udp_data(self) -> bytes:
+
+        try:
+            data, _ = self._udp_socket.recvfrom(1024)
+
+        except socket.timeout:
+            data = None
+
+        except ConnectionResetError:
+            data = b""
+
+        return data
+
     def _client_handler(self, c_socket: socket.socket, addr,
                         event: threading.Event, rx_queue: queue.Queue,
                         tx_queue: queue.Queue) -> None:
@@ -213,11 +236,12 @@ class ServerInstance:
 
                 elif packet_type == PacketType.Strategy:
                     ServerInstance._send_data(c_socket, net_data)
+
                 elif packet_type == PacketType.StrategyOK:
                     ServerInstance._send_data(c_socket, net_data)
 
                 elif packet_type == PacketType.Telemetry:
-                    ServerInstance._send_data(c_socket, net_data)
+                    self._send_udp(net_data, addr)
 
                 elif packet_type == PacketType.UpdateUsers:
                     ServerInstance._send_data(c_socket, net_data)
@@ -227,6 +251,23 @@ class ServerInstance:
 
         c_socket.close()
         print("SERVER: client_handler STOPPED")
+
+    def _send_udp(self, data: bytes, addr: tuple) -> None:
+
+        try:
+            self._udp_socket.sendto(data, (addr[0], 4271))
+
+        except ConnectionResetError as msg:
+            print(f"SERVER: {msg}")
+
+        except ConnectionRefusedError as msg:
+            print(f"SERVER: {msg}")
+
+        except ConnectionResetError as msg:
+            print(f"SERVER: {msg}")
+
+        except BrokenPipeError as msg:
+            print(f"SERVER: {msg}")
 
     @staticmethod
     def _send_data(c_socket: socket.socket, data: bytes) -> None:
