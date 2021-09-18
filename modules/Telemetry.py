@@ -4,7 +4,7 @@ import struct
 import tkinter
 from tkinter import ttk
 from dataclasses import astuple, dataclass
-from typing import List, Optional
+from typing import ClassVar, Optional
 
 from SharedMemory.PyAccSharedMemory import Wheels
 
@@ -103,17 +103,19 @@ class TyreInfo(ttk.Frame):
                                     width=var_width, anchor=tkinter.CENTER)
         l_disc_wear_var.grid(row=row_count, column=var_column)
 
-    def update_value(self, pressure: float, tyre_temp: float,
-                     brake_temp: float, pad_wear: float,
-                     disc_wear: float) -> None:
+    def update_value(self, pad_wear: float, disc_wear: float) -> None:
 
-        self.tyre_pressure.set(f"{pressure:.1f}")
-        self.tyre_temp.set(f"{tyre_temp:.1f}")
-        self.brake_temp.set(f"{brake_temp:.1f}")
         self.pad_wear.set(f"{pad_wear:.1f}")
         self.disc_wear.set(f"{disc_wear:.1f}")
 
-        self.update_tyre_hud(pressure)
+    def update_rt_value(self, tyre_pressure: float,
+                        tyre_temp: float, brake_temp: float) -> None:
+
+        self.tyre_pressure.set(f"{tyre_pressure:.1f}")
+        self.tyre_temp.set(f"{tyre_temp:.1f}")
+        self.brake_temp.set(f"{brake_temp:.1f}")
+
+        self.update_tyre_hud(tyre_pressure)
         self.update_brake_hud(brake_temp)
 
     def update_tyre_hud(self, pressure: float) -> None:
@@ -144,39 +146,54 @@ class TyreInfo(ttk.Frame):
 
     def reset_value(self) -> None:
 
-        elif pressure < mid_table["low"]:
-
-            if low_table["high_mid"] < pressure:
-                colour = rgbtohex(0, 255, 255)
-
-            elif low_table["low_mid"] < pressure < low_table["high_mid"]:
-                colour = rgbtohex(0, 128, 255)
-
-            elif pressure < low_table["low_mid"]:
-                colour = rgbtohex(0, 0, 255)
-
-        self.tyre_canvas.itemconfig(self.tyre_rect, fill=colour)
-
-    def update_brake_hud(self, brake_temp: float) -> None:
-
-        if 700 < brake_temp:
-
-            self.tyre_canvas.itemconfig(self.brake_rect, fill="Red")
-
-        elif 300 < brake_temp < 700:
-
-            self.tyre_canvas.itemconfig(self.brake_rect, fill="Green")
-
-        else:
-            self.tyre_canvas.itemconfig(self.brake_rect, fill="Blue")
-
-    def reset_value(self) -> None:
-
         self.tyre_pressure.set(0)
         self.tyre_temp.set(0)
         self.brake_temp.set(0)
         self.pad_wear.set(0)
         self.disc_wear.set(0)
+
+
+@dataclass
+class TelemetryRT:
+
+    gas: float
+    brake: float
+    tyre_pressure: Wheels
+    tyre_temp: Wheels
+    brake_temp: Wheels
+
+    byte_format: ClassVar[str] = "!14f"
+    byte_size: ClassVar[int] = struct.calcsize(byte_format)
+
+    def to_bytes(self) -> bytes:
+
+        buffer = [
+            struct.pack("!f", self.gas),
+            struct.pack("!f", self.brake),
+            struct.pack("!4f", *astuple(self.tyre_pressure)),
+            struct.pack("!4f", *astuple(self.tyre_temp)),
+            struct.pack("!4f", *astuple(self.brake_temp)),
+        ]
+
+        return b"".join(buffer)
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> TelemetryRT:
+
+        if len(data) > cls.byte_size:
+
+            print(f"Telemetry: Warning got packet of {len(data)} bytes")
+            data = data[:cls.byte_size]
+
+        raw_data = struct.unpack(cls.byte_format, data)
+
+        return TelemetryRT(
+            raw_data[0],
+            raw_data[1],
+            Wheels(*raw_data[2:6]),
+            Wheels(*raw_data[6:10]),
+            Wheels(*raw_data[10:14])
+        )
 
 
 @dataclass
@@ -187,9 +204,6 @@ class Telemetry:
     fuel: float
     fuel_per_lap: float
     fuel_estimated_laps: float
-    tyre_pressure: Wheels
-    tyre_temp: Wheels
-    brake_temp: Wheels
     pad_wear: Wheels
     disc_wear: Wheels
     lap_time: int
@@ -197,8 +211,6 @@ class Telemetry:
     previous_time: int
     in_pit: bool
     in_pit_lane: bool
-    gas: float
-    brake: float
 
     def to_bytes(self) -> bytes:
 
@@ -211,9 +223,6 @@ class Telemetry:
             struct.pack("!f", self.fuel),
             struct.pack("!f", self.fuel_per_lap),
             struct.pack("!f", self.fuel_estimated_laps),
-            struct.pack("!4f", *astuple(self.tyre_pressure)),
-            struct.pack("!4f", *astuple(self.tyre_temp)),
-            struct.pack("!4f", *astuple(self.brake_temp)),
             struct.pack("!4f", *astuple(self.pad_wear)),
             struct.pack("!4f", *astuple(self.disc_wear)),
             struct.pack("!i", self.lap_time),
@@ -221,8 +230,6 @@ class Telemetry:
             struct.pack("!i", self.previous_time),
             struct.pack("!?", self.in_pit),
             struct.pack("!?", self.in_pit_lane),
-            struct.pack("!f", self.in_pit_lane),
-            struct.pack("!f", self.in_pit_lane),
         ]
 
         return b"".join(buffer)
@@ -232,12 +239,12 @@ class Telemetry:
 
         lenght = data[0]
 
-        if len(data[1:]) > (118 + lenght):
+        if len(data[1:]) > (62 + lenght):
             psize = len(data[1:])
             print(f"Telemetry: Warning got packet of {psize} bytes")
-            data = data[:(119 + lenght)]
+            data = data[:(63 + lenght)]
 
-        raw_data = struct.unpack(f"!{lenght}s i 23f 3i 2? 2f", data[1:])
+        raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2?", data[1:])
 
         name = raw_data[0].decode("utf-8")
         rest = raw_data[1:]
@@ -250,16 +257,11 @@ class Telemetry:
             rest[3],
             Wheels(*rest[4:8]),
             Wheels(*rest[8:12]),
-            Wheels(*rest[12:16]),
-            Wheels(*rest[16:20]),
-            Wheels(*rest[20:24]),
-            rest[24],
-            rest[25],
-            rest[26],
-            rest[27],
-            rest[28],
-            rest[29],
-            rest[30],
+            rest[12],
+            rest[13],
+            rest[14],
+            rest[15],
+            rest[16],
         )
 
 
@@ -270,6 +272,7 @@ class TelemetryUI(ttk.Frame):
         ttk.Frame.__init__(self, master=root)
 
         self.telemetry: Optional[Telemetry] = None
+        self.telemetry_rt: Optional[TelemetryRT] = None
 
         self.current_driver = None
         self.driver_swap = False
@@ -375,27 +378,16 @@ class TelemetryUI(ttk.Frame):
             self.fuel_lap_left_var.set(
                 f"{self.telemetry.fuel_estimated_laps:.1f}")
 
-            pressure = astuple(self.telemetry.tyre_pressure)
-            tyre_temp = astuple(self.telemetry.tyre_temp)
-            brake_temp = astuple(self.telemetry.brake_temp)
             pad_wear = astuple(self.telemetry.pad_wear)
             disc_wear = astuple(self.telemetry.disc_wear)
 
-            self.front_left.update_value(pressure[0], tyre_temp[0],
-                                         brake_temp[0], pad_wear[0],
-                                         disc_wear[0])
+            self.front_left.update_value(pad_wear[0], disc_wear[0])
 
-            self.front_right.update_value(pressure[1], tyre_temp[1],
-                                          brake_temp[1], pad_wear[1],
-                                          disc_wear[1])
+            self.front_right.update_value(pad_wear[1], disc_wear[1])
 
-            self.rear_left.update_value(pressure[2], tyre_temp[2],
-                                        brake_temp[2], pad_wear[2],
-                                        disc_wear[2])
+            self.rear_left.update_value(pad_wear[2], disc_wear[2])
 
-            self.rear_right.update_value(pressure[3], tyre_temp[3],
-                                         brake_temp[3], pad_wear[3],
-                                         disc_wear[3])
+            self.rear_right.update_value(pad_wear[3],  disc_wear[3])
 
             self.lap_time_var.set(string_time_from_ms(self.telemetry.lap_time))
             self.best_time_var.set(
@@ -407,3 +399,23 @@ class TelemetryUI(ttk.Frame):
 
                 self.current_driver = self.telemetry.driver
                 self.driver_swap = True
+
+    def update_values_rt(self) -> None:
+
+        if self.telemetry_rt is not None:
+
+            pressure = astuple(self.telemetry_rt.tyre_pressure)
+            tyre_temp = astuple(self.telemetry_rt.tyre_temp)
+            brake_temp = astuple(self.telemetry_rt.brake_temp)
+
+            self.front_left.update_rt_value(pressure[0], tyre_temp[0],
+                                            brake_temp[0])
+
+            self.front_right.update_rt_value(pressure[1], tyre_temp[1],
+                                             brake_temp[1])
+
+            self.rear_left.update_rt_value(pressure[2], tyre_temp[2],
+                                           brake_temp[2])
+
+            self.rear_right.update_rt_value(pressure[3], tyre_temp[3],
+                                            brake_temp[3])

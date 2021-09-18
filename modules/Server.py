@@ -69,13 +69,10 @@ class ServerInstance:
                 if udp_data is not None and len(udp_data) > 0:
 
                     packet = PacketType.from_bytes(udp_data)
-
                     if packet == PacketType.ConnectUDP:
-                        print("got udp connection")
 
                         lenght = udp_data[1]
                         name = udp_data[2:lenght+2].decode("utf-8")
-                        print(name)
 
                         for client_thread in self._thread_pool:
 
@@ -134,7 +131,7 @@ class ServerInstance:
                         event: threading.Event) -> None:
 
         try:
-            data = c_socket.recv(1024)
+            data = c_socket.recv(256)
 
         except socket.timeout:
             data = None
@@ -221,7 +218,7 @@ class ServerInstance:
         while not (event.is_set() or data == b"" or client_disconnect):
 
             try:
-                data = c_socket.recv(1024)
+                data = c_socket.recv(256)
 
             except socket.timeout:
                 data = None
@@ -268,6 +265,11 @@ class ServerInstance:
                     ServerInstance._send_data(c_socket, net_data)
 
                 elif (packet_type == PacketType.Telemetry
+                      and udp_addr is not None):
+
+                    self._send_udp(net_data, udp_addr)
+
+                elif (packet_type == PacketType.TelemetryRT
                       and udp_addr is not None):
 
                     self._send_udp(net_data, udp_addr)

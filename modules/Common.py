@@ -102,6 +102,7 @@ class PacketType(Enum):
     Telemetry = 8
     UpdateUsers = 9
     ConnectUDP = 10
+    TelemetryRT = 11
     Unkown = -1
 
     def to_bytes(self) -> bytes:
@@ -136,6 +137,7 @@ class NetworkQueue(Enum):
     CarInfoData = auto()
     StrategySet = auto()
     Telemetry = auto()
+    TelemetryRT = auto()
     UpdateUsers = auto()
 
 

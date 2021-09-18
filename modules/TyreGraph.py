@@ -12,7 +12,7 @@ from matplotlib import pyplot, style
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from modules.Common import avg
-from modules.Telemetry import Telemetry
+from modules.Telemetry import Telemetry, TelemetryRT
 
 # Use tkinter backend
 matplotlib.use("TkAgg")
@@ -82,11 +82,10 @@ class TyreGraph(tkinter.Frame):
 
     def update_data(self, telemetry: Telemetry) -> None:
 
-        pressures = astuple(telemetry.tyre_pressure)
-
         if telemetry.lap != self.current_lap:
 
             if len(self.pressures_fl) != 0:
+
                 self.fl_var.set(f"{avg(self.pressures_fl):.2f}")
                 self.fr_var.set(f"{avg(self.pressures_fr):.2f}")
                 self.rl_var.set(f"{avg(self.pressures_rl):.2f}")
@@ -101,22 +100,22 @@ class TyreGraph(tkinter.Frame):
 
                 for index, pressure in enumerate(self.pressures_fl):
 
-                    if index % self.app_config["saved_graph_step"] == 0:
+                    if index % self.app_config["saved_graph_step"] * 5 == 0:
                         lap_pressure["front left"].append(pressure)
 
                 for index, pressure in enumerate(self.pressures_fr):
 
-                    if index % self.app_config["saved_graph_step"] == 0:
+                    if index % self.app_config["saved_graph_step"] * 5 == 0:
                         lap_pressure["front right"].append(pressure)
 
                 for index, pressure in enumerate(self.pressures_rl):
 
-                    if index % self.app_config["saved_graph_step"] == 0:
+                    if index % self.app_config["saved_graph_step"] * 5 == 0:
                         lap_pressure["rear left"].append(pressure)
 
                 for index, pressure in enumerate(self.pressures_rr):
 
-                    if index % self.app_config["saved_graph_step"] == 0:
+                    if index % self.app_config["saved_graph_step"] * 5 == 0:
                         lap_pressure["rear right"].append(pressure)
 
                 TyreGraph.previous_laps[str(telemetry.lap)] = lap_pressure
@@ -129,10 +128,14 @@ class TyreGraph(tkinter.Frame):
             self._reset_pressure_loss()
             self.in_pit_lane = False
 
-        if telemetry.in_pit_lane:
+        elif telemetry.in_pit_lane:
             self.in_pit_lane = True
 
-        else:
+    def update_pressures(self, telemetry_rt: TelemetryRT) -> None:
+
+        pressures = astuple(telemetry_rt.tyre_pressure)
+
+        if not self.in_pit_lane and avg(pressures) != 0:
             self._check_pressure_loss(pressures)
 
             self.pressures_fl.append(pressures[0])
@@ -140,7 +143,7 @@ class TyreGraph(tkinter.Frame):
             self.pressures_rl.append(pressures[2])
             self.pressures_rr.append(pressures[3])
 
-            self.data_point = [i / 2 for i in range(0, len(self.pressures_fl))]
+        self.data_point = [i * 0.2 for i in range(0, len(self.pressures_fl))]
 
     def _check_pressure_loss(self, pressures: List[float]) -> None:
 
@@ -381,7 +384,7 @@ class PrevLapsGraph(ttk.Frame):
 
         print(f"ploting for {key}")
 
-        data_point = [i * self.app_config["saved_graph_step"]
+        data_point = [i * self.app_config["saved_graph_step"] * 0.2
                       for i in range(len(lap_data["front left"]))]
 
         self.graph.clear()

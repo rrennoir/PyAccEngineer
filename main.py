@@ -16,7 +16,7 @@ from modules.Client import ClientInstance
 from modules.Common import CarInfo, NetworkQueue, PitStop, Credidentials
 from modules.Server import ServerInstance
 from modules.Strategy import StrategyUI
-from modules.Telemetry import Telemetry, TelemetryUI
+from modules.Telemetry import Telemetry, TelemetryRT, TelemetryUI
 from modules.TyreGraph import PrevLapsGraph, TyreGraph
 from modules.Users import UserUI
 
@@ -324,7 +324,9 @@ class App(tkinter.Tk):
         tab_control.add(self.prev_lap_graph, text="Previous Laps")
 
         self.last_time = time.time()
-        self.min_delta = 0.2
+        self.rt_last_time = time.time()
+        self.rt_min_delta = 0.2
+        self.min_delta = 1.0
 
         self.client_loop()
 
@@ -335,6 +337,7 @@ class App(tkinter.Tk):
 
     def client_loop(self) -> None:
 
+        rt_delta_time = time.time() - self.rt_last_time
         delta_time = time.time() - self.last_time
 
         if self.client is not None and self.client_queue_out.qsize() > 0:
@@ -370,8 +373,15 @@ class App(tkinter.Tk):
                 telemetry = Telemetry.from_bytes(telemetry_bytes)
                 self.telemetry_ui.telemetry = telemetry
                 self.telemetry_ui.update_values()
-
                 self.tyre_graph.update_data(telemetry)
+
+            elif event_type == NetworkQueue.TelemetryRT:
+
+                telemetry_bytes = self.client_queue_out.get()
+                telemetry = TelemetryRT.from_bytes(telemetry_bytes)
+                self.telemetry_ui.telemetry_rt = telemetry
+                self.telemetry_ui.update_values_rt()
+                self.tyre_graph.update_pressures(telemetry)
 
             elif event_type == NetworkQueue.UpdateUsers:
 
@@ -402,49 +412,58 @@ class App(tkinter.Tk):
                 self.strategy_ui.set_driver(self.telemetry_ui.current_driver)
 
         asm_data = self.strategy_ui.asm.get_data()
-        if (asm_data is not None and self.client is not None
-                and delta_time > self.min_delta):
+        if asm_data is not None and self.client is not None:
 
-            self.last_time = time.time()
+            if self.rt_min_delta < rt_delta_time:
 
-            mfd_pressure = asm_data.Graphics.mfd_tyre_pressure
-            mfd_fuel = asm_data.Graphics.mfd_fuel_to_add
-            max_fuel = asm_data.Static.max_fuel
-            mfd_tyre_set = asm_data.Graphics.mfd_tyre_set
-            infos = CarInfo(*astuple(mfd_pressure),
-                            mfd_fuel, max_fuel,
-                            mfd_tyre_set)
+                self.rt_last_time = time.time()
 
-            self.client_queue_in.put(NetworkQueue.CarInfoData)
-            self.client_queue_in.put(infos.to_bytes())
+                telemetry_rt = TelemetryRT(
+                    asm_data.Physics.gas,
+                    asm_data.Physics.brake,
+                    asm_data.Physics.wheel_pressure,
+                    asm_data.Physics.tyre_core_temp,
+                    asm_data.Physics.brake_temp,
+                )
 
-            # Telemetry
-            name = asm_data.Static.player_name.split("\x00")[0]
-            surname = asm_data.Static.player_surname.split("\x00")[0]
-            driver = f"{name} {surname}"
+                self.client_queue_in.put(NetworkQueue.TelemetryRT)
+                self.client_queue_in.put(telemetry_rt.to_bytes())
 
-            telemetry_data = Telemetry(
-                driver,
-                asm_data.Graphics.completed_lap,
-                asm_data.Physics.fuel,
-                asm_data.Graphics.fuel_per_lap,
-                asm_data.Graphics.fuel_estimated_laps,
-                asm_data.Physics.wheel_pressure,
-                asm_data.Physics.tyre_core_temp,
-                asm_data.Physics.brake_temp,
-                asm_data.Physics.pad_life,
-                asm_data.Physics.disc_life,
-                asm_data.Graphics.current_time,
-                asm_data.Graphics.best_time,
-                asm_data.Graphics.last_time,
-                asm_data.Graphics.is_in_pit,
-                asm_data.Graphics.is_in_pit_lane,
-                asm_data.Physics.gas,
-                asm_data.Physics.brake,
-            )
+            if self.min_delta < delta_time:
 
-            self.client_queue_in.put(NetworkQueue.Telemetry)
-            self.client_queue_in.put(telemetry_data.to_bytes())
+                self.last_time = time.time()
+
+                infos = CarInfo(
+                    *astuple(asm_data.Graphics.mfd_tyre_pressure),
+                    asm_data.Graphics.mfd_fuel_to_add,
+                    asm_data.Static.max_fuel,
+                    asm_data.Graphics.mfd_tyre_set)
+
+                self.client_queue_in.put(NetworkQueue.CarInfoData)
+                self.client_queue_in.put(infos.to_bytes())
+
+                # Telemetry
+                name = asm_data.Static.player_name.split("\x00")[0]
+                surname = asm_data.Static.player_surname.split("\x00")[0]
+                driver = f"{name} {surname}"
+
+                telemetry_data = Telemetry(
+                    driver,
+                    asm_data.Graphics.completed_lap,
+                    asm_data.Physics.fuel,
+                    asm_data.Graphics.fuel_per_lap,
+                    asm_data.Graphics.fuel_estimated_laps,
+                    asm_data.Physics.pad_life,
+                    asm_data.Physics.disc_life,
+                    asm_data.Graphics.current_time,
+                    asm_data.Graphics.best_time,
+                    asm_data.Graphics.last_time,
+                    asm_data.Graphics.is_in_pit,
+                    asm_data.Graphics.is_in_pit_lane
+                )
+
+                self.client_queue_in.put(NetworkQueue.Telemetry)
+                self.client_queue_in.put(telemetry_data.to_bytes())
 
         if self.strategy_ui.strategy is not None:
 

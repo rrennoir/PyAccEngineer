@@ -57,7 +57,7 @@ class ClientInstance:
 
         self._send_tcp(b"".join(buffer))
 
-        reply = self._tcp_socket.recv(64)
+        reply = self._tcp_socket.recv(256)
         self._tcp_socket.settimeout(0.01)
         packet_type = PacketType.from_bytes(reply)
         if packet_type == PacketType.ConnectionReply:
@@ -104,7 +104,7 @@ class ClientInstance:
             while data != b"":
 
                 try:
-                    data = self._tcp_socket.recv(1024)
+                    data = self._tcp_socket.recv(256)
 
                 except socket.timeout as msg:
                     print(f"CLIENT: {msg}")
@@ -160,7 +160,7 @@ class ClientInstance:
         while not (self._thread_event.is_set() or data == b""):
 
             try:
-                udp_data, _ = self._udp_socket.recvfrom(1024)
+                udp_data, _ = self._udp_socket.recvfrom(256)
 
             except socket.timeout:
                 udp_data = None
@@ -169,7 +169,7 @@ class ClientInstance:
                 udp_data = b""
 
             try:
-                data = self._tcp_socket.recv(1024)
+                data = self._tcp_socket.recv(256)
 
             except socket.timeout:
                 data = None
@@ -181,10 +181,17 @@ class ClientInstance:
                 self._handle_data(data)
 
             if udp_data is not None and len(udp_data) > 0:
+
                 packet_type = PacketType.from_bytes(udp_data)
+
                 if packet_type == PacketType.Telemetry:
 
                     self._out_queue.put(NetworkQueue.Telemetry)
+                    self._out_queue.put(udp_data[1:])
+
+                if packet_type == PacketType.TelemetryRT:
+
+                    self._out_queue.put(NetworkQueue.TelemetryRT)
                     self._out_queue.put(udp_data[1:])
 
             self._check_app_state()
@@ -247,3 +254,8 @@ class ClientInstance:
 
                 telemetry = self._in_queue.get()
                 self._send_udp(PacketType.Telemetry.to_bytes() + telemetry)
+
+            elif item_type == NetworkQueue.TelemetryRT:
+
+                telemetry = self._in_queue.get()
+                self._send_udp(PacketType.TelemetryRT.to_bytes() + telemetry)
