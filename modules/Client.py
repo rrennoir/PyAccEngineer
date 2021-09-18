@@ -19,7 +19,6 @@ class ClientInstance:
         self._udp_port = credis.udp_port
         self._username = credis.username
         self._driverID = credis.driverID
-        self._team_size = credis.driverNb
         self._listener_thread = None
         self._thread_event = None
         self._in_queue = in_queue
@@ -55,7 +54,6 @@ class ClientInstance:
         buffer.append(name_lenght)
         buffer.append(name_byte)
         buffer.append(struct.pack("!i", self._driverID))
-        buffer.append(struct.pack("!B", self._team_size))
 
         self._send_tcp(b"".join(buffer))
 

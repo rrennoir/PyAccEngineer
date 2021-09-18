@@ -34,7 +34,6 @@ class ServerInstance:
         self.connection = None
         self._thread_pool: List[ClientHandle] = []
         self._users = []
-        self._team_size = None
         self.error = None
 
         try:
@@ -122,7 +121,6 @@ class ServerInstance:
             lenght = data[1]
             name = data[2:lenght+2].decode("utf-8")
             driverID = struct.unpack("!i", data[lenght+2:lenght+6])[0]
-            self._team_size = struct.unpack("!B", data[lenght+6:])[0]
 
             packet_type = PacketType.ConnectionReply.to_bytes()
             if name not in [user[0] for user in self._users]:
@@ -157,7 +155,6 @@ class ServerInstance:
         buffer = []
         buffer.append(PacketType.UpdateUsers.to_bytes())
         buffer.append(struct.pack("!B", len(self._users)))
-        buffer.append(struct.pack("!B", self._team_size))
 
         for user in self._users:
 

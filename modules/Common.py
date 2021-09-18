@@ -60,7 +60,6 @@ class Credidentials:
     udp_port: int
     username: str
     driverID: int
-    driverNb: int
 
 
 class PacketType(Enum):

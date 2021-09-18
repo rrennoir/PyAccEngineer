@@ -93,7 +93,6 @@ class StrategyUI(tkinter.Frame):
         self.driver_set = False
         self.current_driver = ""
         self.driver_list = []
-        self.team_size = None
 
         self.fuel_text = tkinter.DoubleVar()
         self.tyre_set_text = tkinter.IntVar(value=1)
@@ -256,24 +255,43 @@ class StrategyUI(tkinter.Frame):
             print("no more than 2 driver connected")
             return
 
+        driver_ids = []
+        current_id = None
+
+        # find current driver id
         set_driver = self.driver_var.get()
+        print(f"Current: {set_driver}")
         for driver in self.driver_list:
 
             if driver[0] == set_driver:
                 current_id = driver[1]
 
-        found = False
-        next_id = current_id + 1
-        while not found:
+            else:
+                driver_ids.append(driver[1])
 
-            for driver in self.driver_list:
-                if driver[1] == next_id:
-                    next_driver = driver[0]
-                    found = True
+        if current_id is None:
+            print(f"Driver {set_driver} not in driver list")
+            return
 
-            next_id += 1
-            if next_id > self.team_size:
-                next_id = 1
+        # Find next driver in the list
+        driver_ids.sort()
+        next_driver_id = None
+        for id in driver_ids:
+
+            if current_id < id:
+                next_driver_id = id
+                break
+
+        if next_driver_id is None:
+            print(f"No next driver found")
+            return
+
+        # Find name of next driver id
+        for driver in self.driver_list:
+
+            if driver[1] == next_driver_id:
+                next_driver = driver[0]
+                break
 
         self.driver_var.set(next_driver)
 
@@ -283,32 +301,45 @@ class StrategyUI(tkinter.Frame):
             print("no more than 2 driver connected")
             return
 
+        driver_ids = []
+        current_id = None
+
+        # find current driver id
         set_driver = self.driver_var.get()
+        print(f"Current: {set_driver}")
         for driver in self.driver_list:
 
             if driver[0] == set_driver:
                 current_id = driver[1]
 
-        found = False
-        next_id = current_id - 1
-        while not found:
+            else:
+                driver_ids.append(driver[1])
 
-            for driver in self.driver_list:
-                if driver[1] == next_id:
-                    next_driver = driver[0]
-                    found = True
+        if current_id is None:
+            print(f"Driver {set_driver} not in driver list")
+            return
 
-            next_id -= 1
-            print(next_id)
-            if next_id < 1:
-                next_id = 5
+        # Find next driver in the list
+        driver_ids.sort()
+        previous_driver_id = None
+        for id in driver_ids:
 
-        self.driver_var.set(next_driver)
+            if current_id > id:
+                previous_driver_id = id
+                break
 
-    def set_team_size(self, size: int) -> None:
+        if previous_driver_id is None:
+            print(f"No next driver found")
+            return
 
-        if self.team_size is None:
-            self.team_size = size
+        # Find name of next driver id
+        for driver in self.driver_list:
+
+            if driver[1] == previous_driver_id:
+                previous_driver = driver[0]
+                break
+
+        self.driver_var.set(previous_driver)
 
     def check_reply(self) -> None:
 

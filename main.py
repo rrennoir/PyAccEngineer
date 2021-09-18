@@ -34,7 +34,7 @@ class ConnectionWindow(tkinter.Toplevel):
 
         self.credidentials = None
         key_check = ("ip", "tcp_port", "udp_port", "username",
-                     "driverID", "teamSize")
+                     "driverID")
 
         if Path(self.connection_path).is_file():
             fp = open(self.connection_path, "r")
@@ -93,11 +93,6 @@ class ConnectionWindow(tkinter.Toplevel):
                                         anchor=tkinter.E, width=10)
         self.l_driverID.grid(row=4, column=0, padx=5, pady=2)
 
-        self.l_driverNb = tkinter.Label(self.f_connection_info,
-                                        text="N° of drivers",
-                                        anchor=tkinter.E, width=10)
-        self.l_driverNb.grid(row=5, column=0, padx=5, pady=2)
-
         self.e_ip = tkinter.Entry(self.f_connection_info, width=30)
         self.e_ip.grid(row=0, column=1, padx=5, pady=2)
 
@@ -113,9 +108,6 @@ class ConnectionWindow(tkinter.Toplevel):
         self.e_driverID = tkinter.Entry(self.f_connection_info, width=30)
         self.e_driverID.grid(row=4, column=1, padx=5, pady=2)
 
-        self.e_driverNb = tkinter.Entry(self.f_connection_info, width=30)
-        self.e_driverNb.grid(row=5, column=1, padx=5, pady=2)
-
         self.b_connect = tkinter.Button(self, text="Connect",
                                         command=self.connect)
         self.b_connect.grid(row=1, padx=10, pady=5)
@@ -129,7 +121,6 @@ class ConnectionWindow(tkinter.Toplevel):
             self.e_udp_port.insert(tkinter.END, self.credidentials["udp_port"])
             self.e_username.insert(tkinter.END, self.credidentials["username"])
             self.e_driverID.insert(tkinter.END, self.credidentials["driverID"])
-            self.e_driverNb.insert(tkinter.END, self.credidentials["teamSize"])
 
         else:
             self.e_tcp_port.insert(tkinter.END, "4269")
@@ -182,14 +173,6 @@ class ConnectionWindow(tkinter.Toplevel):
             self.e_driverID.config(background="Red")
             error_message += "Invalide driver ID\n"
 
-        team_size = self.e_driverNb.get()
-        if team_size != "" and team_size.isnumeric():
-            self.e_driverNb.config(background="White")
-
-        else:
-            self.e_driverNb.config(background="Red")
-            error_message += "N° of drivers\n"
-
         if error_message == "":
 
             credits = Credidentials(
@@ -197,8 +180,7 @@ class ConnectionWindow(tkinter.Toplevel):
                 tcp_port=int(self.e_tcp_port.get()),
                 udp_port=int(self.e_udp_port.get()),
                 username=self.e_username.get(),
-                driverID=int(self.e_driverID.get()),
-                driverNb=int(self.e_driverNb.get()),
+                driverID=int(self.e_driverID.get())
             )
 
             if self.as_server:
@@ -237,8 +219,7 @@ class ConnectionWindow(tkinter.Toplevel):
                 "tcp_port": credits.tcp_port,
                 "udp_port": credits.udp_port,
                 "username": credits.username,
-                "driverID": credits.driverID,
-                "teamSize": credits.driverNb
+                "driverID": credits.driverID
             }
             json.dump(connection, fp)
 
@@ -396,11 +377,10 @@ class App(tkinter.Tk):
 
                 user_update = self.client_queue_out.get()
                 nb_users = user_update[0]
-                team_size = user_update[1]
                 self.user_ui.reset()
                 self.strategy_ui.reset_drivers()
 
-                index = 2
+                index = 1
                 for _ in range(nb_users):
 
                     lenght = user_update[index]
@@ -413,8 +393,6 @@ class App(tkinter.Tk):
                     index += 4
                     self.user_ui.add_user(name, driverID)
                     self.strategy_ui.add_driver(name, driverID)
-
-                self.strategy_ui.set_team_size(team_size)
 
         if self.telemetry_ui.driver_swap or self.user_ui.active_user is None:
 
