@@ -336,7 +336,7 @@ class PrevLapsGraph(ttk.Frame):
 
         self.lap_selector.grid(row=0, column=1)
 
-        self.b_save = ttk.Button(self, text="Save graph", state="disabled",
+        self.b_save = ttk.Button(self, text="Save graph", state="active",
                                  command=self._save_graph)
         self.b_save.grid(row=0, column=1)
 
@@ -356,9 +356,6 @@ class PrevLapsGraph(ttk.Frame):
         laps = TyreGraph.previous_laps
 
         if self.laps != laps:
-
-            if self.b_save["state"] == "disabled":
-                self.b_save["state"] = "active"
 
             laps_key = list(laps.keys())
 
