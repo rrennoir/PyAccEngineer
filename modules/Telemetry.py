@@ -73,21 +73,28 @@ class TyreInfo(ttk.Frame):
             var_column = 1
             tyre_column = 0
             txt_anchor = tkinter.W
+            brake_x = 0
 
         else:
             label_column = 0
             var_column = 1
             tyre_column = 2
             txt_anchor = tkinter.E
+            brake_x = 35
 
         row_count = 0
         f_tyre = ttk.Frame(self)
         f_tyre.grid(row=row_count, rowspan=6, column=tyre_column)
 
         self.tyre_canvas = tkinter.Canvas(f_tyre, width=50, height=100)
+        self.tyre_canvas.pack(padx=10)
+
         self.tyre_rect = self.tyre_canvas.create_rectangle(0, 0, 50, 100,
                                                            fill="Grey")
-        self.tyre_canvas.pack(padx=10)
+
+        self.brake_rect = self.tyre_canvas.create_rectangle(brake_x, 25,
+                                                            brake_x + 15, 75,
+                                                            fill="Grey")
 
         l_tyre = ttk.Label(self, text=name, width=label_width,
                            anchor=txt_anchor)
@@ -148,6 +155,7 @@ class TyreInfo(ttk.Frame):
         self.disc_wear.set(f"{disc_wear:.1f}")
 
         self.update_tyre_hud(pressure)
+        self.update_brake_hud(brake_temp)
 
     def update_tyre_hud(self, pressure: float) -> None:
 
@@ -192,6 +200,19 @@ class TyreInfo(ttk.Frame):
                 colour = rgbtohex(0, 0, 255)
 
         self.tyre_canvas.itemconfig(self.tyre_rect, fill=colour)
+
+    def update_brake_hud(self, brake_temp: float) -> None:
+
+        if 700 < brake_temp:
+
+            self.tyre_canvas.itemconfig(self.brake_rect, fill="Red")
+
+        elif 300 < brake_temp < 700:
+
+            self.tyre_canvas.itemconfig(self.brake_rect, fill="Green")
+
+        else:
+            self.tyre_canvas.itemconfig(self.brake_rect, fill="Blue")
 
     def reset_value(self) -> None:
 
