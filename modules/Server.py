@@ -156,7 +156,6 @@ class ServerInstance:
             lenght = struct.pack("!B", len(name))
             driverID = struct.pack("!i", user[2])
             buffer.append(lenght + name + driverID)
-            buffer.append(lenght + name)
 
         self._thread_pool[0].rx_queue.put(b"".join(buffer))
 
