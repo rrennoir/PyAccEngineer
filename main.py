@@ -324,7 +324,7 @@ class App(tkinter.Tk):
         tab_control.add(self.prev_lap_graph, text="Previous Laps")
 
         self.last_time = time.time()
-        self.min_delta = 0.1
+        self.min_delta = 0.2
 
         self.client_loop()
 
@@ -439,6 +439,8 @@ class App(tkinter.Tk):
                 asm_data.Graphics.last_time,
                 asm_data.Graphics.is_in_pit,
                 asm_data.Graphics.is_in_pit_lane,
+                asm_data.Physics.gas,
+                asm_data.Physics.brake,
             )
 
             self.client_queue_in.put(NetworkQueue.Telemetry)
@@ -456,7 +458,7 @@ class App(tkinter.Tk):
             self.client_queue_in.put(NetworkQueue.StrategyDone)
             self.strategy_ui.strategy_ok = False
 
-        self.c_loop_id = self.after(10, self.client_loop)
+        self.c_loop_id = self.after(50, self.client_loop)
 
     def open_connection_window(self, as_server: bool = False) -> None:
 
