@@ -1,6 +1,6 @@
 # PyAccEngineer v1.4
 
-![app](https://i.imgur.com/CKuR1CS.png)
+![app](https://i.imgur.com/w8uCDtm.png)
 
 ## Requirements
 
