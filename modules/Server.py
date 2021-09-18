@@ -196,10 +196,6 @@ class ServerInstance:
 
         try:
             data, addr = self._udp_socket.recvfrom(1024)
-            if data.startswith(b"hello"):
-                print("got hello")
-                self._udp_socket.sendto(b"hello to you", addr)
-                data = None
 
         except socket.timeout:
             data = None
@@ -294,8 +290,6 @@ class ServerInstance:
         print("SERVER: client_handler STOPPED")
 
     def _send_udp(self, data: bytes, addr: tuple) -> None:
-
-        print(f"sending udp to {addr}")
 
         try:
             self._udp_socket.sendto(data, addr)
