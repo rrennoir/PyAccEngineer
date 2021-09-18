@@ -52,10 +52,10 @@ class ButtonPannel(ttk.Frame):
         for index, step in enumerate(steps):
 
             b_minus = ttk.Button(self, text=str(-step), width=5,
-                                 command=lambda: callback(-step))
+                                 command=partial(callback, -step))
 
             b_add = ttk.Button(self, text=str(step), width=5,
-                               command=lambda: callback(step))
+                               command=partial(callback, step))
 
             b_minus.grid(row=0, column=2 - index, padx=4, pady=2)
             b_add.grid(row=0, column=4 + index, padx=4, pady=2)
