@@ -103,7 +103,18 @@ class StrategyUI(tkinter.Frame):
         self.rear_left_text = tkinter.DoubleVar()
         self.rear_right_text = tkinter.DoubleVar()
 
-        self.driver_var = tkinter.StringVar()
+        self.driver_var = tkinter.StringVar(value="FirstName LastName")
+
+        self.old_fuel = tkinter.DoubleVar()
+        self.old_tyre_set = tkinter.IntVar(value=1)
+        self.old_tyre_compound = tkinter.StringVar(value="Dry")
+
+        self.old_front_left = tkinter.DoubleVar()
+        self.old_front_right = tkinter.DoubleVar()
+        self.old_rear_left = tkinter.DoubleVar()
+        self.old_rear_right = tkinter.DoubleVar()
+
+        self.old_driver = tkinter.StringVar(value="FirstName\nLastName")
 
         self._build_ui()
 
@@ -120,8 +131,90 @@ class StrategyUI(tkinter.Frame):
 
         self.b_set_strat.pack(side=tkinter.RIGHT, padx=5, pady=2)
 
+        f_previous_strat = ttk.Frame(self)
+        f_previous_strat.grid(row=0, rowspan=2, column=1)
+
+        l_title = ttk.Label(f_previous_strat, text="Strategy history")
+        l_title.grid(row=0, column=0, columnspan=2)
+
+        cb_strat = ttk.Combobox(f_previous_strat, values=[""],
+                                state="readonly")
+        cb_strat.grid(row=1, column=0, columnspan=2, padx=4, pady=2)
+
+        # Old fuel
+        l_fuel = ttk.Label(f_previous_strat, text="Fuel")
+        l_fuel.grid(row=2, column=0, padx=4, pady=2)
+
+        l_fuel_var = ttk.Label(f_previous_strat, textvariable=self.old_fuel)
+        l_fuel_var.grid(row=2, column=1, padx=4, pady=2)
+
+        # Old Tyre set
+        l_tyre_set = ttk.Label(f_previous_strat, text="Tyre set")
+        l_tyre_set.grid(row=3, column=0, padx=4, pady=2)
+
+        l_tyre_set_var = ttk.Label(f_previous_strat,
+                                   textvariable=self.old_tyre_set)
+        l_tyre_set_var.grid(row=3, column=1, padx=4, pady=2)
+
+        # Old compound
+        l_compound = ttk.Label(f_previous_strat, text="Compound")
+        l_compound.grid(row=4, column=0, padx=4, pady=2)
+
+        l_compound_var = ttk.Label(f_previous_strat,
+                                   textvariable=self.old_tyre_compound)
+        l_compound_var.grid(row=4, column=1, padx=4, pady=2)
+
+        # Old front left
+        l_pressure_fl = ttk.Label(f_previous_strat, text="Front left")
+        l_pressure_fl.grid(row=5, column=0, padx=4, pady=2)
+
+        l_pressure_fl_var = ttk.Label(f_previous_strat,
+                                      textvariable=self.old_front_left)
+        l_pressure_fl_var.grid(row=5, column=1, padx=4, pady=2)
+
+        # Old front right
+        l_pressure_fr = ttk.Label(f_previous_strat, text="Front right")
+        l_pressure_fr.grid(row=6, column=0, padx=4, pady=2)
+
+        l_pressure_fr_var = ttk.Label(f_previous_strat,
+                                      textvariable=self.old_front_right)
+        l_pressure_fr_var.grid(row=6, column=1, padx=4, pady=2)
+
+        # Old rear left
+        l_pressure_rl = ttk.Label(f_previous_strat, text="Rear left")
+        l_pressure_rl.grid(row=7, column=0, padx=4, pady=2)
+
+        l_pressure_rl_var = ttk.Label(f_previous_strat,
+                                      textvariable=self.old_rear_left)
+        l_pressure_rl_var.grid(row=7, column=1, padx=4, pady=2)
+
+        # Old rear right
+        l_pressure_rr = ttk.Label(f_previous_strat, text="Rear right")
+        l_pressure_rr.grid(row=8, column=0, padx=4, pady=2)
+
+        l_pressure_rr_var = ttk.Label(f_previous_strat,
+                                      textvariable=self.old_rear_right)
+        l_pressure_rr_var.grid(row=8, column=1, padx=4, pady=2)
+
+        # Old driver
+        l_driver = ttk.Label(f_previous_strat, text="Driver")
+        l_driver.grid(row=9, column=0, padx=4, pady=2)
+
+        l_pressure_rr_var = ttk.Label(f_previous_strat,
+                                      textvariable=self.old_driver)
+        l_pressure_rr_var.grid(row=9, column=1, padx=4, pady=2)
+
+        b_copy = ttk.Button(f_previous_strat, text="Copy",
+                            command=self._copy_strat)
+
+        b_copy.grid(row=10, column=0, columnspan=2, padx=4, pady=5)
+
         self.update_values()
         self.check_reply()
+
+    def _copy_strat(self) -> None:
+
+        pass
 
     def _build_ui(self) -> None:
 
