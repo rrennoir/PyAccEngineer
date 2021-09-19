@@ -3,10 +3,11 @@ import multiprocessing
 import queue
 import time
 import tkinter
-from tkinter import ttk
 from dataclasses import astuple
+from datetime import datetime
 from functools import partial
-from typing import Union, List
+from tkinter import ttk
+from typing import List, Union
 
 import pyautogui
 import win32com
@@ -88,14 +89,13 @@ class StrategyUI(tkinter.Frame):
         self.data_queue = multiprocessing.Queue()
         self.strat_setter = StrategySetter(self.data_queue)
 
-        self.tyres = None
-        self.mfd_fuel = 0
-        self.mfd_tyre_set = 0
         self.max_static_fuel = 120
 
         self.driver_set = False
         self.current_driver = ""
         self.driver_list = []
+
+        self.strategies = {}
 
         self.fuel_text = tkinter.DoubleVar()
         self.tyre_set_text = tkinter.IntVar(value=1)
@@ -117,8 +117,6 @@ class StrategyUI(tkinter.Frame):
         self.old_rear_left = tkinter.DoubleVar()
         self.old_rear_right = tkinter.DoubleVar()
 
-        self.old_driver = tkinter.StringVar(value="FirstName\nLastName")
-
         self._build_ui()
 
         f_button_grid = ttk.Frame(self)
@@ -135,77 +133,85 @@ class StrategyUI(tkinter.Frame):
         self.b_set_strat.pack(side=tkinter.RIGHT, padx=5, pady=2)
 
         f_previous_strat = ttk.Frame(self)
-        f_previous_strat.grid(row=0, rowspan=2, column=1)
+        f_previous_strat.grid(row=0, rowspan=2, column=1, padx=5)
 
         l_title = ttk.Label(f_previous_strat, text="Strategy history")
         l_title.grid(row=0, column=0, columnspan=2)
 
-        cb_strat = ttk.Combobox(f_previous_strat, values=[""],
-                                state="readonly")
-        cb_strat.grid(row=1, column=0, columnspan=2, padx=4, pady=2)
+        self.cb_strat = ttk.Combobox(f_previous_strat, values=[""],
+                                     state="readonly")
+        self.cb_strat.bind("<<ComboboxSelected>>", self._show_old_strat)
+        self.cb_strat.grid(row=1, column=0, columnspan=2, padx=4, pady=2)
 
         # Old fuel
-        l_fuel = ttk.Label(f_previous_strat, text="Fuel")
+        l_fuel = ttk.Label(f_previous_strat, text="Fuel",
+                           anchor=tkinter.E, width=10)
         l_fuel.grid(row=2, column=0, padx=4, pady=2)
 
-        l_fuel_var = ttk.Label(f_previous_strat, textvariable=self.old_fuel)
+        l_fuel_var = ttk.Label(f_previous_strat, width=5,
+                               anchor=tkinter.CENTER,
+                               textvariable=self.old_fuel)
         l_fuel_var.grid(row=2, column=1, padx=4, pady=2)
 
         # Old Tyre set
-        l_tyre_set = ttk.Label(f_previous_strat, text="Tyre set")
+        l_tyre_set = ttk.Label(f_previous_strat, text="Tyre set",
+                               anchor=tkinter.E, width=10)
         l_tyre_set.grid(row=3, column=0, padx=4, pady=2)
 
-        l_tyre_set_var = ttk.Label(f_previous_strat,
+        l_tyre_set_var = ttk.Label(f_previous_strat, width=5,
+                                   anchor=tkinter.CENTER,
                                    textvariable=self.old_tyre_set)
         l_tyre_set_var.grid(row=3, column=1, padx=4, pady=2)
 
         # Old compound
-        l_compound = ttk.Label(f_previous_strat, text="Compound")
+        l_compound = ttk.Label(f_previous_strat, text="Compound",
+                               anchor=tkinter.E, width=10)
         l_compound.grid(row=4, column=0, padx=4, pady=2)
 
-        l_compound_var = ttk.Label(f_previous_strat,
+        l_compound_var = ttk.Label(f_previous_strat, width=5,
+                                   anchor=tkinter.CENTER,
                                    textvariable=self.old_tyre_compound)
         l_compound_var.grid(row=4, column=1, padx=4, pady=2)
 
         # Old front left
-        l_pressure_fl = ttk.Label(f_previous_strat, text="Front left")
+        l_pressure_fl = ttk.Label(f_previous_strat, text="Front left",
+                                  anchor=tkinter.E, width=10)
         l_pressure_fl.grid(row=5, column=0, padx=4, pady=2)
 
-        l_pressure_fl_var = ttk.Label(f_previous_strat,
+        l_pressure_fl_var = ttk.Label(f_previous_strat, width=5,
+                                      anchor=tkinter.CENTER,
                                       textvariable=self.old_front_left)
         l_pressure_fl_var.grid(row=5, column=1, padx=4, pady=2)
 
         # Old front right
-        l_pressure_fr = ttk.Label(f_previous_strat, text="Front right")
+        l_pressure_fr = ttk.Label(f_previous_strat, text="Front right",
+                                  anchor=tkinter.E, width=10)
         l_pressure_fr.grid(row=6, column=0, padx=4, pady=2)
 
-        l_pressure_fr_var = ttk.Label(f_previous_strat,
+        l_pressure_fr_var = ttk.Label(f_previous_strat, width=5,
+                                      anchor=tkinter.CENTER,
                                       textvariable=self.old_front_right)
         l_pressure_fr_var.grid(row=6, column=1, padx=4, pady=2)
 
         # Old rear left
-        l_pressure_rl = ttk.Label(f_previous_strat, text="Rear left")
+        l_pressure_rl = ttk.Label(f_previous_strat, text="Rear left",
+                                  anchor=tkinter.E, width=10)
         l_pressure_rl.grid(row=7, column=0, padx=4, pady=2)
 
-        l_pressure_rl_var = ttk.Label(f_previous_strat,
+        l_pressure_rl_var = ttk.Label(f_previous_strat, width=5,
+                                      anchor=tkinter.CENTER,
                                       textvariable=self.old_rear_left)
         l_pressure_rl_var.grid(row=7, column=1, padx=4, pady=2)
 
         # Old rear right
-        l_pressure_rr = ttk.Label(f_previous_strat, text="Rear right")
+        l_pressure_rr = ttk.Label(f_previous_strat, text="Rear right",
+                                  anchor=tkinter.E, width=10)
         l_pressure_rr.grid(row=8, column=0, padx=4, pady=2)
 
-        l_pressure_rr_var = ttk.Label(f_previous_strat,
+        l_pressure_rr_var = ttk.Label(f_previous_strat, width=5,
+                                      anchor=tkinter.CENTER,
                                       textvariable=self.old_rear_right)
         l_pressure_rr_var.grid(row=8, column=1, padx=4, pady=2)
-
-        # Old driver
-        l_driver = ttk.Label(f_previous_strat, text="Driver")
-        l_driver.grid(row=9, column=0, padx=4, pady=2)
-
-        l_pressure_rr_var = ttk.Label(f_previous_strat,
-                                      textvariable=self.old_driver)
-        l_pressure_rr_var.grid(row=9, column=1, padx=4, pady=2)
 
         b_copy = ttk.Button(f_previous_strat, text="Copy",
                             command=self._copy_strat)
@@ -217,7 +223,39 @@ class StrategyUI(tkinter.Frame):
 
     def _copy_strat(self) -> None:
 
-        pass
+        if self.cb_strat.get() == "":
+            print("No strategy selected")
+            return
+
+        self.fuel_text.set(self.old_fuel.get())
+        self.tyre_set_text.set(self.old_tyre_set.get())
+        self.tyre_compound_text.set(self.old_tyre_compound.get())
+        self.front_left_text.set(f"{self.old_front_left.get():.1f}")
+        self.front_right_text.set(f"{self.old_front_right.get():.1f}")
+        self.rear_left_text.set(f"{self.old_rear_left.get():.1f}")
+        self.rear_right_text.set(f"{self.old_rear_right.get():.1f}")
+
+    def _show_old_strat(self, _) -> None:
+
+        if self.cb_strat.get() == "":
+            print("No strategy selected")
+            return
+
+        selected_strat = self.cb_strat.get()
+
+        if selected_strat not in self.strategies:
+            print(f"{selected_strat} not in strategies")
+            return
+
+        strategy: PitStop = self.strategies[selected_strat]
+
+        self.old_fuel.set(strategy.fuel)
+        self.old_tyre_set.set(strategy.tyre_set + 1)
+        self.old_tyre_compound.set(strategy.tyre_compound)
+        self.old_front_left.set(f"{strategy.tyre_pressures[0]:.1f}")
+        self.old_front_right.set(f"{strategy.tyre_pressures[1]:.1f}")
+        self.old_rear_left.set(f"{strategy.tyre_pressures[2]:.1f}")
+        self.old_rear_right.set(f"{strategy.tyre_pressures[3]:.1f}")
 
     def _build_ui(self) -> None:
 
@@ -425,7 +463,7 @@ class StrategyUI(tkinter.Frame):
                 break
 
         if previous_driver_id is None:
-            print(f"No next driver found")
+            print(f"No previous driver found")
             return
 
         # Find name of next driver id
@@ -451,17 +489,18 @@ class StrategyUI(tkinter.Frame):
 
         if self.server_data is not None:
 
-            self.tyres = list(astuple(self.server_data)[:4])
-            self.mfd_fuel = self.server_data.fuel_to_add
-            self.mfd_tyre_set = self.server_data.tyre_set
+            tyres = astuple(self.server_data)[:4]
+            mfd_tyre_set = self.server_data.tyre_set
+            mfd_fuel = self.server_data.fuel_to_add
+
             self.max_static_fuel = self.server_data.max_fuel
 
-            self.fuel_text.set(f"{self.mfd_fuel:.1f}")
-            self.tyre_set_text.set(self.mfd_tyre_set + 1)
-            self.front_left_text.set(f"{self.tyres[0]:.1f}")
-            self.front_right_text.set(f"{self.tyres[1]:.1f}")
-            self.rear_left_text.set(f"{self.tyres[2]:.1f}")
-            self.rear_right_text.set(f"{self.tyres[3]:.1f}")
+            self.fuel_text.set(f"{mfd_fuel:.1f}")
+            self.tyre_set_text.set(mfd_tyre_set + 1)
+            self.front_left_text.set(f"{tyres[0]:.1f}")
+            self.front_right_text.set(f"{tyres[1]:.1f}")
+            self.rear_left_text.set(f"{tyres[2]:.1f}")
+            self.rear_right_text.set(f"{tyres[3]:.1f}")
 
             if self.tyre_compound_text.get() == "":
                 self.tyre_compound_text.set("Dry")
@@ -502,9 +541,22 @@ class StrategyUI(tkinter.Frame):
         else:
             driver_offset = 0
 
-        self.strategy = PitStop(
-            self.mfd_fuel, self.mfd_tyre_set, self.tyre_compound_text.get(),
-            self.tyres, driver_offset)
+        strat = PitStop(self.fuel_text.get(),
+                        self.tyre_set_text.get() - 1,
+                        self.tyre_compound_text.get(),
+                        (
+                          self.front_left_text.get(),
+                          self.front_right_text.get(),
+                          self.rear_left_text.get(),
+                          self.rear_right_text.get()
+                        ),
+                        driver_offset)
+
+        time_key = datetime.now().strftime("%H:%M.%S_%d_%m_%Y")
+        self.strategies[time_key] = strat
+        self.cb_strat["value"] = (*self.cb_strat["value"], time_key)
+
+        self.strategy = strat
         self.b_set_strat.config(state="disabled")
 
     def is_strategy_applied(self, state: bool) -> None:
@@ -523,45 +575,33 @@ class StrategyUI(tkinter.Frame):
 
     def change_pressure_fl(self, change) -> None:
 
-        if self.tyres is None:
-            return
-
-        self.tyres[0] = clamp(self.tyres[0] + change, 20.3, 35.0)
-        self.front_left_text.set(f"{self.tyres[0]:.1f}")
+        temp = clamp(self.front_left_text.get() + change, 20.3, 35.0)
+        self.front_left_text.set(f"{temp:.1f}")
 
     def change_pressure_fr(self, change) -> None:
 
-        if self.tyres is None:
-            return
-
-        self.tyres[1] = clamp(self.tyres[1] + change, 20.3, 35.0)
-        self.front_right_text.set(f"{self.tyres[1]:.1f}")
+        temp = clamp(self.front_right_text.get() + change, 20.3, 35.0)
+        self.front_right_text.set(f"{temp:.1f}")
 
     def change_pressure_rl(self, change) -> None:
 
-        if self.tyres is None:
-            return
-
-        self.tyres[2] = clamp(self.tyres[2] + change, 20.3, 35.0)
-        self.rear_left_text.set(f"{self.tyres[2]:.1f}")
+        temp = clamp(self.rear_left_text.get() + change, 20.3, 35.0)
+        self.rear_left_text.set(f"{temp:.1f}")
 
     def change_pressure_rr(self, change) -> None:
 
-        if self.tyres is None:
-            return
-
-        self.tyres[3] = clamp(self.tyres[3] + change, 20.3, 35.0)
-        self.rear_right_text.set(f"{self.tyres[3]:.1f}")
+        temp = clamp(self.rear_right_text.get() + change, 20.3, 35.0)
+        self.rear_right_text.set(f"{temp:.1f}")
 
     def change_fuel(self, change) -> None:
 
-        self.mfd_fuel = clamp(self.mfd_fuel + change, 0, self.max_static_fuel)
-        self.fuel_text.set(f"{self.mfd_fuel:.1f}")
+        temp = clamp(self.fuel_text.get() + change, 0, self.max_static_fuel)
+        self.fuel_text.set(f"{temp:.1f}")
 
     def change_tyre_set(self, change: int) -> None:
 
-        self.mfd_tyre_set = clamp(self.mfd_tyre_set + change, 0, 49)
-        self.tyre_set_text.set(self.mfd_tyre_set + 1)
+        self.mfd_tyre_set = clamp(self.tyre_set_text.get() + change, 0, 49)
+        self.tyre_set_text.set(self.mfd_tyre_set)
 
     def change_tyre_compound(self, compound: str) -> None:
 
