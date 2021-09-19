@@ -4,3 +4,4 @@ __pycache__
 Pressure_Graph
 *.png
 build
+.VSCodeCounter
