@@ -82,11 +82,14 @@ class ClientInstance:
                 return (True, "Connected")
 
             else:
+                self._tcp_socket.close()
+                self._udp_socket.close()
                 return (False, "Connection rejected")
 
         else:
             # TODO should I ?
             self._tcp_socket.shutdown(socket.SHUT_RDWR)
+            self._udp_socket.shutdown(socket.SHUT_RDWR)
             return (False, "Connection refused")
 
     def disconnect(self) -> None:
