@@ -6,7 +6,7 @@ from tkinter import ttk
 from dataclasses import astuple, dataclass
 from typing import ClassVar, Optional
 
-from SharedMemory.PyAccSharedMemory import Wheels
+from SharedMemory.PyAccSharedMemory import Wheels, ACC_SESSION_TYPE
 
 from modules.Common import rgbtohex, string_time_from_ms, convert_to_rgb
 
@@ -211,6 +211,10 @@ class Telemetry:
     previous_time: int
     in_pit: bool
     in_pit_lane: bool
+    session: ACC_SESSION_TYPE
+
+    byte_size: ClassVar[int] = struct.calcsize("!B i 11f 3i 2? B")
+    byte_format: ClassVar[str] = "!B i 11f 3i 2? B"
 
     def to_bytes(self) -> bytes:
 
@@ -230,6 +234,7 @@ class Telemetry:
             struct.pack("!i", self.previous_time),
             struct.pack("!?", self.in_pit),
             struct.pack("!?", self.in_pit_lane),
+            struct.pack("!B", self.session.value),
         ]
 
         return b"".join(buffer)
@@ -238,13 +243,14 @@ class Telemetry:
     def from_bytes(cls, data: bytes) -> Telemetry:
 
         lenght = data[0]
+        expected_packet_size = cls.byte_size + lenght
 
-        if len(data[1:]) > (62 + lenght):
+        if len(data[1:]) > expected_packet_size:
             psize = len(data[1:])
             print(f"Telemetry: Warning got packet of {psize} bytes")
-            data = data[:(63 + lenght)]
+            data = data[:expected_packet_size]
 
-        raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2?", data[1:])
+        raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2? B", data[1:])
 
         name = raw_data[0].decode("utf-8")
         rest = raw_data[1:]
@@ -262,6 +268,7 @@ class Telemetry:
             rest[14],
             rest[15],
             rest[16],
+            ACC_SESSION_TYPE(rest[17]),
         )
 
 
