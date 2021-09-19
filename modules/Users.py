@@ -82,6 +82,15 @@ class UserUI(ttk.Frame):
             else:
                 user.label.configure(style="TLabel")
 
+    def remove_active(self) -> None:
+
+        for user in self.user_vars:
+
+            if user.var.get()[:-4] == self.active_user:
+                user.label.configure(style="TLabel")
+
+        self.active_user = None
+
     def reset(self) -> None:
 
         self.user_list.clear()
