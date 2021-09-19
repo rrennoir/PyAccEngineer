@@ -4,8 +4,9 @@ import struct
 import sys
 from dataclasses import astuple, dataclass
 from enum import Enum, auto
-from typing import ClassVar, Tuple, List, Union
+from typing import ClassVar, List, Tuple, Union
 
+import win32clipboard
 
 EPSILON = sys.float_info.epsilon  # Smallest possible difference.
 
@@ -32,6 +33,20 @@ def convert_to_rgb(minval, maxval, val, colours):
     else:
         (r1, g1, b1), (r2, g2, b2) = colours[i], colours[i+1]
         return int(r1 + f*(r2-r1)), int(g1 + f*(g2-g1)), int(b1 + f*(b2-b1))
+
+
+def send_to_clipboard(clip_type, data):
+
+    win32clipboard.OpenClipboard()
+    try:
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardData(clip_type, data)
+
+    except TypeError as msg:
+        print(msg)
+
+    finally:
+        win32clipboard.CloseClipboard()
 
 
 def rgbtohex(r: int, g: int, b: int) -> str:

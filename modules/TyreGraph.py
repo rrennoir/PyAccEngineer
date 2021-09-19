@@ -1,4 +1,5 @@
 import copy
+import io
 import pathlib
 import tkinter
 from dataclasses import astuple
@@ -8,10 +9,12 @@ from typing import List
 
 import matplotlib
 import matplotlib.animation as animation
+import win32clipboard
 from matplotlib import pyplot, style
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from PIL import Image
 
-from modules.Common import avg
+from modules.Common import avg, send_to_clipboard
 from modules.Telemetry import Telemetry, TelemetryRT
 
 # Use tkinter backend
@@ -118,7 +121,8 @@ class TyreGraph(tkinter.Frame):
                     if index % self.app_config["saved_graph_step"] * 5 == 0:
                         lap_pressure["rear right"].append(pressure)
 
-                TyreGraph.previous_laps[str(telemetry.lap)] = lap_pressure
+                key_name = f"{telemetry.session}-Lap_{telemetry.lap}"
+                TyreGraph.previous_laps[key_name] = lap_pressure
 
             self._reset_pressures()
             self.current_lap = telemetry.lap
@@ -340,12 +344,16 @@ class PrevLapsGraph(ttk.Frame):
 
         self.lap_selector.grid(row=0, column=1)
 
-        self.b_save = ttk.Button(self, text="Save graph", state="active",
+        self.b_save = ttk.Button(self, text="Save graph as png",
                                  command=self._save_graph)
         self.b_save.grid(row=0, column=1)
 
+        self.b_copy = ttk.Button(self, text="Copy graph to clipboard",
+                                 command=self._copy_graph)
+        self.b_copy.grid(row=0, column=2)
+
         self.canvas = FigureCanvasTkAgg(self.figure, self)
-        self.canvas.get_tk_widget().grid(row=1, column=0, columnspan=2)
+        self.canvas.get_tk_widget().grid(row=1, column=0, columnspan=3)
 
         self.graph.set_title(f"Pressures over time for lap None")
         self.graph.set_xlabel("Time (Seconds)")
@@ -382,7 +390,7 @@ class PrevLapsGraph(ttk.Frame):
 
         lap_data = self.laps[key]
 
-        print(f"ploting for {key}")
+        print(f"Ploting for {key}")
 
         data_point = [i * self.app_config["saved_graph_step"] * 0.2
                       for i in range(len(lap_data["front left"]))]
@@ -413,7 +421,7 @@ class PrevLapsGraph(ttk.Frame):
         else:
             self.graph.set_xlim(0, data_point[-1])
 
-        self.graph.set_title(f"Pressures over time for lap {key}")
+        self.graph.set_title(f"Pressures over time for {key}")
         self.graph.set_xlabel("Time (Seconds)")
         self.graph.set_ylabel("Pressures (PSI)")
         self.graph.legend()
@@ -425,15 +433,38 @@ class PrevLapsGraph(ttk.Frame):
         if self.lap_selector.get() == "":
             return
 
-        lap = self.lap_selector.get()
-        time = datetime.now().strftime("%y.%m.%d_%H.%M.%S")
+        name = self.lap_selector.get()
+        time = datetime.now().strftime("%Y.%m.%d_%H.%M.%S")
 
         save_dir = pathlib.Path("./Pressure_Graph")
         save_dir.mkdir(parents=True, exist_ok=True)
 
-        path = save_dir / f"{time}_{lap}.png"
+        path = save_dir / f"{time}_{name}.png"
 
         self.figure.savefig(str(path))
+
+    def _copy_graph(self) -> None:
+
+        if self.lap_selector.get() == "":
+            return
+
+        # Save figure to in-memory buffer
+        png_buffer = io.BytesIO()
+        self.figure.savefig(png_buffer, format="png")
+        png_buffer.seek(0)
+
+        # Convert PNG image to BMP and save to in-memory buffer
+        bmp_buffer = io.BytesIO()
+        image = Image.open(png_buffer)
+        image.convert("RGB").save(bmp_buffer, "BMP")
+
+        # Get bytes and remove header
+        final_data = bmp_buffer.getvalue()[14:]
+
+        send_to_clipboard(win32clipboard.CF_DIB, final_data)
+
+        png_buffer.close()
+        bmp_buffer.close()
 
     def close(self) -> None:
 
