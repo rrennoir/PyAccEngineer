@@ -23,13 +23,13 @@ matplotlib.use("TkAgg")
 style.use("dark_background")
 
 
-class TyreGraph(tkinter.Frame):
+class TyreGraph(ttk.Frame):
 
     previous_laps = {}
 
     def __init__(self, root, config: dict) -> None:
 
-        tkinter.Frame.__init__(self, master=root)
+        ttk.Frame.__init__(self, master=root)
 
         self.pressures_fl = []
         self.pressures_fr = []
