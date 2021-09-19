@@ -328,6 +328,9 @@ class App(tkinter.Tk):
         self.rt_min_delta = 0.2
         self.min_delta = 1.0
 
+        self.last_telemetry = time.time()
+        self.telemetry_timeout = 2
+
         self.client_loop()
 
         self.eval('tk::PlaceWindow . center')
@@ -340,7 +343,17 @@ class App(tkinter.Tk):
         rt_delta_time = time.time() - self.rt_last_time
         delta_time = time.time() - self.last_time
 
+        if (self.strategy_ui.is_driver_active and
+                time.time() > self.last_telemetry + self.telemetry_timeout):
+            print("telemetry time out")
+            self.strategy_ui.is_driver_active = False
+            self.user_ui.remove_active()
+            self.telemetry_ui.current_driver = None
+
         if self.client is not None and self.client_queue_out.qsize() > 0:
+
+            if not self.strategy_ui.is_connected:
+                self.strategy_ui.is_connected = True
 
             event_type = self.client_queue_out.get()
 
@@ -375,6 +388,12 @@ class App(tkinter.Tk):
                 self.telemetry_ui.update_values()
                 self.tyre_graph.update_data(telemetry)
 
+                if not self.strategy_ui.is_driver_active:
+                    self.strategy_ui.is_driver_active = True
+                    self.user_ui.set_active(telemetry.driver)
+
+                self.last_telemetry = time.time()
+
             elif event_type == NetworkQueue.TelemetryRT:
 
                 telemetry_bytes = self.client_queue_out.get()
@@ -403,6 +422,9 @@ class App(tkinter.Tk):
                     index += 4
                     self.user_ui.add_user(name, driverID)
                     self.strategy_ui.add_driver(name, driverID)
+
+        elif self.client is None and self.strategy_ui.is_connected:
+            self.strategy_ui.is_connected = False
 
         if self.telemetry_ui.driver_swap or self.user_ui.active_user is None:
 

@@ -76,6 +76,9 @@ class StrategyUI(tkinter.Frame):
 
         self.check_reply_id = None
 
+        self.is_connected = False
+        self.is_driver_active = False
+
         self.server_data: CarInfo = None
         self.strategy = None
         self.strategy_ok = False
@@ -471,7 +474,12 @@ class StrategyUI(tkinter.Frame):
 
     def set_strategy(self) -> None:
 
-        if self.tyres is None:
+        if not self.is_connected:
+            print("Not connected")
+            return
+
+        elif not self.is_driver_active:
+            print("No driver active")
             return
 
         selected_driver = self.driver_var.get()
