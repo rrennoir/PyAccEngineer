@@ -212,9 +212,10 @@ class Telemetry:
     in_pit: bool
     in_pit_lane: bool
     session: ACC_SESSION_TYPE
+    driver_stint_time_left: int
 
-    byte_size: ClassVar[int] = struct.calcsize("!B i 11f 3i 2? B")
-    byte_format: ClassVar[str] = "!B i 11f 3i 2? B"
+    byte_size: ClassVar[int] = struct.calcsize("!B i 11f 3i 2? B i")
+    byte_format: ClassVar[str] = "!B i 11f 3i 2? B i"
 
     def to_bytes(self) -> bytes:
 
@@ -235,6 +236,7 @@ class Telemetry:
             struct.pack("!?", self.in_pit),
             struct.pack("!?", self.in_pit_lane),
             struct.pack("!B", self.session.value),
+            struct.pack("!i", self.driver_stint_time_left),
         ]
 
         return b"".join(buffer)
@@ -245,12 +247,13 @@ class Telemetry:
         lenght = data[0]
         expected_packet_size = cls.byte_size + lenght
 
-        if len(data[1:]) > expected_packet_size:
-            psize = len(data[1:])
-            print(f"Telemetry: Warning got packet of {psize} bytes")
-            data = data[:expected_packet_size]
+        if len(data) > expected_packet_size:
+            psize = len(data)
+            print(f"Telemetry: Warning got packet of {psize} bytes,"
+                  f" expected {expected_packet_size}")
+            data = data[:expected_packet_size + 1]
 
-        raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2? B", data[1:])
+        raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2? B i", data[1:])
 
         name = raw_data[0].decode("utf-8")
         rest = raw_data[1:]
@@ -269,6 +272,7 @@ class Telemetry:
             rest[15],
             rest[16],
             ACC_SESSION_TYPE(rest[17]),
+            rest[18]
         )
 
 
