@@ -33,7 +33,7 @@ class ConnectionWindow(tkinter.Toplevel):
         self.connection_path = "./Config/connection.json"
 
         self.credidentials = None
-        key_check = ("ip", "tcp_port", "udp_port", "username",
+        key_check = ("saved_ip", "tcp_port", "udp_port", "username",
                      "driverID")
 
         if Path(self.connection_path).is_file():
@@ -93,8 +93,12 @@ class ConnectionWindow(tkinter.Toplevel):
                                         anchor=tkinter.E, width=10)
         self.l_driverID.grid(row=4, column=0, padx=5, pady=2)
 
-        self.e_ip = tkinter.Entry(self.f_connection_info, width=30)
-        self.e_ip.grid(row=0, column=1, padx=5, pady=2)
+        if self.credidentials is None:
+            self.cb_ip = ttk.Combobox(self.f_connection_info, width=30, values=[])
+        
+        else:
+            self.cb_ip = ttk.Combobox(self.f_connection_info, width=30, values=self.credidentials["saved_ip"])
+        self.cb_ip.grid(row=0, column=1, padx=5, pady=2)
 
         self.e_tcp_port = tkinter.Entry(self.f_connection_info, width=30)
         self.e_tcp_port.grid(row=1, column=1, padx=5, pady=2)
@@ -114,9 +118,6 @@ class ConnectionWindow(tkinter.Toplevel):
 
         if self.credidentials is not None:
 
-            if not self.as_server:
-                self.e_ip.insert(tkinter.END, self.credidentials["ip"])
-
             self.e_tcp_port.insert(tkinter.END, self.credidentials["tcp_port"])
             self.e_udp_port.insert(tkinter.END, self.credidentials["udp_port"])
             self.e_username.insert(tkinter.END, self.credidentials["username"])
@@ -127,8 +128,8 @@ class ConnectionWindow(tkinter.Toplevel):
             self.e_udp_port.insert(tkinter.END, "4270")
 
         if self.as_server:
-            self.e_ip.insert(tkinter.END, "127.0.0.1")
-            self.e_ip.config(state="disabled")
+            self.cb_ip.set("127.0.0.1")
+            self.cb_ip["state"] = "disabled"
 
     def connect(self) -> None:
 
@@ -137,11 +138,9 @@ class ConnectionWindow(tkinter.Toplevel):
         error_message = ""
 
         try:
-            ipaddress.ip_address(self.e_ip.get())
-            self.e_ip.config(background="White")
+            ipaddress.ip_address(self.cb_ip.get())
 
         except ValueError:
-            self.e_ip.config(background="Red")
             error_message += "Invalide IP address\n"
 
         if self.e_tcp_port.get().isnumeric():
@@ -176,7 +175,7 @@ class ConnectionWindow(tkinter.Toplevel):
         if error_message == "":
 
             credits = Credidentials(
-                ip=self.e_ip.get(),
+                ip=self.cb_ip.get(),
                 tcp_port=int(self.e_tcp_port.get()),
                 udp_port=int(self.e_udp_port.get()),
                 username=self.e_username.get(),
@@ -212,16 +211,29 @@ class ConnectionWindow(tkinter.Toplevel):
 
     def save_credidentials(self, credits: Credidentials) -> None:
 
+        if  self.credidentials is None:
+            saved_ip = [self.cb_ip.get()]
+
+        elif credits.ip not in self.credidentials["saved_ip"]:
+
+            saved_ip = [self.cb_ip.get(), *self.credidentials["saved_ip"]]
+
+            if len(saved_ip) > 5:
+                self.credidentials["saved_ip"].pop()
+
+        else:
+            saved_ip = self.credidentials["saved_ip"]
+
         with open(self.connection_path, "w") as fp:
 
             connection = {
-                "ip": credits.ip,
+                "saved_ip": saved_ip,
                 "tcp_port": credits.tcp_port,
                 "udp_port": credits.udp_port,
                 "username": credits.username,
-                "driverID": credits.driverID
+                "driverID": credits.driverID,
             }
-            json.dump(connection, fp)
+            json.dump(connection, fp, indent=4)
 
     def on_close(self) -> None:
 
