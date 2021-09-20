@@ -483,6 +483,7 @@ class App(tkinter.Tk):
                     asm_data.Graphics.is_in_pit,
                     asm_data.Graphics.is_in_pit_lane,
                     asm_data.Graphics.session_type,
+                    asm_data.Graphics.driver_stint_time_left
                 )
 
                 self.client_queue_in.put(NetworkQueue.Telemetry)
