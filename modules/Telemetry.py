@@ -245,10 +245,11 @@ class Telemetry:
         lenght = data[0]
         expected_packet_size = cls.byte_size + lenght
 
-        if len(data[1:]) > expected_packet_size:
-            psize = len(data[1:])
-            print(f"Telemetry: Warning got packet of {psize} bytes")
-            data = data[:expected_packet_size]
+        if len(data) > expected_packet_size:
+            psize = len(data)
+            print(f"Telemetry: Warning got packet of {psize} bytes,"
+                  f" expected {expected_packet_size}")
+            data = data[:expected_packet_size + 1]
 
         raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2? B", data[1:])
 
