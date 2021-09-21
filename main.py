@@ -478,6 +478,8 @@ class App(tkinter.Tk):
                 surname = asm_data.Static.player_surname.split("\x00")[0]
                 driver = f"{name} {surname}"
 
+                has_wet = asm_data.Graphics.tyre_compound.startswith("wet")
+
                 telemetry_data = Telemetry(
                     driver,
                     asm_data.Graphics.completed_lap,
@@ -496,6 +498,7 @@ class App(tkinter.Tk):
                     asm_data.Physics.wheel_pressure,
                     asm_data.Physics.tyre_core_temp,
                     asm_data.Physics.brake_temp,
+                    has_wet
                 )
 
                 self.client_queue_in.put(NetworkQueue.Telemetry)

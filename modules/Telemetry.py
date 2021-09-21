@@ -25,6 +25,14 @@ class TyreInfo(ttk.Frame):
         self.pad_wear = tkinter.DoubleVar()
         self.disc_wear = tkinter.DoubleVar()
 
+        self.has_wet = False
+
+        self.tyre_range = {
+            "dry": [26, 29],
+            "wet": [28, 32],
+            "gt4": [25, 28]
+        }
+
         label_width = 20
         var_width = 5
         if on_the_right:
@@ -103,10 +111,12 @@ class TyreInfo(ttk.Frame):
                                     width=var_width, anchor=tkinter.CENTER)
         l_disc_wear_var.grid(row=row_count, column=var_column)
 
-    def update_value(self, pad_wear: float, disc_wear: float) -> None:
+    def update_value(self, pad_wear: float, disc_wear: float,
+                     has_wet: bool) -> None:
 
         self.pad_wear.set(f"{pad_wear:.1f}")
         self.disc_wear.set(f"{disc_wear:.1f}")
+        self.has_wet = has_wet
 
     def update_rt_value(self, tyre_pressure: float,
                         tyre_temp: float, brake_temp: float) -> None:
@@ -120,14 +130,19 @@ class TyreInfo(ttk.Frame):
 
     def update_tyre_hud(self, pressure: float) -> None:
 
-        if pressure > 29:
+        pressure_range = self.tyre_range["dry"]
+        if self.has_wet:
+            pressure_range = self.tyre_range["wet"]
+
+        if pressure > pressure_range[1]:
             colour = self.colours[2]
 
-        elif pressure < 26:
+        elif pressure < pressure_range[0]:
             colour = self.colours[0]
 
         else:
-            colour = convert_to_rgb(26, 29, pressure, self.colours)
+            colour = convert_to_rgb(pressure_range[0], pressure_range[1],
+                                    pressure, self.colours)
 
         self.tyre_canvas.itemconfig(self.tyre_rect, fill=rgbtohex(*colour))
 
