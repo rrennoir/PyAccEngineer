@@ -305,6 +305,9 @@ class TelemetryUI(ttk.Frame):
 
         self.gas = tkinter.DoubleVar()
         self.brake = tkinter.DoubleVar()
+        self.steering = tkinter.DoubleVar()
+        self.gear = tkinter.IntVar()
+        self.speed = tkinter.DoubleVar()
 
         self._build_telemetry_ui()
 
@@ -332,10 +335,28 @@ class TelemetryUI(ttk.Frame):
         self.c_brake = tkinter.Canvas(f_driver_input, width=20, height=100)
         self.c_brake.grid(row=0, column=1, padx=10)
 
+        self.c_steering = tkinter.Canvas(f_driver_input, width=100, height=20)
+        self.c_steering.grid(row=1, column=0, padx=10, pady=10, columnspan=2)
+
         self.gas_rect = self.c_gas.create_rectangle(0, 0, 20, 100,
                                                     fill="Green")
         self.brake_rect = self.c_brake.create_rectangle(0, 0, 20, 100,
                                                         fill="Red")
+
+        self.steering_rect = self.c_steering.create_rectangle(0, 0, 100, 20,
+                                                              fill="Yellow")
+
+        l_gear = ttk.Label(f_driver_input, text="Gear", width=7)
+        l_gear.grid(row=2, column=0)
+
+        gear_var = ttk.Label(f_driver_input, textvariable=self.gear, width=3)
+        gear_var.grid(row=2, column=1)
+
+        l_speed = ttk.Label(f_driver_input, text="Speed", width=7)
+        l_speed.grid(row=3, column=0)
+
+        speed_var = ttk.Label(f_driver_input, textvariable=self.speed, width=3)
+        speed_var.grid(row=3, column=1)
 
     def _build_telemetry_ui(self) -> None:
 
@@ -460,8 +481,14 @@ class TelemetryUI(ttk.Frame):
 
             self.gas.set(self.telemetry_rt.gas)
             self.brake.set(self.telemetry_rt.brake)
+            self.steering.set(self.telemetry_rt.streering_angle)
+            self.gear.set(self.telemetry_rt.gear - 1)
+            self.speed.set(f"{self.telemetry_rt.speed:.1f}")
 
             self.c_gas.coords(self.gas_rect, 0,
                               100 - self.gas.get() * 100,  20, 100)
             self.c_brake.coords(self.brake_rect, 0,
                                 100 - self.brake.get() * 100,  20, 100)
+
+            self.c_steering.coords(self.steering_rect,
+                                   0, 0, (self.steering.get() + 1) * 50, 20)
