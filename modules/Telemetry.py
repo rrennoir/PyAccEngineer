@@ -158,11 +158,11 @@ class TelemetryRT:
 
     gas: float
     brake: float
-    tyre_pressure: Wheels
-    tyre_temp: Wheels
-    brake_temp: Wheels
+    streering_angle: float
+    gear: float
+    speed: float
 
-    byte_format: ClassVar[str] = "!14f"
+    byte_format: ClassVar[str] = "!5f"
     byte_size: ClassVar[int] = struct.calcsize(byte_format)
 
     def to_bytes(self) -> bytes:
@@ -170,9 +170,9 @@ class TelemetryRT:
         buffer = [
             struct.pack("!f", self.gas),
             struct.pack("!f", self.brake),
-            struct.pack("!4f", *astuple(self.tyre_pressure)),
-            struct.pack("!4f", *astuple(self.tyre_temp)),
-            struct.pack("!4f", *astuple(self.brake_temp)),
+            struct.pack("!f", self.streering_angle),
+            struct.pack("!f", self.gear),
+            struct.pack("!f", self.speed),
         ]
 
         return b"".join(buffer)
@@ -185,15 +185,9 @@ class TelemetryRT:
             print(f"Telemetry: Warning got packet of {len(data)} bytes")
             data = data[:cls.byte_size]
 
-        raw_data = struct.unpack(cls.byte_format, data)
+        unpacked_data = struct.unpack(cls.byte_format, data)
 
-        return TelemetryRT(
-            raw_data[0],
-            raw_data[1],
-            Wheels(*raw_data[2:6]),
-            Wheels(*raw_data[6:10]),
-            Wheels(*raw_data[10:14])
-        )
+        return TelemetryRT(*unpacked_data)
 
 
 @dataclass
@@ -213,9 +207,13 @@ class Telemetry:
     in_pit_lane: bool
     session: ACC_SESSION_TYPE
     driver_stint_time_left: int
+    tyre_pressure: Wheels
+    tyre_temp: Wheels
+    brake_temp: Wheels
+    has_wet_tyres: bool
 
-    byte_size: ClassVar[int] = struct.calcsize("!B i 11f 3i 2? B i")
-    byte_format: ClassVar[str] = "!B i 11f 3i 2? B i"
+    byte_size: ClassVar[int] = struct.calcsize("!B i 11f 3i 2? B i 12f B")
+    byte_format: ClassVar[str] = "!B i 11f 3i 2? B i 12f B"
 
     def to_bytes(self) -> bytes:
 
@@ -237,6 +235,10 @@ class Telemetry:
             struct.pack("!?", self.in_pit_lane),
             struct.pack("!B", self.session.value),
             struct.pack("!i", self.driver_stint_time_left),
+            struct.pack("!4f", *astuple(self.tyre_pressure)),
+            struct.pack("!4f", *astuple(self.tyre_temp)),
+            struct.pack("!4f", *astuple(self.brake_temp)),
+            struct.pack("!B", self.has_wet_tyres),
         ]
 
         return b"".join(buffer)
@@ -253,7 +255,7 @@ class Telemetry:
                   f" expected {expected_packet_size}")
             data = data[:expected_packet_size + 1]
 
-        raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2? B i", data[1:])
+        raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2? B i 12f B", data[1:])
 
         name = raw_data[0].decode("utf-8")
         rest = raw_data[1:]
@@ -272,7 +274,11 @@ class Telemetry:
             rest[15],
             rest[16],
             ACC_SESSION_TYPE(rest[17]),
-            rest[18]
+            rest[18],
+            Wheels(*rest[19:23]),
+            Wheels(*rest[23:27]),
+            Wheels(*rest[27:31]),
+            rest[31],
         )
 
 
@@ -400,6 +406,22 @@ class TelemetryUI(ttk.Frame):
 
         if self.telemetry is not None:
 
+            pressure = astuple(self.telemetry.tyre_pressure)
+            tyre_temp = astuple(self.telemetry.tyre_temp)
+            brake_temp = astuple(self.telemetry.brake_temp)
+
+            self.front_left.update_rt_value(pressure[0], tyre_temp[0],
+                                            brake_temp[0])
+
+            self.front_right.update_rt_value(pressure[1], tyre_temp[1],
+                                             brake_temp[1])
+
+            self.rear_left.update_rt_value(pressure[2], tyre_temp[2],
+                                           brake_temp[2])
+
+            self.rear_right.update_rt_value(pressure[3], tyre_temp[3],
+                                            brake_temp[3])
+
             self.lap_var.set(self.telemetry.lap)
             self.fuel_var.set(f"{self.telemetry.fuel:.1f}")
             self.fuel_per_lap_var.set(f"{self.telemetry.fuel_per_lap:.2f}")
@@ -409,13 +431,17 @@ class TelemetryUI(ttk.Frame):
             pad_wear = astuple(self.telemetry.pad_wear)
             disc_wear = astuple(self.telemetry.disc_wear)
 
-            self.front_left.update_value(pad_wear[0], disc_wear[0])
+            self.front_left.update_value(
+                pad_wear[0], disc_wear[0], self.telemetry.has_wet_tyres)
 
-            self.front_right.update_value(pad_wear[1], disc_wear[1])
+            self.front_right.update_value(
+                pad_wear[1], disc_wear[1], self.telemetry.has_wet_tyres)
 
-            self.rear_left.update_value(pad_wear[2], disc_wear[2])
+            self.rear_left.update_value(
+                pad_wear[2], disc_wear[2], self.telemetry.has_wet_tyres)
 
-            self.rear_right.update_value(pad_wear[3],  disc_wear[3])
+            self.rear_right.update_value(
+                pad_wear[3],  disc_wear[3], self.telemetry.has_wet_tyres)
 
             self.lap_time_var.set(string_time_from_ms(self.telemetry.lap_time))
             self.best_time_var.set(
@@ -431,22 +457,6 @@ class TelemetryUI(ttk.Frame):
     def update_values_rt(self) -> None:
 
         if self.telemetry_rt is not None:
-
-            pressure = astuple(self.telemetry_rt.tyre_pressure)
-            tyre_temp = astuple(self.telemetry_rt.tyre_temp)
-            brake_temp = astuple(self.telemetry_rt.brake_temp)
-
-            self.front_left.update_rt_value(pressure[0], tyre_temp[0],
-                                            brake_temp[0])
-
-            self.front_right.update_rt_value(pressure[1], tyre_temp[1],
-                                             brake_temp[1])
-
-            self.rear_left.update_rt_value(pressure[2], tyre_temp[2],
-                                           brake_temp[2])
-
-            self.rear_right.update_rt_value(pressure[3], tyre_temp[3],
-                                            brake_temp[3])
 
             self.gas.set(self.telemetry_rt.gas)
             self.brake.set(self.telemetry_rt.brake)

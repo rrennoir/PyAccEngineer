@@ -410,7 +410,6 @@ class App(tkinter.Tk):
                 telemetry = TelemetryRT.from_bytes(telemetry_bytes)
                 self.telemetry_ui.telemetry_rt = telemetry
                 self.telemetry_ui.update_values_rt()
-                self.tyre_graph.update_pressures(telemetry)
 
             elif event_type == NetworkQueue.UpdateUsers:
 
@@ -453,9 +452,9 @@ class App(tkinter.Tk):
                 telemetry_rt = TelemetryRT(
                     asm_data.Physics.gas,
                     asm_data.Physics.brake,
-                    asm_data.Physics.wheel_pressure,
-                    asm_data.Physics.tyre_core_temp,
-                    asm_data.Physics.brake_temp,
+                    asm_data.Physics.steer_angle,
+                    asm_data.Physics.gear,
+                    asm_data.Physics.speed_kmh
                 )
 
                 self.client_queue_in.put(NetworkQueue.TelemetryRT)
@@ -493,7 +492,10 @@ class App(tkinter.Tk):
                     asm_data.Graphics.is_in_pit,
                     asm_data.Graphics.is_in_pit_lane,
                     asm_data.Graphics.session_type,
-                    asm_data.Graphics.driver_stint_time_left
+                    asm_data.Graphics.driver_stint_time_left,
+                    asm_data.Physics.wheel_pressure,
+                    asm_data.Physics.tyre_core_temp,
+                    asm_data.Physics.brake_temp,
                 )
 
                 self.client_queue_in.put(NetworkQueue.Telemetry)
