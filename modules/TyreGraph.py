@@ -325,6 +325,11 @@ class PrevLapsGraph(ttk.Frame):
 
         self.laps = copy.copy(TyreGraph.previous_laps)
 
+        self.avg_fl = tkinter.DoubleVar()
+        self.avg_fr = tkinter.DoubleVar()
+        self.avg_rl = tkinter.DoubleVar()
+        self.avg_rr = tkinter.DoubleVar()
+
         self.app_config = config
 
         self._update_list_id = None
@@ -333,6 +338,7 @@ class PrevLapsGraph(ttk.Frame):
         self.graph = self.figure.add_subplot(1, 1, 1)
 
         f_lap_select = ttk.Frame(self)
+        f_lap_select.grid_columnconfigure(index=2, minsize=250)
         f_lap_select.grid(row=0, column=0)
 
         l_lap = ttk.Label(f_lap_select, text="Lap", width=6)
@@ -344,16 +350,57 @@ class PrevLapsGraph(ttk.Frame):
 
         self.lap_selector.grid(row=0, column=1)
 
-        self.b_save = ttk.Button(self, text="Save graph as png",
+        self.b_save = ttk.Button(f_lap_select, text="Save graph as png",
                                  command=self._save_graph)
-        self.b_save.grid(row=0, column=1)
+        self.b_save.grid(row=0, column=3)
 
-        self.b_copy = ttk.Button(self, text="Copy graph to clipboard",
+        self.b_copy = ttk.Button(f_lap_select, text="Copy graph to clipboard",
                                  command=self._copy_graph)
-        self.b_copy.grid(row=0, column=2)
+        self.b_copy.grid(row=0, column=4)
+
+        f_avg_pressure = ttk.Frame(self, style="PressureInfo.TFrame")
+        f_avg_pressure.grid(row=1, column=0)
+
+        # Row Label
+        title = ttk.Label(f_avg_pressure, text="Last lap average", width=36)
+        title.grid(row=1, column=0, padx=1, pady=1)
+
+        # Colum Label
+        l_front_left = ttk.Label(f_avg_pressure, text="Front left", width=15,
+                                 anchor=tkinter.CENTER)
+        l_front_left.grid(row=0, column=1, padx=1, pady=1)
+
+        l_front_right = ttk.Label(f_avg_pressure, text="Front right", width=15,
+                                  anchor=tkinter.CENTER)
+        l_front_right.grid(row=0, column=2, padx=1, pady=1)
+
+        l_rear_left = ttk.Label(f_avg_pressure, text="Rear left", width=15,
+                                anchor=tkinter.CENTER)
+        l_rear_left.grid(row=0, column=3, padx=1, pady=1)
+
+        l_rear_right = ttk.Label(f_avg_pressure, text="Rear right", width=15,
+                                 anchor=tkinter.CENTER)
+        l_rear_right.grid(row=0, column=4, padx=1, pady=1)
+
+        # Pressure avg values
+        l_fl_var = ttk.Label(f_avg_pressure, textvariable=self.avg_fl,
+                             width=15, anchor=tkinter.CENTER)
+        l_fl_var.grid(row=1, column=1, padx=1)
+
+        l_fr_var = ttk.Label(f_avg_pressure, textvariable=self.avg_fr,
+                             width=15, anchor=tkinter.CENTER)
+        l_fr_var.grid(row=1, column=2, padx=1)
+
+        l_rl_var = ttk.Label(f_avg_pressure,  textvariable=self.avg_rl,
+                             width=15, anchor=tkinter.CENTER)
+        l_rl_var.grid(row=1, column=3, padx=1)
+
+        l_rr_var = ttk.Label(f_avg_pressure, textvariable=self.avg_rr,
+                             width=15, anchor=tkinter.CENTER)
+        l_rr_var.grid(row=1, column=4, padx=1)
 
         self.canvas = FigureCanvasTkAgg(self.figure, self)
-        self.canvas.get_tk_widget().grid(row=1, column=0, columnspan=3)
+        self.canvas.get_tk_widget().grid(row=2, column=0)
 
         self.graph.set_title(f"Pressures over time for lap None")
         self.graph.set_xlabel("Time (Seconds)")
@@ -427,6 +474,11 @@ class PrevLapsGraph(ttk.Frame):
         self.graph.legend()
 
         self.canvas.draw()
+
+        self.avg_fl.set(f"{avg(lap_data['front left']):.1f}")
+        self.avg_fr.set(f"{avg(lap_data['front right']):.1f}")
+        self.avg_rl.set(f"{avg(lap_data['rear left']):.1f}")
+        self.avg_rr.set(f"{avg(lap_data['rear right']):.1f}")
 
     def _save_graph(self) -> None:
 
