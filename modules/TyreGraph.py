@@ -35,7 +35,7 @@ class TyreGraph(ttk.Frame):
         self.pressures_fr = []
         self.pressures_rl = []
         self.pressures_rr = []
-        self.data_point = []
+        self.time_axis = []
         self.in_pit_lane = False
 
         self.current_lap = 0
@@ -56,22 +56,22 @@ class TyreGraph(ttk.Frame):
         self.graph = self.figure.add_subplot(1, 1, 1)
 
         self.plot_line_fl,  = self.graph.plot(
-            self.data_point, self.pressures_fl,
+            self.time_axis, self.pressures_fl,
             self.app_config["graph_colour"]["front_left"],
             label="Front left")
 
         self.plot_line_fr,  = self.graph.plot(
-            self.data_point, self.pressures_fr,
+            self.time_axis, self.pressures_fr,
             self.app_config["graph_colour"]["front_right"],
             label="Front right")
 
         self.plot_line_rl,  = self.graph.plot(
-            self.data_point, self.pressures_rl,
+            self.time_axis, self.pressures_rl,
             self.app_config["graph_colour"]["rear_left"],
             label="Rear left")
 
         self.plot_line_rr,  = self.graph.plot(
-            self.data_point, self.pressures_rr,
+            self.time_axis, self.pressures_rr,
             self.app_config["graph_colour"]["rear_right"],
             label="Rear right")
 
@@ -98,28 +98,34 @@ class TyreGraph(ttk.Frame):
                     "front left": [],
                     "front right": [],
                     "rear left": [],
-                    "rear right": []
+                    "rear right": [],
+                    "time": []
                 }
 
                 for index, pressure in enumerate(self.pressures_fl):
 
-                    if index % self.app_config["saved_graph_step"] * 5 == 0:
+                    if index % self.app_config["saved_graph_step"] == 0:
                         lap_pressure["front left"].append(pressure)
 
                 for index, pressure in enumerate(self.pressures_fr):
 
-                    if index % self.app_config["saved_graph_step"] * 5 == 0:
+                    if index % self.app_config["saved_graph_step"] == 0:
                         lap_pressure["front right"].append(pressure)
 
                 for index, pressure in enumerate(self.pressures_rl):
 
-                    if index % self.app_config["saved_graph_step"] * 5 == 0:
+                    if index % self.app_config["saved_graph_step"] == 0:
                         lap_pressure["rear left"].append(pressure)
 
                 for index, pressure in enumerate(self.pressures_rr):
 
-                    if index % self.app_config["saved_graph_step"] * 5 == 0:
+                    if index % self.app_config["saved_graph_step"] == 0:
                         lap_pressure["rear right"].append(pressure)
+
+                for index, pressure in enumerate(self.time_axis):
+
+                    if index % self.app_config["saved_graph_step"] == 0:
+                        lap_pressure["time"].append(pressure)
 
                 key_name = f"{telemetry.session}-Lap_{telemetry.lap}"
                 TyreGraph.previous_laps[key_name] = lap_pressure
@@ -127,17 +133,7 @@ class TyreGraph(ttk.Frame):
             self._reset_pressures()
             self.current_lap = telemetry.lap
 
-        if self.in_pit_lane and not telemetry.in_pit_lane:
-            self._reset_pressures()
-            self._reset_pressure_loss()
-            self.in_pit_lane = False
-
-        elif telemetry.in_pit_lane:
-            self.in_pit_lane = True
-
-    def update_pressures(self, telemetry_rt: TelemetryRT) -> None:
-
-        pressures = astuple(telemetry_rt.tyre_pressure)
+        pressures = astuple(telemetry.tyre_pressure)
 
         if not self.in_pit_lane and avg(pressures) != 0:
             self._check_pressure_loss(pressures)
@@ -147,14 +143,22 @@ class TyreGraph(ttk.Frame):
             self.pressures_rl.append(pressures[2])
             self.pressures_rr.append(pressures[3])
 
-        self.data_point = [i * 0.2 for i in range(0, len(self.pressures_fl))]
+            self.time_axis.append(telemetry.lap_time / 1000)
+
+        if self.in_pit_lane and not telemetry.in_pit_lane:
+            self._reset_pressures()
+            self._reset_pressure_loss()
+            self.in_pit_lane = False
+
+        elif telemetry.in_pit_lane:
+            self.in_pit_lane = True
 
     def _check_pressure_loss(self, pressures: List[float]) -> None:
 
         if len(self.pressures_fl) == 0:
             return
 
-        delta = 0.05
+        delta = 0.075
 
         diff_lf = self.pressures_fl[-1] - pressures[0]
         if diff_lf > delta:
@@ -184,25 +188,25 @@ class TyreGraph(ttk.Frame):
         if len(self.pressures_fl) == 0:
             return
 
-        if len(self.data_point) != len(self.pressures_fl):
+        if len(self.time_axis) != len(self.pressures_fl):
             print("update incomplet")
             return
 
-        self.plot_line_fl.set_data(self.data_point, self.pressures_fl)
-        self.plot_line_fr.set_data(self.data_point, self.pressures_fr)
-        self.plot_line_rl.set_data(self.data_point, self.pressures_rl)
-        self.plot_line_rr.set_data(self.data_point, self.pressures_rr)
+        self.plot_line_fl.set_data(self.time_axis, self.pressures_fl)
+        self.plot_line_fr.set_data(self.time_axis, self.pressures_fr)
+        self.plot_line_rl.set_data(self.time_axis, self.pressures_rl)
+        self.plot_line_rr.set_data(self.time_axis, self.pressures_rr)
 
         min_all = self._find_lowest_pressure()
         max_all = self._find_higest_pressure()
 
         self.graph.set_ylim(min_all - 0.2, max_all + 0.2)
 
-        if len(self.data_point) == 1:
+        if len(self.time_axis) == 1:
             self.graph.set_xlim(0, 1)
 
         else:
-            self.graph.set_xlim(0, self.data_point[-1])
+            self.graph.set_xlim(0, self.time_axis[-1])
 
     def _find_higest_pressure(self) -> None:
 
@@ -234,7 +238,7 @@ class TyreGraph(ttk.Frame):
         self.pressures_fr.clear()
         self.pressures_rl.clear()
         self.pressures_rr.clear()
-        self.data_point.clear()
+        self.time_axis.clear()
 
     def reset(self) -> None:
 
@@ -439,21 +443,18 @@ class PrevLapsGraph(ttk.Frame):
 
         print(f"Ploting for {key}")
 
-        data_point = [i * self.app_config["saved_graph_step"] * 0.2
-                      for i in range(len(lap_data["front left"]))]
-
         self.graph.clear()
 
-        self.graph.plot(data_point, lap_data["front left"],
+        self.graph.plot(lap_data["time"], lap_data["front left"],
                         self.app_config["graph_colour"]["front_left"],
                         label="Front left")
-        self.graph.plot(data_point, lap_data["front right"],
+        self.graph.plot(lap_data["time"], lap_data["front right"],
                         self.app_config["graph_colour"]["front_right"],
                         label="Front right")
-        self.graph.plot(data_point, lap_data["rear left"],
+        self.graph.plot(lap_data["time"], lap_data["rear left"],
                         self.app_config["graph_colour"]["rear_left"],
                         label="Rear left")
-        self.graph.plot(data_point, lap_data["rear right"],
+        self.graph.plot(lap_data["time"], lap_data["rear right"],
                         self.app_config["graph_colour"]["rear_right"],
                         label="Rear right")
 
@@ -462,16 +463,17 @@ class PrevLapsGraph(ttk.Frame):
 
         self.graph.set_ylim(min_all - 0.2, max_all + 0.2)
 
-        if len(data_point) == 1:
+        if len(lap_data["time"]) == 1:
             self.graph.set_xlim(0, 1)
 
         else:
-            self.graph.set_xlim(0, data_point[-1])
+            self.graph.set_xlim(0, lap_data["time"][-1])
 
         self.graph.set_title(f"Pressures over time for {key}")
         self.graph.set_xlabel("Time (Seconds)")
         self.graph.set_ylabel("Pressures (PSI)")
         self.graph.legend()
+        self.graph.grid(color="#696969", linestyle='-', linewidth=1)
 
         self.canvas.draw()
 
