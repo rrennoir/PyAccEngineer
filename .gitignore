@@ -1,3 +1,7 @@
 .vscode
 connection.json
 __pycache__
+Pressure_Graph
+*.png
+build
+.VSCodeCounter

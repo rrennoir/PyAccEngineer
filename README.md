@@ -1,7 +1,6 @@
-# PyAccEngineer v1.2
+# PyAccEngineer v1.4
 
-![app](https://i.imgur.com/CKuR1CS.png)
-
+![app](https://i.imgur.com/w8uCDtm.png)
 
 ## Requirements
 
@@ -27,22 +26,21 @@
 
 Simply run the main.py in the cmd / powershell
 
-```
+```powershell
 python main.py
 ```
 
-* One user connect as server and the others connect to it
+- One user connect as server and the others connect to it
 
-* If the username chosen is the same as in acc ("name surname") then the user driving will be highlighted in green.
-* `Update values` will refresh the information on the strategy page to the lastest value in game (mfd page)
-* `Set Strategy` will send a command to the user who is currently driving and set the strategy accordingly
-
+- If the username chosen is the same as in acc ("name surname") then the user driving will be highlighted in green.
+- `Update values` will refresh the information on the strategy page to the lastest value in game (mfd page)
+- `Set Strategy` will send a command to the user who is currently driving and set the strategy accordingly
 
 ### Run the server as headless
 
 Simply run the Server.py, by default port is 4269 use -p or --port to change it
 
-```
+```powershell
 python headless_server.py -p 4269
 ```
 
@@ -50,10 +48,9 @@ To stop the server simply press ctrl C in the terminal
 
 ## Warnings
 
-* At least one pit strategy must be set or different from the default
-* When the strategy setter is started the driving user shouldn't alt tab (duh)
-* Tyre change must be on before the strategy setter is started
-* The app can't change driver (yet, I hope)
+- At least one pit strategy must be set or different from the default
+- When the strategy setter is started the driving user shouldn't alt tab (duh)
+- Tyre change must be on before the strategy setter is started
 
 ## ***Will you controle my pc for other things ?***
 

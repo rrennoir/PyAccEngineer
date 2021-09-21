@@ -4,30 +4,34 @@ import struct
 import threading
 from typing import Tuple
 
-from modules.Common import NetworkQueue, PacketType
+from modules.Common import NetworkQueue, PacketType, Credidentials
 
 
 class ClientInstance:
 
-    def __init__(self, ip: str, port: int, username: str,
-                 in_queue: queue.Queue, out_queue: queue.Queue) -> None:
+    def __init__(self, credis: Credidentials, in_queue: queue.Queue,
+                 out_queue: queue.Queue) -> None:
 
-        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._server_ip = ip
-        self._server_port = port
-        self._username = username
+        self._tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self._server_ip = credis.ip
+        self._tcp_port = credis.tcp_port
+        self._udp_port = credis.udp_port
+        self._username = credis.username
+        self._driverID = credis.driverID
         self._listener_thread = None
         self._thread_event = None
         self._in_queue = in_queue
         self._out_queue = out_queue
-        self._error = ""
 
     def connect(self) -> Tuple[bool, str]:
 
         try:
-            self._socket.settimeout(3)
-            self._socket.connect((self._server_ip, self._server_port))
-            self._socket.settimeout(0.1)
+            self._tcp_socket.settimeout(3)
+            self._tcp_socket.connect((self._server_ip, self._tcp_port))
+            self._udp_socket.bind(("", 4271))
+            self._udp_socket.settimeout(0.01)
+
             print(f"CLIENT: Connected to {self._server_ip}")
 
         except socket.timeout as msg:
@@ -49,10 +53,12 @@ class ClientInstance:
         buffer.append(PacketType.Connect.to_bytes())
         buffer.append(name_lenght)
         buffer.append(name_byte)
+        buffer.append(struct.pack("!i", self._driverID))
 
-        self._send_data(b"".join(buffer))
+        self._send_tcp(b"".join(buffer))
 
-        reply = self._socket.recv(64)
+        reply = self._tcp_socket.recv(256)
+        self._tcp_socket.settimeout(0.01)
         packet_type = PacketType.from_bytes(reply)
         if packet_type == PacketType.ConnectionReply:
 
@@ -65,30 +71,45 @@ class ClientInstance:
                     target=self._network_listener)
                 self._listener_thread.start()
 
+                buffer = [
+                    PacketType.ConnectUDP.to_bytes(),
+                    name_lenght,
+                    name_byte
+                ]
+
+                self._send_udp(b"".join(buffer))
+
                 return (True, "Connected")
 
             else:
+                self._tcp_socket.close()
+                self._udp_socket.close()
                 return (False, "Connection rejected")
 
         else:
             # TODO should I ?
-            self._socket.shutdown(socket.SHUT_RDWR)
+            self._tcp_socket.shutdown(socket.SHUT_RDWR)
+            self._udp_socket.shutdown(socket.SHUT_RDWR)
             return (False, "Connection refused")
 
     def disconnect(self) -> None:
 
-        if self._listener_thread.is_alive():
+        if (self._listener_thread is not None
+                and self._listener_thread.is_alive()):
 
-            self._send_data(PacketType.Disconnect.to_bytes())
-            self._socket.shutdown(socket.SHUT_WR)
+            self._thread_event.set()
+            self._listener_thread.join()
+
+            self._send_tcp(PacketType.Disconnect.to_bytes())
+            self._tcp_socket.shutdown(socket.SHUT_WR)
 
             data = None
             while data != b"":
 
                 try:
-                    data = self._socket.recv(1024)
+                    data = self._tcp_socket.recv(256)
 
-                except socket.timeout:
+                except socket.timeout as msg:
                     print(f"CLIENT: {msg}")
 
                 except ConnectionResetError as msg:
@@ -97,34 +118,43 @@ class ClientInstance:
                 except ConnectionRefusedError as msg:
                     print(f"CLIENT: {msg}")
 
-        if self._thread_event is not None:
-            self._thread_event.set()
-            self._listener_thread.join()
+        print("close socket")
+        self._tcp_socket.close()
+        self._udp_socket.close()
 
-    def _send_data(self, data: bytes) -> bool:
+    def _send_tcp(self, data: bytes) -> None:
 
         try:
-            self._socket.send(data)
+            self._tcp_socket.send(data)
 
         except ConnectionResetError as msg:
             print(f"CLIENT: {msg}")
-            self._error = msg
-            return False
 
         except ConnectionRefusedError as msg:
             print(f"CLIENT: {msg}")
-            self._error = msg
-            return False
 
         except ConnectionResetError as msg:
             print(f"CLIENT: {msg}")
-            self._error = msg
-            return False
 
         except BrokenPipeError as msg:
             print(f"CLIENT: {msg}")
-            self._error = msg
-            return False
+
+    def _send_udp(self, data: bytes) -> bool:
+
+        try:
+            self._udp_socket.sendto(data, (self._server_ip, self._udp_port))
+
+        except ConnectionResetError as msg:
+            print(f"CLIENT: {msg}")
+
+        except ConnectionRefusedError as msg:
+            print(f"CLIENT: {msg}")
+
+        except ConnectionResetError as msg:
+            print(f"CLIENT: {msg}")
+
+        except BrokenPipeError as msg:
+            print(f"CLIENT: {msg}")
 
     def _network_listener(self) -> None:
 
@@ -133,7 +163,16 @@ class ClientInstance:
         while not (self._thread_event.is_set() or data == b""):
 
             try:
-                data = self._socket.recv(1024)
+                udp_data, _ = self._udp_socket.recvfrom(256)
+
+            except socket.timeout:
+                udp_data = None
+
+            except ConnectionResetError:
+                udp_data = b""
+
+            try:
+                data = self._tcp_socket.recv(256)
 
             except socket.timeout:
                 data = None
@@ -144,13 +183,25 @@ class ClientInstance:
             if data is not None and len(data) > 0:
                 self._handle_data(data)
 
+            if udp_data is not None and len(udp_data) > 0:
+
+                packet_type = PacketType.from_bytes(udp_data)
+
+                if packet_type == PacketType.Telemetry:
+
+                    self._out_queue.put(NetworkQueue.Telemetry)
+                    self._out_queue.put(udp_data[1:])
+
+                if packet_type == PacketType.TelemetryRT:
+
+                    self._out_queue.put(NetworkQueue.TelemetryRT)
+                    self._out_queue.put(udp_data[1:])
+
             self._check_app_state()
 
         if data == b"":
             print("CLIENT: Lost connection to server.")
 
-        print("close socket")
-        self._socket.close()
         self._thread_event.set()
         print("client_listener STOPPED")
 
@@ -191,18 +242,23 @@ class ClientInstance:
             if item_type == NetworkQueue.CarInfoData:
 
                 info: bytes = self._in_queue.get()
-                self._send_data(PacketType.SmData.to_bytes() + info)
+                self._send_tcp(PacketType.SmData.to_bytes() + info)
 
             elif item_type == NetworkQueue.StrategySet:
 
                 strategy: bytes = self._in_queue.get()
-                self._send_data(PacketType.Strategy.to_bytes() + strategy)
+                self._send_tcp(PacketType.Strategy.to_bytes() + strategy)
 
             elif item_type == NetworkQueue.StrategyDone:
 
-                self._send_data(PacketType.StrategyOK.to_bytes())
+                self._send_tcp(PacketType.StrategyOK.to_bytes())
 
             elif item_type == NetworkQueue.Telemetry:
 
                 telemetry = self._in_queue.get()
-                self._send_data(PacketType.Telemetry.to_bytes() + telemetry)
+                self._send_udp(PacketType.Telemetry.to_bytes() + telemetry)
+
+            elif item_type == NetworkQueue.TelemetryRT:
+
+                telemetry = self._in_queue.get()
+                self._send_udp(PacketType.TelemetryRT.to_bytes() + telemetry)

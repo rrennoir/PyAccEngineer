@@ -2,62 +2,22 @@ from __future__ import annotations
 
 import struct
 import tkinter
+from tkinter import ttk
 from dataclasses import astuple, dataclass
-from typing import List, Optional
+from typing import ClassVar, Optional
 
-from SharedMemory.PyAccSharedMemory import Wheels
+from SharedMemory.PyAccSharedMemory import Wheels, ACC_SESSION_TYPE
 
-from modules.Common import rgbtohex, string_time_from_ms
+from modules.Common import rgbtohex, string_time_from_ms, convert_to_rgb
 
 
-class TyreInfo(tkinter.Frame):
+class TyreInfo(ttk.Frame):
 
-    def __init__(self, root, name: str, font, on_the_right: bool = True):
+    def __init__(self, root, name: str, on_the_right: bool = True):
 
-        tkinter.Frame.__init__(self, master=root, background="Black")
+        ttk.Frame.__init__(self, master=root)
 
-        self.pressure_table = {
-            "Dry": {
-                "high": {
-                    "low": 28.1,
-                    "low_mid": 28.3,
-                    "high_mid": 28.7,
-                    "high": 29.9
-                },
-                "mid": {
-                    "low": 27.1,
-                    "low_mid": 27.3,
-                    "high_mid": 27.7,
-                    "high": 27.9
-                },
-                "low": {
-                    "low": 26.1,
-                    "low_mid": 26.3,
-                    "high_mid": 26.7,
-                    "high": 26.9
-                }
-            },
-            "Wet": {
-                "high": {
-                    "low": 30.8,
-                    "low_mid": 31.0,
-                    "high_mid": 31.5,
-                    "high": 31.7
-                },
-                "mid": {
-                    "low": 29.7,
-                    "low_mid": 29.5,
-                    "high_mid": 30.5,
-                    "high": 30.7
-                },
-                "low": {
-                    "low": 28.5,
-                    "low_mid": 28.7,
-                    "high_mid": 29.0,
-                    "high": 29.2
-                }
-            }
-        }
+        self.colours = [(32, 32, 255), (32, 255, 32), (255, 32, 32)]
 
         self.tyre_pressure = tkinter.DoubleVar()
         self.tyre_temp = tkinter.DoubleVar()
@@ -65,149 +25,139 @@ class TyreInfo(tkinter.Frame):
         self.pad_wear = tkinter.DoubleVar()
         self.disc_wear = tkinter.DoubleVar()
 
-        self.tyre_band: List[tkinter.Label] = []
+        self.has_wet = False
 
-        label_width = 15
+        self.tyre_range = {
+            "dry": [26, 29],
+            "wet": [28, 32],
+            "gt4": [25, 28]
+        }
+
+        label_width = 20
         var_width = 5
         if on_the_right:
             label_column = 2
             var_column = 1
             tyre_column = 0
             txt_anchor = tkinter.W
+            brake_x = 0
 
         else:
             label_column = 0
             var_column = 1
             tyre_column = 2
             txt_anchor = tkinter.E
+            brake_x = 35
 
         row_count = 0
-        self.tyre = tkinter.Frame(self, background="Black")
-        self.tyre.grid(row=row_count, rowspan=6, column=tyre_column)
-        for band_row in range(6):
-            temp = tkinter.Label(self.tyre, width=10,
-                                 background="Green", font=font)
-            temp.grid(row=band_row, column=0)
-            self.tyre_band.append(temp)
+        f_tyre = ttk.Frame(self)
+        f_tyre.grid(row=row_count, rowspan=6, column=tyre_column)
 
-        l_tyre = tkinter.Label(self, text=name, width=label_width,
-                               anchor=txt_anchor, bg="Black", fg="White",
-                               font=font)
+        self.tyre_canvas = tkinter.Canvas(f_tyre, width=50, height=100)
+        self.tyre_canvas.pack(padx=10)
+
+        self.tyre_rect = self.tyre_canvas.create_rectangle(0, 0, 50, 100,
+                                                           fill="Grey")
+
+        self.brake_rect = self.tyre_canvas.create_rectangle(brake_x, 25,
+                                                            brake_x + 15, 75,
+                                                            fill="Grey")
+
+        l_tyre = ttk.Label(self, text=name, width=label_width,
+                           anchor=txt_anchor)
         l_tyre.grid(row=row_count, column=label_column)
         row_count += 1
 
-        l_tyre_pressure = tkinter.Label(self, text="Tyre pressure",
-                                        width=label_width, anchor=txt_anchor,
-                                        bg="Black", fg="White", font=font)
+        l_tyre_pressure = ttk.Label(self, text="Tyre pressure",
+                                    width=label_width, anchor=txt_anchor)
 
-        l_tyre_pressure_var = tkinter.Label(self,
-                                            textvariable=self.tyre_pressure,
-                                            width=var_width,
-                                            bg="Black", fg="White", font=font)
+        l_tyre_pressure_var = ttk.Label(self, textvariable=self.tyre_pressure,
+                                        width=var_width, anchor=tkinter.CENTER)
 
         l_tyre_pressure.grid(row=row_count, column=label_column)
         l_tyre_pressure_var.grid(row=row_count, column=var_column)
         row_count += 1
 
-        l_tyre_temp = tkinter.Label(self, text="Tyre temperature",
-                                    width=label_width, anchor=txt_anchor,
-                                    bg="Black", fg="White", font=font)
-        l_tyre_temp_var = tkinter.Label(self,
-                                        textvariable=self.tyre_temp,
-                                        width=var_width,
-                                        bg="Black", fg="White", font=font)
+        l_tyre_temp = ttk.Label(self, text="Tyre temperature",
+                                width=label_width, anchor=txt_anchor)
+        l_tyre_temp_var = ttk.Label(self, textvariable=self.tyre_temp,
+                                    width=var_width, anchor=tkinter.CENTER)
         l_tyre_temp.grid(row=row_count, column=label_column)
         l_tyre_temp_var.grid(row=row_count, column=var_column)
         row_count += 1
 
-        l_brake_temp = tkinter.Label(self, text="Brake temperature",
-                                     width=label_width, anchor=txt_anchor,
-                                     bg="Black", fg="White", font=font)
-        l_brake_temp_var = tkinter.Label(self,
-                                         textvariable=self.brake_temp,
-                                         width=var_width,
-                                         bg="Black", fg="White", font=font)
+        l_brake_temp = ttk.Label(self, text="Brake temperature",
+                                 width=label_width, anchor=txt_anchor)
+        l_brake_temp_var = ttk.Label(self, textvariable=self.brake_temp,
+                                     width=var_width, anchor=tkinter.CENTER)
         l_brake_temp.grid(row=row_count, column=label_column)
         l_brake_temp_var.grid(row=row_count, column=var_column)
         row_count += 1
 
-        l_pad_wear = tkinter.Label(self, text="Pad wear",
-                                   width=label_width, anchor=txt_anchor,
-                                   bg="Black", fg="White", font=font)
-        l_pad_wear_var = tkinter.Label(self,
-                                       textvariable=self.pad_wear,
-                                       width=var_width, bg="Black", fg="White",
-                                       font=font)
+        l_pad_wear = ttk.Label(self, text="Pad wear", width=label_width,
+                               anchor=txt_anchor)
         l_pad_wear.grid(row=row_count, column=label_column)
+
+        l_pad_wear_var = ttk.Label(self, textvariable=self.pad_wear,
+                                   width=var_width, anchor=tkinter.CENTER)
         l_pad_wear_var.grid(row=row_count, column=var_column)
         row_count += 1
 
-        l_disc_wear = tkinter.Label(self, text="Disc wear",
-                                    width=label_width, anchor=txt_anchor,
-                                    bg="Black", fg="White", font=font)
-        l_disc_wear_var = tkinter.Label(self,
-                                        textvariable=self.disc_wear,
-                                        width=var_width, bg="Black",
-                                        fg="White", font=font)
+        l_disc_wear = ttk.Label(self, text="Disc wear",
+                                width=label_width, anchor=txt_anchor)
         l_disc_wear.grid(row=row_count, column=label_column)
+
+        l_disc_wear_var = ttk.Label(self, textvariable=self.disc_wear,
+                                    width=var_width, anchor=tkinter.CENTER)
         l_disc_wear_var.grid(row=row_count, column=var_column)
 
-    def update_value(self, pressure: float, tyre_temp: float,
-                     brake_temp: float, pad_wear: float,
-                     disc_wear: float) -> None:
+    def update_value(self, pad_wear: float, disc_wear: float,
+                     has_wet: bool) -> None:
 
-        self.tyre_pressure.set(f"{pressure:.1f}")
-        self.tyre_temp.set(f"{tyre_temp:.1f}")
-        self.brake_temp.set(f"{brake_temp:.1f}")
         self.pad_wear.set(f"{pad_wear:.1f}")
         self.disc_wear.set(f"{disc_wear:.1f}")
+        self.has_wet = has_wet
 
-        self.update_tyre_hud(pressure)
+    def update_rt_value(self, tyre_pressure: float,
+                        tyre_temp: float, brake_temp: float) -> None:
+
+        self.tyre_pressure.set(f"{tyre_pressure:.1f}")
+        self.tyre_temp.set(f"{tyre_temp:.1f}")
+        self.brake_temp.set(f"{brake_temp:.1f}")
+
+        self.update_tyre_hud(tyre_pressure)
+        self.update_brake_hud(brake_temp)
 
     def update_tyre_hud(self, pressure: float) -> None:
 
-        pressure_table = self.pressure_table["Dry"]
-        mid_table = pressure_table["mid"]
-        high_table = pressure_table["high"]
-        low_table = pressure_table["low"]
+        pressure_range = self.tyre_range["dry"]
+        if self.has_wet:
+            pressure_range = self.tyre_range["wet"]
 
-        color = "Grey"
-        for band in self.tyre_band:
+        if pressure > pressure_range[1]:
+            colour = self.colours[2]
 
-            if mid_table["low"] < pressure < mid_table["high"]:
+        elif pressure < pressure_range[0]:
+            colour = self.colours[0]
 
-                if mid_table["high_mid"] < pressure:
-                    color = rgbtohex(128, 255, 0)
+        else:
+            colour = convert_to_rgb(pressure_range[0], pressure_range[1],
+                                    pressure, self.colours)
 
-                elif mid_table["low_mid"] < pressure < mid_table["high_mid"]:
-                    color = rgbtohex(0, 255, 0)
+        self.tyre_canvas.itemconfig(self.tyre_rect, fill=rgbtohex(*colour))
 
-                else:
-                    color = rgbtohex(0, 255, 128)
+    def update_brake_hud(self, brake_temp: float) -> None:
 
-            elif mid_table["high"] < pressure:
+        if brake_temp > 1000:
+            colour = self.colours[2]
 
-                if high_table["high_mid"] < pressure:
-                    color = rgbtohex(255, 0, 0)
+        elif brake_temp < 100:
+            colour = self.colours[0]
 
-                elif high_table["low_mid"] < pressure < high_table["high_mid"]:
-                    color = rgbtohex(255, 128, 0)
+        else:
+            colour = convert_to_rgb(100, 1000, brake_temp, self.colours)
 
-                elif pressure < high_table["low_mid"]:
-                    color = rgbtohex(255, 255, 0)
-
-            elif pressure < mid_table["low"]:
-
-                if low_table["high_mid"] < pressure:
-                    color = rgbtohex(0, 255, 255)
-
-                elif low_table["low_mid"] < pressure < low_table["high_mid"]:
-                    color = rgbtohex(0, 128, 255)
-
-                elif pressure < low_table["low_mid"]:
-                    color = rgbtohex(0, 0, 255)
-
-            band.config(bg=color)
+        self.tyre_canvas.itemconfig(self.brake_rect, fill=rgbtohex(*colour))
 
     def reset_value(self) -> None:
 
@@ -219,6 +169,43 @@ class TyreInfo(tkinter.Frame):
 
 
 @dataclass
+class TelemetryRT:
+
+    gas: float
+    brake: float
+    streering_angle: float
+    gear: float
+    speed: float
+
+    byte_format: ClassVar[str] = "!5f"
+    byte_size: ClassVar[int] = struct.calcsize(byte_format)
+
+    def to_bytes(self) -> bytes:
+
+        buffer = [
+            struct.pack("!f", self.gas),
+            struct.pack("!f", self.brake),
+            struct.pack("!f", self.streering_angle),
+            struct.pack("!f", self.gear),
+            struct.pack("!f", self.speed),
+        ]
+
+        return b"".join(buffer)
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> TelemetryRT:
+
+        if len(data) > cls.byte_size:
+
+            print(f"Telemetry: Warning got packet of {len(data)} bytes")
+            data = data[:cls.byte_size]
+
+        unpacked_data = struct.unpack(cls.byte_format, data)
+
+        return TelemetryRT(*unpacked_data)
+
+
+@dataclass
 class Telemetry:
 
     driver: str
@@ -226,9 +213,6 @@ class Telemetry:
     fuel: float
     fuel_per_lap: float
     fuel_estimated_laps: float
-    tyre_pressure: Wheels
-    tyre_temp: Wheels
-    brake_temp: Wheels
     pad_wear: Wheels
     disc_wear: Wheels
     lap_time: int
@@ -236,6 +220,15 @@ class Telemetry:
     previous_time: int
     in_pit: bool
     in_pit_lane: bool
+    session: ACC_SESSION_TYPE
+    driver_stint_time_left: int
+    tyre_pressure: Wheels
+    tyre_temp: Wheels
+    brake_temp: Wheels
+    has_wet_tyres: bool
+
+    byte_size: ClassVar[int] = struct.calcsize("!B i 11f 3i 2? B i 12f B")
+    byte_format: ClassVar[str] = "!B i 11f 3i 2? B i 12f B"
 
     def to_bytes(self) -> bytes:
 
@@ -248,9 +241,6 @@ class Telemetry:
             struct.pack("!f", self.fuel),
             struct.pack("!f", self.fuel_per_lap),
             struct.pack("!f", self.fuel_estimated_laps),
-            struct.pack("!4f", *astuple(self.tyre_pressure)),
-            struct.pack("!4f", *astuple(self.tyre_temp)),
-            struct.pack("!4f", *astuple(self.brake_temp)),
             struct.pack("!4f", *astuple(self.pad_wear)),
             struct.pack("!4f", *astuple(self.disc_wear)),
             struct.pack("!i", self.lap_time),
@@ -258,6 +248,12 @@ class Telemetry:
             struct.pack("!i", self.previous_time),
             struct.pack("!?", self.in_pit),
             struct.pack("!?", self.in_pit_lane),
+            struct.pack("!B", self.session.value),
+            struct.pack("!i", self.driver_stint_time_left),
+            struct.pack("!4f", *astuple(self.tyre_pressure)),
+            struct.pack("!4f", *astuple(self.tyre_temp)),
+            struct.pack("!4f", *astuple(self.brake_temp)),
+            struct.pack("!B", self.has_wet_tyres),
         ]
 
         return b"".join(buffer)
@@ -266,13 +262,15 @@ class Telemetry:
     def from_bytes(cls, data: bytes) -> Telemetry:
 
         lenght = data[0]
+        expected_packet_size = cls.byte_size + lenght
 
-        if len(data[1:]) > (110 + lenght):
-            psize = len(data[1:])
-            print(f"Telemetry: Warning got packet of {psize} bytes")
-            data = data[:(111 + lenght)]
+        if len(data) > expected_packet_size:
+            psize = len(data)
+            print(f"Telemetry: Warning got packet of {psize} bytes,"
+                  f" expected {expected_packet_size}")
+            data = data[:expected_packet_size + 1]
 
-        raw_data = struct.unpack(f"!{lenght}s i 23f 3i 2?", data[1:])
+        raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2? B i 12f B", data[1:])
 
         name = raw_data[0].decode("utf-8")
         rest = raw_data[1:]
@@ -285,127 +283,180 @@ class Telemetry:
             rest[3],
             Wheels(*rest[4:8]),
             Wheels(*rest[8:12]),
-            Wheels(*rest[12:16]),
-            Wheels(*rest[16:20]),
-            Wheels(*rest[20:24]),
-            rest[24],
-            rest[25],
-            rest[26],
-            rest[27],
-            rest[28],
+            rest[12],
+            rest[13],
+            rest[14],
+            rest[15],
+            rest[16],
+            ACC_SESSION_TYPE(rest[17]),
+            rest[18],
+            Wheels(*rest[19:23]),
+            Wheels(*rest[23:27]),
+            Wheels(*rest[27:31]),
+            rest[31],
         )
 
 
-class TelemetryUI(tkinter.Frame):
+class TelemetryUI(ttk.Frame):
 
-    def __init__(self, root, font):
+    def __init__(self, root):
 
-        tkinter.Frame.__init__(self, master=root, background="Black")
+        ttk.Frame.__init__(self, master=root)
 
         self.telemetry: Optional[Telemetry] = None
-
-        self.font = font
-
-        f_info = tkinter.Frame(self, bg="Grey")
-        f_info.grid(row=0, column=0, padx=1, pady=1)
-
-        f_info2 = tkinter.Frame(self, bg="Grey")
-        f_info2.grid(row=1, column=0, padx=1, pady=1)
+        self.telemetry_rt: Optional[TelemetryRT] = None
 
         self.current_driver = None
         self.driver_swap = False
 
-        # Lap time
         self.lap_time_var = tkinter.StringVar(value="00:00.000")
-        l_lap_time = tkinter.Label(f_info, text="Lap time: ",
-                                   bg="Black", fg="White", font=self.font)
-        l_lap_time_var = tkinter.Label(f_info, textvariable=self.lap_time_var,
-                                       bg="Black", fg="White", width=10,
-                                       font=self.font)
+        self.best_time_var = tkinter.StringVar(value="00:00.000")
+        self.prev_time_var = tkinter.StringVar(value="00:00.000")
+
+        self.lap_var = tkinter.IntVar()
+        self.fuel_var = tkinter.DoubleVar()
+        self.fuel_per_lap_var = tkinter.DoubleVar()
+        self.fuel_lap_left_var = tkinter.DoubleVar()
+
+        self.gas = tkinter.DoubleVar()
+        self.brake = tkinter.DoubleVar()
+        self.steering = tkinter.DoubleVar()
+        self.gear = tkinter.IntVar()
+        self.speed = tkinter.DoubleVar()
+
+        self._build_telemetry_ui()
+
+        tyre_frame = ttk.Frame(self)
+        tyre_frame.grid(row=2, column=0)
+
+        self.front_left = TyreInfo(tyre_frame, "Front left", False)
+        self.front_left.grid(row=0, column=0, padx=10, pady=10)
+
+        self.front_right = TyreInfo(tyre_frame, "Front right")
+        self.front_right.grid(row=0, column=1, padx=10, pady=10)
+
+        self.rear_left = TyreInfo(tyre_frame, "Rear left", False)
+        self.rear_left.grid(row=1, column=0, padx=10, pady=10)
+
+        self.rear_right = TyreInfo(tyre_frame, "Rear right")
+        self.rear_right.grid(row=1, column=1, padx=10, pady=10)
+
+        f_driver_input = ttk.Frame(self)
+        f_driver_input.grid(row=0, column=1, rowspan=3)
+
+        self.c_gas = tkinter.Canvas(f_driver_input, width=20, height=100)
+        self.c_gas.grid(row=0, column=0, padx=10)
+
+        self.c_brake = tkinter.Canvas(f_driver_input, width=20, height=100)
+        self.c_brake.grid(row=0, column=1, padx=10)
+
+        self.c_steering = tkinter.Canvas(f_driver_input, width=100, height=20)
+        self.c_steering.grid(row=1, column=0, padx=10, pady=10, columnspan=2)
+
+        self.gas_rect = self.c_gas.create_rectangle(0, 0, 20, 100,
+                                                    fill="Green")
+        self.brake_rect = self.c_brake.create_rectangle(0, 0, 20, 100,
+                                                        fill="Red")
+
+        self.steering_rect = self.c_steering.create_rectangle(0, 0, 100, 20,
+                                                              fill="Yellow")
+
+        l_gear = ttk.Label(f_driver_input, text="Gear", width=7)
+        l_gear.grid(row=2, column=0)
+
+        gear_var = ttk.Label(f_driver_input, textvariable=self.gear, width=3)
+        gear_var.grid(row=2, column=1)
+
+        l_speed = ttk.Label(f_driver_input, text="Speed", width=7)
+        l_speed.grid(row=3, column=0)
+
+        speed_var = ttk.Label(f_driver_input, textvariable=self.speed, width=3)
+        speed_var.grid(row=3, column=1)
+
+    def _build_telemetry_ui(self) -> None:
+
+        f_info = ttk.Frame(self)
+        f_info.grid(row=0, column=0, padx=1, pady=1)
+
+        f_info2 = ttk.Frame(self)
+        f_info2.grid(row=1, column=0, padx=1, pady=1)
+
+        # Lap time
+        l_lap_time = ttk.Label(f_info, text="Lap time")
         l_lap_time.grid(row=0, column=0, padx=1, pady=1)
+
+        l_lap_time_var = ttk.Label(f_info, textvariable=self.lap_time_var,
+                                   width=10)
         l_lap_time_var.grid(row=0, column=1, padx=1, pady=1)
 
         # best time
-        self.best_time_var = tkinter.StringVar(value="00:00.000")
-        l_best_time = tkinter.Label(f_info, text="Best time: ",
-                                    bg="Black", fg="White", font=self.font)
-        l_best_time_var = tkinter.Label(f_info,
-                                        textvariable=self.best_time_var,
-                                        bg="Black", fg="White", width=10,
-                                        font=self.font)
+        l_best_time = ttk.Label(f_info, text="Best time")
         l_best_time.grid(row=0, column=2, padx=1, pady=1)
+
+        l_best_time_var = ttk.Label(f_info, textvariable=self.best_time_var,
+                                    width=10)
         l_best_time_var.grid(row=0, column=3, padx=1, pady=1)
 
         # Previous time
-        self.prev_time_var = tkinter.StringVar(value="00:00.000")
-        l_prev_time = tkinter.Label(f_info, text="Previous time: ",
-                                    bg="Black", fg="White", font=self.font)
-        l_prev_time_var = tkinter.Label(f_info,
-                                        textvariable=self.prev_time_var,
-                                        bg="Black", fg="White", width=10,
-                                        font=self.font)
+        l_prev_time = ttk.Label(f_info, text="Previous time")
         l_prev_time.grid(row=0, column=4, padx=1, pady=1)
+
+        l_prev_time_var = ttk.Label(f_info,
+                                    textvariable=self.prev_time_var, width=10)
         l_prev_time_var.grid(row=0, column=5, padx=1, pady=1)
 
         # Lap
-        self.lap_var = tkinter.IntVar()
-        l_lap = tkinter.Label(f_info2, text="Lap: ",
-                              bg="Black", fg="White", font=self.font)
-        l_lap_var = tkinter.Label(f_info2, textvariable=self.lap_var,
-                                  bg="Black", fg="White", width=5,
-                                  font=self.font)
+        l_lap = ttk.Label(f_info2, text="Lap")
         l_lap.grid(row=0, column=0, padx=1, pady=1)
+
+        l_lap_var = ttk.Label(f_info2, textvariable=self.lap_var,
+                              width=5)
         l_lap_var.grid(row=0, column=1, padx=1, pady=1)
 
         # Fuel
-        self.fuel_var = tkinter.DoubleVar()
-        l_fuel = tkinter.Label(f_info2, text="Fuel: ",
-                               bg="Black", fg="White", font=self.font)
-        l_fuel_var = tkinter.Label(f_info2, textvariable=self.fuel_var,
-                                   bg="Black", fg="White", width=5,
-                                   font=self.font)
+        l_fuel = ttk.Label(f_info2, text="Fuel")
         l_fuel.grid(row=0, column=2, padx=1, pady=1)
+
+        l_fuel_var = ttk.Label(f_info2, textvariable=self.fuel_var,
+                               width=5)
         l_fuel_var.grid(row=0, column=3, padx=1, pady=1)
 
         # Fuel per lap
-        self.fuel_per_lap_var = tkinter.DoubleVar()
-        l_fuel_per_lap = tkinter.Label(f_info2, text="Fuel per lap: ",
-                                       bg="Black", fg="White", font=self.font)
-        l_fuel_per_lap_var = tkinter.Label(f_info2,
-                                           textvariable=self.fuel_per_lap_var,
-                                           bg="Black", fg="White", width=5,
-                                           font=self.font)
+        l_fuel_per_lap = ttk.Label(f_info2, text="Fuel per lap")
         l_fuel_per_lap.grid(row=0, column=4, padx=1, pady=1)
+
+        l_fuel_per_lap_var = ttk.Label(f_info2,
+                                       textvariable=self.fuel_per_lap_var,
+                                       width=5,)
         l_fuel_per_lap_var.grid(row=0, column=5, padx=1, pady=1)
 
         # Lap left
-        self.fuel_lap_left_var = tkinter.DoubleVar()
-        l_fuel_lap_left = tkinter.Label(f_info2, text="Lap left with fuel: ",
-                                        bg="Black", fg="White", font=self.font)
-        l_fuel_lap_left_var = tkinter.Label(
-            f_info2, textvariable=self.fuel_lap_left_var, bg="Black",
-            fg="White", width=5, font=self.font)
+        l_fuel_lap_left = ttk.Label(f_info2, text="Lap left with fuel")
         l_fuel_lap_left.grid(row=0, column=6, padx=1, pady=1)
+
+        l_fuel_lap_left_var = ttk.Label(
+            f_info2, textvariable=self.fuel_lap_left_var, width=5)
         l_fuel_lap_left_var.grid(row=0, column=7, padx=1, pady=1)
-
-        tyre_frame = tkinter.Frame(self, bg="Black")
-        tyre_frame.grid(row=2, column=0)
-
-        self.front_left = TyreInfo(tyre_frame, "FL", self.font, False)
-        self.front_left.grid(row=0, column=0, padx=10, pady=10)
-
-        self.front_right = TyreInfo(tyre_frame, "FR", self.font)
-        self.front_right.grid(row=0, column=1, padx=10, pady=10)
-
-        self.rear_left = TyreInfo(tyre_frame, "RL", self.font, False)
-        self.rear_left.grid(row=1, column=0, padx=10, pady=10)
-
-        self.rear_right = TyreInfo(tyre_frame, "RR", self.font)
-        self.rear_right.grid(row=1, column=1, padx=10, pady=10)
 
     def update_values(self) -> None:
 
         if self.telemetry is not None:
+
+            pressure = astuple(self.telemetry.tyre_pressure)
+            tyre_temp = astuple(self.telemetry.tyre_temp)
+            brake_temp = astuple(self.telemetry.brake_temp)
+
+            self.front_left.update_rt_value(pressure[0], tyre_temp[0],
+                                            brake_temp[0])
+
+            self.front_right.update_rt_value(pressure[1], tyre_temp[1],
+                                             brake_temp[1])
+
+            self.rear_left.update_rt_value(pressure[2], tyre_temp[2],
+                                           brake_temp[2])
+
+            self.rear_right.update_rt_value(pressure[3], tyre_temp[3],
+                                            brake_temp[3])
 
             self.lap_var.set(self.telemetry.lap)
             self.fuel_var.set(f"{self.telemetry.fuel:.1f}")
@@ -413,27 +464,20 @@ class TelemetryUI(tkinter.Frame):
             self.fuel_lap_left_var.set(
                 f"{self.telemetry.fuel_estimated_laps:.1f}")
 
-            pressure = astuple(self.telemetry.tyre_pressure)
-            tyre_temp = astuple(self.telemetry.tyre_temp)
-            brake_temp = astuple(self.telemetry.brake_temp)
             pad_wear = astuple(self.telemetry.pad_wear)
             disc_wear = astuple(self.telemetry.disc_wear)
 
-            self.front_left.update_value(pressure[0], tyre_temp[0],
-                                         brake_temp[0], pad_wear[0],
-                                         disc_wear[0])
+            self.front_left.update_value(
+                pad_wear[0], disc_wear[0], self.telemetry.has_wet_tyres)
 
-            self.front_right.update_value(pressure[1], tyre_temp[1],
-                                          brake_temp[1], pad_wear[1],
-                                          disc_wear[1])
+            self.front_right.update_value(
+                pad_wear[1], disc_wear[1], self.telemetry.has_wet_tyres)
 
-            self.rear_left.update_value(pressure[2], tyre_temp[2],
-                                        brake_temp[2], pad_wear[2],
-                                        disc_wear[2])
+            self.rear_left.update_value(
+                pad_wear[2], disc_wear[2], self.telemetry.has_wet_tyres)
 
-            self.rear_right.update_value(pressure[3], tyre_temp[3],
-                                         brake_temp[3], pad_wear[3],
-                                         disc_wear[3])
+            self.rear_right.update_value(
+                pad_wear[3],  disc_wear[3], self.telemetry.has_wet_tyres)
 
             self.lap_time_var.set(string_time_from_ms(self.telemetry.lap_time))
             self.best_time_var.set(
@@ -445,3 +489,21 @@ class TelemetryUI(tkinter.Frame):
 
                 self.current_driver = self.telemetry.driver
                 self.driver_swap = True
+
+    def update_values_rt(self) -> None:
+
+        if self.telemetry_rt is not None:
+
+            self.gas.set(self.telemetry_rt.gas)
+            self.brake.set(self.telemetry_rt.brake)
+            self.steering.set(self.telemetry_rt.streering_angle)
+            self.gear.set(self.telemetry_rt.gear - 1)
+            self.speed.set(f"{self.telemetry_rt.speed:.1f}")
+
+            self.c_gas.coords(self.gas_rect, 0,
+                              100 - self.gas.get() * 100,  20, 100)
+            self.c_brake.coords(self.brake_rect, 0,
+                                100 - self.brake.get() * 100,  20, 100)
+
+            self.c_steering.coords(self.steering_rect,
+                                   0, 0, (self.steering.get() + 1) * 50, 20)

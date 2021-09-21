@@ -15,16 +15,19 @@ class ClientHandle:
     thread: threading.Thread
     rx_queue: queue.Queue
     tx_queue: queue.Queue
-    addr: str
-    username: str = ""
+    addr: tuple
+    username: str
+    udp_addr: tuple = ()
 
 
 class ServerInstance:
 
-    def __init__(self, port: int) -> None:
+    def __init__(self, tcp_port: int, udp_port: int) -> None:
 
-        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._socket.settimeout(0.05)
+        self._tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._tcp_socket.settimeout(0.01)
+        self._udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self._udp_socket.settimeout(0.01)
         self._server_thread = threading.Thread(target=self._server_listener)
         self._server_event = threading.Event()
         self.server_queue = queue.Queue()
@@ -32,25 +35,62 @@ class ServerInstance:
         self.connection = None
         self._thread_pool: List[ClientHandle] = []
         self._users = []
+        self.error = None
 
-        self._socket.bind(("", port))
+        try:
+            self._tcp_socket.bind(("", tcp_port))
+            self._udp_socket.bind(("", udp_port))
+
+        except OSError as msg:
+            self.error = msg
+            print(f"SERVER: {msg}")
+            return
+
         self._server_thread.start()
 
     def _server_listener(self) -> None:
 
-        self._socket.listen()
+        self._tcp_socket.listen()
         handler_event = threading.Event()
         dead_thread_timer = time.time()
         while not self._server_event.is_set():
 
             if len(self._thread_pool) < 4:
                 try:
-                    c_socket, addr = self._socket.accept()
+                    c_socket, addr = self._tcp_socket.accept()
                     print("SERVER: Accepting new connection")
                     self._new_connection(c_socket, addr, handler_event)
 
                 except socket.timeout:
                     pass
+
+                udp_data, udp_addr = self._get_udp_data()
+
+                if udp_data is not None and len(udp_data) > 0:
+
+                    packet = PacketType.from_bytes(udp_data)
+                    if packet == PacketType.ConnectUDP:
+
+                        lenght = udp_data[1]
+                        name = udp_data[2:lenght+2].decode("utf-8")
+
+                        for client_thread in self._thread_pool:
+
+                            if client_thread.username == name:
+                                client_thread.udp_addr = udp_addr
+
+                                byte_addr = udp_addr[0].encode("utf-8")
+
+                                buffer = [
+                                    packet.to_bytes(),
+                                    struct.pack("!B", len(byte_addr)),
+                                    byte_addr,
+                                    struct.pack("!i", udp_addr[1])
+                                ]
+
+                                client_thread.tx_queue.put(b"".join(buffer))
+
+                        udp_data = None
 
                 for client_thread in self._thread_pool:
 
@@ -60,7 +100,10 @@ class ServerInstance:
                         for thread in self._thread_pool:
                             thread.tx_queue.put(data)
 
-            if time.time() - dead_thread_timer > 5:
+                    if udp_data is not None and udp_data != b"":
+                        client_thread.tx_queue.put(udp_data)
+
+            if time.time() - dead_thread_timer > 2:
                 dead_thread_timer = time.time()
                 for client_thread in reversed(self._thread_pool):
                     if not client_thread.thread.is_alive():
@@ -73,7 +116,8 @@ class ServerInstance:
 
                         self._update_user_connected()
 
-        self._socket.close()
+        self._tcp_socket.close()
+        self._udp_socket.close()
         handler_event.set()
         print("Closing threads")
         for client_thread in self._thread_pool:
@@ -87,7 +131,7 @@ class ServerInstance:
                         event: threading.Event) -> None:
 
         try:
-            data = c_socket.recv(1024)
+            data = c_socket.recv(256)
 
         except socket.timeout:
             data = None
@@ -100,6 +144,7 @@ class ServerInstance:
 
             lenght = data[1]
             name = data[2:lenght+2].decode("utf-8")
+            driverID = struct.unpack("!i", data[lenght+2:lenght+6])[0]
 
             packet_type = PacketType.ConnectionReply.to_bytes()
             if name not in [user[0] for user in self._users]:
@@ -117,7 +162,7 @@ class ServerInstance:
                                           tx_queue, addr, name)
                 new_client.thread.start()
 
-                self._users.append((name, addr))
+                self._users.append((name, addr, driverID))
                 self._thread_pool.append(new_client)
 
                 self._update_user_connected()
@@ -139,23 +184,41 @@ class ServerInstance:
 
             name = user[0].encode("utf-8")
             lenght = struct.pack("!B", len(name))
-            buffer.append(lenght + name)
+            driverID = struct.pack("!i", user[2])
+            buffer.append(lenght + name + driverID)
 
         self._thread_pool[0].rx_queue.put(b"".join(buffer))
+
+    def _get_udp_data(self) -> bytes:
+
+        try:
+            data, addr = self._udp_socket.recvfrom(1024)
+
+        except socket.timeout:
+            data = None
+            addr = ()
+
+        except ConnectionResetError:
+            data = b""
+            addr = ()
+
+        return data, addr
 
     def _client_handler(self, c_socket: socket.socket, addr,
                         event: threading.Event, rx_queue: queue.Queue,
                         tx_queue: queue.Queue) -> None:
 
         client_disconnect = False
-        c_socket.settimeout(0.2)
+        c_socket.settimeout(0.01)
         print(f"SERVER: Connected to {addr}")
+
+        udp_addr = None
 
         data = None
         while not (event.is_set() or data == b"" or client_disconnect):
 
             try:
-                data = c_socket.recv(1024)
+                data = c_socket.recv(256)
 
             except socket.timeout:
                 data = None
@@ -181,14 +244,14 @@ class ServerInstance:
                 elif packet_type == PacketType.StrategyOK:
                     rx_queue.put(data)
 
-                elif packet_type == PacketType.Telemetry:
-                    rx_queue.put(data)
-
                 else:
                     print(f"Socket data {addr}: {data}")
 
             if tx_queue.qsize() > 0:
                 net_data = tx_queue.get()
+
+                if tx_queue.qsize() > 10:
+                    print("tx_queue is late")
 
                 packet_type = PacketType.from_bytes(net_data)
                 if packet_type == PacketType.SmData:
@@ -197,20 +260,53 @@ class ServerInstance:
 
                 elif packet_type == PacketType.Strategy:
                     ServerInstance._send_data(c_socket, net_data)
+
                 elif packet_type == PacketType.StrategyOK:
                     ServerInstance._send_data(c_socket, net_data)
 
-                elif packet_type == PacketType.Telemetry:
-                    ServerInstance._send_data(c_socket, net_data)
+                elif (packet_type == PacketType.Telemetry
+                      and udp_addr is not None):
+
+                    self._send_udp(net_data, udp_addr)
+
+                elif (packet_type == PacketType.TelemetryRT
+                      and udp_addr is not None):
+
+                    self._send_udp(net_data, udp_addr)
 
                 elif packet_type == PacketType.UpdateUsers:
                     ServerInstance._send_data(c_socket, net_data)
+
+                elif packet_type == PacketType.ConnectUDP:
+                    lenght = net_data[1]
+                    t_addr = net_data[2:lenght+2].decode("utf-8")
+                    port = struct.unpack("!i", net_data[lenght+2:lenght+6])[0]
+
+                    udp_addr = (t_addr, port)
+                    print(udp_addr)
 
         if data == b"":
             print(f"SERVER: Lost connection with client {addr}")
 
         c_socket.close()
         print("SERVER: client_handler STOPPED")
+
+    def _send_udp(self, data: bytes, addr: tuple) -> None:
+
+        try:
+            self._udp_socket.sendto(data, addr)
+
+        except ConnectionResetError as msg:
+            print(f"SERVER: {msg}")
+
+        except ConnectionRefusedError as msg:
+            print(f"SERVER: {msg}")
+
+        except ConnectionResetError as msg:
+            print(f"SERVER: {msg}")
+
+        except BrokenPipeError as msg:
+            print(f"SERVER: {msg}")
 
     @staticmethod
     def _send_data(c_socket: socket.socket, data: bytes) -> None:

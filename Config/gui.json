@@ -1,4 +1,17 @@
 {
     "font": "Segoe UI",
-    "font_size": 11
+    "font_size": 11,
+    "background_colour": "#424242",
+    "foreground_colour": "#ffffff",
+    "active_driver_colour": "#11bd11",
+    "graph_colour": 
+    {
+        "front_left": "#592F93",
+        "front_right": "#0465B2",
+        "rear_left": "#F58225",
+        "rear_right": "#FEF102"
+    },
+    "live_graph_inverval": 1,
+    "saved_graph_step": 5,
+    "driver_input_speed": 0.1
 }

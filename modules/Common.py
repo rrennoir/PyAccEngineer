@@ -1,9 +1,52 @@
 from __future__ import annotations
 
 import struct
+import sys
 from dataclasses import astuple, dataclass
 from enum import Enum, auto
-from typing import ClassVar, Tuple, List, Union
+from typing import ClassVar, List, Tuple, Union
+
+import win32clipboard
+
+EPSILON = sys.float_info.epsilon  # Smallest possible difference.
+
+
+def convert_to_rgb(minval, maxval, val, colours):
+
+    # "colours" is a series of RGB colors delineating a series of
+    # adjacent linear color gradients between each pair.
+    # Determine where the given value falls proportionality within
+    # the range from minval->maxval and scale that fractional value
+    # by the total number in the "colors" pallette.
+    i_f = float(val-minval) / float(maxval-minval) * (len(colours)-1)
+
+    # Determine the lower index of the pair of color indices this
+    # value corresponds and its fractional distance between the lower
+    # and the upper colors.
+    i, f = int(i_f // 1), i_f % 1  # Split into whole & fractional parts.
+
+    # Does it fall exactly on one of the color points?
+    if f < EPSILON:
+        return colours[i]
+
+    # Otherwise return a color within the range between them.
+    else:
+        (r1, g1, b1), (r2, g2, b2) = colours[i], colours[i+1]
+        return int(r1 + f*(r2-r1)), int(g1 + f*(g2-g1)), int(b1 + f*(b2-b1))
+
+
+def send_to_clipboard(clip_type, data):
+
+    win32clipboard.OpenClipboard()
+    try:
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardData(clip_type, data)
+
+    except TypeError as msg:
+        print(msg)
+
+    finally:
+        win32clipboard.CloseClipboard()
 
 
 def rgbtohex(r: int, g: int, b: int) -> str:
@@ -52,6 +95,16 @@ def string_time_from_ms(time_in_ms: int) -> str:
     return f"{minute_str}:{second_str}.{millisecond_str}"
 
 
+@dataclass
+class Credidentials:
+
+    ip: str
+    tcp_port: int
+    udp_port: int
+    username: str
+    driverID: int
+
+
 class PacketType(Enum):
 
     Connect = 1
@@ -63,6 +116,8 @@ class PacketType(Enum):
     StrategyOK = 7
     Telemetry = 8
     UpdateUsers = 9
+    ConnectUDP = 10
+    TelemetryRT = 11
     Unkown = -1
 
     def to_bytes(self) -> bytes:
@@ -97,6 +152,7 @@ class NetworkQueue(Enum):
     CarInfoData = auto()
     StrategySet = auto()
     Telemetry = auto()
+    TelemetryRT = auto()
     UpdateUsers = auto()
 
 
@@ -131,7 +187,7 @@ class PitStop:
     tyre_set: int
     tyre_compound: str
     tyre_pressures: Tuple[float]
-    next_driver: int = 0
+    driver_offset: int = 0
     brake_pad: int = 1
     repairs_bodywork: bool = True
     repairs_suspension: bool = True
@@ -145,7 +201,7 @@ class PitStop:
         buffer.append(struct.pack("!i", self.tyre_set))
         buffer.append(struct.pack("!3s", self.tyre_compound.encode("utf-8")))
         buffer.append(struct.pack("!4f", *self.tyre_pressures))
-        buffer.append(struct.pack("!i", self.next_driver))
+        buffer.append(struct.pack("!i", self.driver_offset))
         buffer.append(struct.pack("!i", self.brake_pad))
         buffer.append(struct.pack("!?", self.repairs_bodywork))
         buffer.append(struct.pack("!?", self.repairs_suspension))
