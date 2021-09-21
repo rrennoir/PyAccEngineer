@@ -1,6 +1,8 @@
 # PyAccEngineer v1.4
 
-![app](https://i.imgur.com/w8uCDtm.png)
+![app](https://i.imgur.com/7g7SAvD.png)
+
+For more images [here](https://imgur.com/a/EwZwhOD)
 
 ## Requirements
 
@@ -8,7 +10,7 @@
 - pywin32 module
 - PyAutoGUI module
 - matplotlib module
-- Server need open a TCP port (4269 is the default)
+- Server need open a TCP and UDP port (4269 TCP and 4270 UDP are the default)
 
 ## Download
 
@@ -22,35 +24,41 @@
 
 ## Usage
 
-### The Gui
+### Open the app
 
-Simply run the main.py in the cmd / powershell
+- Open Command Prompt / Powershell / Windows Terminal
+- Navigate to the PyAccEngineer folder
+- Type `python main.py`
+- There you go PyAccEngineer is running
 
-```powershell
-python main.py
-```
+![The lazy way](https://i.imgur.com/LTrFK2S.gif)
+
+#### Possible problems
+
+- If you get the error `python isn't recognized...` and python is installed, [check here to add it to the path](https://www.educative.io/edpresso/how-to-add-python-to-path-variable-in-windows)
+
+### How to use it
 
 - One user connect as server and the others connect to it
-
-- If the username chosen is the same as in acc ("name surname") then the user driving will be highlighted in green.
+- [OPTIONAL] Chose the same username as in acc ("name surname") then so the user driving will be highlighted in green.
 - `Update values` will refresh the information on the strategy page to the lastest value in game (mfd page)
 - `Set Strategy` will send a command to the user who is currently driving and set the strategy accordingly
 
-### Run the server as headless
+### Run the server as headless (dedicated server)
 
-Simply run the Server.py, by default port is 4269 use -p or --port to change it
+Simply run the Server.py, by default port is 4269 (TCP) and 4270 (UDP) use -p or --port to change it
 
 ```powershell
 python headless_server.py -p 4269
 ```
 
-To stop the server simply press ctrl C in the terminal
+To stop the server simply press ctrl C in the cmd / powershell / windows terminal
 
-## Warnings
+## **Warnings**
 
-- At least one pit strategy must be set or different from the default
+- **Tyre change must be on before the strategy setter is started**
+- **At least one pit strategy must be set or different from the default**
 - When the strategy setter is started the driving user shouldn't alt tab (duh)
-- Tyre change must be on before the strategy setter is started
 
 ## ***Will you controle my pc for other things ?***
 
