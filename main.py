@@ -94,10 +94,12 @@ class ConnectionWindow(tkinter.Toplevel):
         self.l_driverID.grid(row=4, column=0, padx=5, pady=2)
 
         if self.credidentials is None:
-            self.cb_ip = ttk.Combobox(self.f_connection_info, width=30, values=[])
-        
+            self.cb_ip = ttk.Combobox(self.f_connection_info, width=30,
+                                      values=[])
+
         else:
-            self.cb_ip = ttk.Combobox(self.f_connection_info, width=30, values=self.credidentials["saved_ip"])
+            self.cb_ip = ttk.Combobox(self.f_connection_info, width=30,
+                                      values=self.credidentials["saved_ip"])
         self.cb_ip.grid(row=0, column=1, padx=5, pady=2)
 
         self.e_tcp_port = tkinter.Entry(self.f_connection_info, width=30)
@@ -211,7 +213,7 @@ class ConnectionWindow(tkinter.Toplevel):
 
     def save_credidentials(self, credits: Credidentials) -> None:
 
-        if  self.credidentials is None:
+        if self.credidentials is None:
             saved_ip = [self.cb_ip.get()]
 
         elif credits.ip not in self.credidentials["saved_ip"]:
@@ -338,6 +340,7 @@ class App(tkinter.Tk):
         self.last_time = time.time()
         self.rt_last_time = time.time()
         self.rt_min_delta = self.gui_config["driver_input_speed"]
+        self.min_delta = 0.5
         self.last_telemetry = time.time()
         self.telemetry_timeout = 2
 
