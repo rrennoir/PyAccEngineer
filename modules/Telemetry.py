@@ -297,6 +297,9 @@ class TelemetryUI(ttk.Frame):
         self.fuel_per_lap_var = tkinter.DoubleVar()
         self.fuel_lap_left_var = tkinter.DoubleVar()
 
+        self.gas = tkinter.DoubleVar()
+        self.brake = tkinter.DoubleVar()
+
         self._build_telemetry_ui()
 
         tyre_frame = ttk.Frame(self)
@@ -313,6 +316,20 @@ class TelemetryUI(ttk.Frame):
 
         self.rear_right = TyreInfo(tyre_frame, "Rear right")
         self.rear_right.grid(row=1, column=1, padx=10, pady=10)
+
+        f_driver_input = ttk.Frame(self)
+        f_driver_input.grid(row=0, column=1, rowspan=3)
+
+        self.c_gas = tkinter.Canvas(f_driver_input, width=20, height=100)
+        self.c_gas.grid(row=0, column=0, padx=10)
+
+        self.c_brake = tkinter.Canvas(f_driver_input, width=20, height=100)
+        self.c_brake.grid(row=0, column=1, padx=10)
+
+        self.gas_rect = self.c_gas.create_rectangle(0, 0, 20, 100,
+                                                    fill="Green")
+        self.brake_rect = self.c_brake.create_rectangle(0, 0, 20, 100,
+                                                        fill="Red")
 
     def _build_telemetry_ui(self) -> None:
 
@@ -430,3 +447,11 @@ class TelemetryUI(ttk.Frame):
 
             self.rear_right.update_rt_value(pressure[3], tyre_temp[3],
                                             brake_temp[3])
+
+            self.gas.set(self.telemetry_rt.gas)
+            self.brake.set(self.telemetry_rt.brake)
+
+            self.c_gas.coords(self.gas_rect, 0,
+                              100 - self.gas.get() * 100,  20, 100)
+            self.c_brake.coords(self.brake_rect, 0,
+                                100 - self.brake.get() * 100,  20, 100)
