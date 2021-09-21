@@ -12,5 +12,6 @@
         "rear_right": "#FEF102"
     },
     "live_graph_inverval": 1,
-    "saved_graph_step": 5
+    "saved_graph_step": 5,
+    "driver_input_speed": 0.1
 }

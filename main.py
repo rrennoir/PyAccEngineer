@@ -337,9 +337,7 @@ class App(tkinter.Tk):
 
         self.last_time = time.time()
         self.rt_last_time = time.time()
-        self.rt_min_delta = 0.2
-        self.min_delta = 1.0
-
+        self.rt_min_delta = self.gui_config["driver_input_speed"]
         self.last_telemetry = time.time()
         self.telemetry_timeout = 2
 
