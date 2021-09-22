@@ -8,36 +8,46 @@ from modules.Server import ServerInstance
 
 
 def headless(argv: List[str]) -> None:
-
     """
     Ugly isn't it ?
     """
 
     try:
-        opts, args = getopt.getopt(argv[1:], "hp:", ["help", "port="])
+        opts, args = getopt.getopt(argv[1:], "hp:",
+                                   ["help", "udp_port=", "tcp_port="])
 
     except getopt.GetoptError as err:
 
         print(err)
         sys.exit(2)
 
-    port = 4269
+    udp_port = 4269
+    tcp_port = 4270
     for opt, arg in opts:
 
         if opt in ("-h", "--help"):
             print("Server.py [-p <port> (default 4269)]")
             sys.exit()
 
-        elif opt in ("-p", "--port"):
+        elif opt in ("-up", "--port"):
 
             if arg.isnumeric():
-                port = int(arg)
+                udp_port = int(arg)
 
             else:
-                print(f"Invalide port arg: {arg}")
+                print(f"Invalide UDP port arg: {arg}")
                 sys.exit(1)
 
-    server = ServerInstance(port)
+        elif opt in ("-tp", "--port"):
+
+            if arg.isnumeric():
+                tcp_port = int(arg)
+
+            else:
+                print(f"Invalide TCP port arg: {arg}")
+                sys.exit(1)
+
+    server = ServerInstance(tcp_port, udp_port)
     print("SERVER: Running as headless server")
 
     Running = True
