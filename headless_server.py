@@ -13,7 +13,7 @@ def headless(argv: List[str]) -> None:
     """
 
     try:
-        opts, args = getopt.getopt(argv[1:], "hp:",
+        opts, args = getopt.getopt(argv[1:], "hu:t:",
                                    ["help", "udp_port=", "tcp_port="])
 
     except getopt.GetoptError as err:
@@ -29,7 +29,7 @@ def headless(argv: List[str]) -> None:
             print("Server.py [-p <port> (default 4269)]")
             sys.exit()
 
-        elif opt in ("-up", "--port"):
+        elif opt in ("-u", "--udp_port"):
 
             if arg.isnumeric():
                 udp_port = int(arg)
@@ -38,7 +38,7 @@ def headless(argv: List[str]) -> None:
                 print(f"Invalide UDP port arg: {arg}")
                 sys.exit(1)
 
-        elif opt in ("-tp", "--port"):
+        elif opt in ("-t", "--tcp_port"):
 
             if arg.isnumeric():
                 tcp_port = int(arg)
