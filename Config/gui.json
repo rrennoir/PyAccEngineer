@@ -13,5 +13,7 @@
     },
     "live_graph_inverval": 1,
     "saved_graph_step": 5,
-    "driver_input_speed": 0.1
+    "driver_input_speed": 0.1,
+    "icon": false,
+    "icon_path": "./Assets/Icon/techSupport.ico"
 }

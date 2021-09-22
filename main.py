@@ -259,7 +259,9 @@ class App(tkinter.Tk):
             return
 
         self.font = (self.gui_config["font"], self.gui_config["font_size"])
-        self.iconbitmap("./Assets/Icon/techSupport.ico")
+
+        if self.gui_config["icon"]:
+            self.iconbitmap(self.gui_config["icon_path"])
 
         app_style = ttk.Style(self)
         app_style.configure('.',
