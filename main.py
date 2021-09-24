@@ -447,7 +447,7 @@ class App(tkinter.Tk):
                 self.telemetry_ui.driver_swap = False
                 self.strategy_ui.set_driver(self.telemetry_ui.current_driver)
 
-        asm_data = self.strategy_ui.asm.get_data()
+        asm_data = self.strategy_ui.asm.read_shared_memory()
         if asm_data is not None and self.client is not None:
 
             if self.rt_min_delta < rt_delta_time:
@@ -483,7 +483,7 @@ class App(tkinter.Tk):
                 surname = asm_data.Static.player_surname.split("\x00")[0]
                 driver = f"{name} {surname}"
 
-                has_wet = asm_data.Graphics.tyre_compound.startswith("wet")
+                has_wet = asm_data.Graphics.rain_tyres
 
                 telemetry_data = Telemetry(
                     driver,
@@ -521,7 +521,7 @@ class App(tkinter.Tk):
             self.client_queue_in.put(NetworkQueue.StrategyDone)
             self.strategy_ui.strategy_ok = False
 
-        self.c_loop_id = self.after(50, self.client_loop)
+        self.c_loop_id = self.after(10, self.client_loop)
 
     def open_connection_window(self, as_server: bool = False) -> None:
 

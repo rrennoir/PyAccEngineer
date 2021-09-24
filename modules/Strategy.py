@@ -72,8 +72,7 @@ class StrategyUI(tkinter.Frame):
 
         ttk.Frame.__init__(self, master=root)
 
-        self.asm = accSharedMemory(refresh=60)
-        self.asm.start()
+        self.asm = accSharedMemory()
 
         self.check_reply_id = None
 
@@ -508,7 +507,7 @@ class StrategyUI(tkinter.Frame):
     def close(self) -> None:
 
         self.strat_setter.stop()
-        self.asm.stop()
+        self.asm.close()
         self.after_cancel(self.check_reply_id)
 
     def set_strategy(self) -> None:
