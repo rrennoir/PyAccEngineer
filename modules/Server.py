@@ -96,6 +96,9 @@ class ServerInstance:
 
                     if client_thread.rx_queue.qsize() > 0:
 
+                        if client_thread.rx_queue.qsize() > 20:
+                            print("Server running late !")
+
                         data = client_thread.rx_queue.get()
                         for thread in self._thread_pool:
                             thread.tx_queue.put(data)
