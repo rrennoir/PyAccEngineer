@@ -364,13 +364,13 @@ class TelemetryUI(ttk.Frame):
         l_gear = ttk.Label(f_driver_input, text="Gear", width=7)
         l_gear.grid(row=2, column=0)
 
-        gear_var = ttk.Label(f_driver_input, textvariable=self.gear, width=3)
+        gear_var = ttk.Label(f_driver_input, textvariable=self.gear, width=5)
         gear_var.grid(row=2, column=1)
 
         l_speed = ttk.Label(f_driver_input, text="Speed", width=7)
         l_speed.grid(row=3, column=0)
 
-        speed_var = ttk.Label(f_driver_input, textvariable=self.speed, width=3)
+        speed_var = ttk.Label(f_driver_input, textvariable=self.speed, width=5)
         speed_var.grid(row=3, column=1)
 
     def _build_telemetry_ui(self) -> None:
