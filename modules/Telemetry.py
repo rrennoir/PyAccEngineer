@@ -27,10 +27,17 @@ class TyreInfo(ttk.Frame):
 
         self.has_wet = False
 
+        self.name = name
+
         self.tyre_range = {
             "dry": [26, 29],
             "wet": [28, 32],
             "gt4": [25, 28]
+        }
+
+        self.brake_range = {
+            "front": [150, 850],
+            "rear": [150, 750],
         }
 
         label_width = 20
@@ -148,14 +155,18 @@ class TyreInfo(ttk.Frame):
 
     def update_brake_hud(self, brake_temp: float) -> None:
 
-        if brake_temp > 1000:
+        side = "front"
+        if self.name.startswith("R"):
+            side = "rear"
+
+        if brake_temp > self.brake_range[side][1]:
             colour = self.colours[2]
 
-        elif brake_temp < 100:
+        elif brake_temp < self.brake_range[side][0]:
             colour = self.colours[0]
 
         else:
-            colour = convert_to_rgb(100, 1000, brake_temp, self.colours)
+            colour = convert_to_rgb(self.brake_range[side][0], self.brake_range[side][1], brake_temp, self.colours)
 
         self.tyre_canvas.itemconfig(self.brake_rect, fill=rgbtohex(*colour))
 
