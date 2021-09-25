@@ -39,7 +39,7 @@ class ServerInstance:
         self._thread_pool: List[ClientHandle] = []
         self._users = []
         self.error = None
-        self._udp_connections: List[Tuple[str, int], float] = []
+        self._udp_connections: List[List[Tuple[str, int], float]] = []
 
         try:
             self._tcp_socket.bind(("", tcp_port))
@@ -71,7 +71,7 @@ class ServerInstance:
                     if connection[0][0] == udp_addr[0]:
                         self._udp_connections.remove(connection)
 
-                self._udp_connections.append(udp_addr)
+                self._udp_connections.append([udp_addr, time.time()])
                 print(f"SERVER: UDP connections: {self._udp_connections}")
 
             elif packet in (PacketType.Telemetry, PacketType.TelemetryRT):
@@ -91,6 +91,7 @@ class ServerInstance:
             for connection in reversed(self._udp_connections):
 
                 if now - connection[1] > 1.5:
+
                     print(f"connection with {connection[0]} timed out")
                     self.udp_queue.put(connection[0][0])
                     self._udp_connections.remove(connection)
@@ -101,7 +102,7 @@ class ServerInstance:
     def _udp_send_all(self, data: bytes) -> None:
 
         for connection in self._udp_connections:
-            self._send_udp(data, connection)
+            self._send_udp(data, connection[0])
 
     def _server_listener(self) -> None:
 
@@ -133,7 +134,7 @@ class ServerInstance:
             if self.udp_queue.qsize() > 0:
 
                 ip = self.udp_queue.get()
-                for client in self._thread_pool():
+                for client in self._thread_pool:
                     if client.addr[0] == ip:
                         client.tx_queue.put(PacketType.UDP_RENEW.to_bytes())
 

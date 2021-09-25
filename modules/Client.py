@@ -201,10 +201,10 @@ class ClientInstance:
                     self._out_queue.put(NetworkQueue.TelemetryRT)
                     self._out_queue.put(udp_data[1:])
 
-                if time.time() - udp_timer > 1:
-                    print("send udp OK")
-                    self._send_udp(PacketType.UDP_OK)
-                    udp_timer = time.time()
+            if time.time() - udp_timer > 1:
+
+                self._send_udp(PacketType.UDP_OK.to_bytes())
+                udp_timer = time.time()
 
         if data == b"":
             print("CLIENT: Lost connection to server.")
@@ -246,6 +246,7 @@ class ClientInstance:
             self._udp_socket.close()
             self._udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self._udp_socket.bind(("", 0))
+            self._send_udp(PacketType.ConnectUDP.to_bytes())
 
     def _check_app_state(self) -> None:
 
