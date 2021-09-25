@@ -79,7 +79,8 @@ class ClientInstance:
                 self._thread_event = threading.Event()
 
                 self._listener_thread = threading.Thread(
-                    target=self._network_listener)
+                    target=self._network_listener,
+                    name="Client listener")
                 self._listener_thread.start()
 
                 buffer = [

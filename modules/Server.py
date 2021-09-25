@@ -28,8 +28,10 @@ class ServerInstance:
         self._tcp_socket.settimeout(0.01)
         self._udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._udp_socket.settimeout(0.01)
-        self._server_thread = threading.Thread(target=self._server_listener)
-        self._udp_thread = threading.Thread(target=self._udp_listener)
+        self._server_thread = threading.Thread(target=self._server_listener,
+                                               name="Server listener")
+        self._udp_thread = threading.Thread(target=self._udp_listener,
+                                            name="UDP listener")
         self._server_event = threading.Event()
         self.server_queue = queue.Queue()
 
@@ -165,7 +167,8 @@ class ServerInstance:
                 tx_queue = queue.Queue()
                 thread = threading.Thread(target=self._client_handler,
                                           args=(c_socket, addr, event,
-                                                rx_queue, tx_queue))
+                                                rx_queue, tx_queue),
+                                          name=f"{name} client handler")
 
                 new_client = ClientHandle(thread, rx_queue,
                                           tx_queue, addr, name)
