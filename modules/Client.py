@@ -242,11 +242,13 @@ class ClientInstance:
 
         elif packet_type == PacketType.UDP_RENEW:
 
-            print("got udp renew")
+            print("CLIENT: Got UDP renew request")
             self._udp_socket.close()
             self._udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self._udp_socket.bind(("", 0))
+            self._udp_socket.settimeout(0.01)
             self._send_udp(PacketType.ConnectUDP.to_bytes())
+            print("CLIENT: UDP connection restablished")
 
     def _check_app_state(self) -> None:
 
