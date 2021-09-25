@@ -64,6 +64,11 @@ class ServerInstance:
             if packet == PacketType.ConnectUDP:
                 print("SERVER: Received Connection UDP packet")
                 if udp_addr not in self._udp_connections:
+
+                    for addr in self._udp_connections:
+                        if addr[0] == udp_addr[0]:
+                            self._udp_connections.remove(addr)
+
                     self._udp_connections.append(udp_addr)
                     print(f"SERVER: UDP connections: {self._udp_connections}")
 
