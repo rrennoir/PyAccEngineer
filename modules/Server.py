@@ -92,7 +92,8 @@ class ServerInstance:
 
                 if now - connection[1] > 1.5:
 
-                    print(f"connection with {connection[0]} timed out")
+                    print(f"SERVER: UDP connection with "
+                          f"{connection[0]} timed out")
                     self.udp_queue.put(connection[0][0])
                     self._udp_connections.remove(connection)
 
@@ -114,7 +115,7 @@ class ServerInstance:
             if len(self._thread_pool) < 5:
                 try:
                     c_socket, addr = self._tcp_socket.accept()
-                    print("SERVER: Accepting new connection")
+                    print("SERVER: Accepting new TCP connection")
                     self._new_connection(c_socket, addr, handler_event)
 
                 except socket.timeout:
