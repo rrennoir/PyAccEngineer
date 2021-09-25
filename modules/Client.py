@@ -1,6 +1,7 @@
 import queue
 import socket
 import struct
+import random
 import threading
 from typing import Tuple
 
@@ -29,7 +30,17 @@ class ClientInstance:
         try:
             self._tcp_socket.settimeout(3)
             self._tcp_socket.connect((self._server_ip, self._tcp_port))
-            self._udp_socket.bind(("", 4271))
+
+            found_port = False
+            while not found_port:
+                try:
+                    random_port = random.randint(1024, 49151)
+                    self._udp_socket.bind(("", random_port))
+                    found_port = True
+
+                except OSError as msg:
+                    print(msg)
+
             self._udp_socket.settimeout(0.01)
 
             print(f"CLIENT: Connected to {self._server_ip}")
