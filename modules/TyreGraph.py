@@ -15,7 +15,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from PIL import Image
 
 from modules.Common import avg, send_to_clipboard
-from modules.Telemetry import Telemetry, TelemetryRT
+from modules.Telemetry import Telemetry
 
 # Use tkinter backend
 matplotlib.use("TkAgg")
@@ -38,7 +38,7 @@ class TyreGraph(ttk.Frame):
         self.time_axis = []
         self.in_pit_lane = False
 
-        self.current_lap = 0
+        self.current_lap = -1
 
         self.app_config = config
 
@@ -87,6 +87,7 @@ class TyreGraph(ttk.Frame):
 
         if telemetry.lap != self.current_lap:
 
+            key_name = f"{telemetry.session}-Lap_{telemetry.lap}"
             if len(self.pressures_fl) != 0:
 
                 self.fl_var.set(f"{avg(self.pressures_fl):.2f}")
@@ -127,8 +128,8 @@ class TyreGraph(ttk.Frame):
                     if index % self.app_config["saved_graph_step"] == 0:
                         lap_pressure["time"].append(pressure)
 
-                key_name = f"{telemetry.session}-Lap_{telemetry.lap}"
                 TyreGraph.previous_laps[key_name] = lap_pressure
+            self.graph.set_title(f"Pressures over time of {key_name}")
 
             self._reset_pressures()
             self.current_lap = telemetry.lap
