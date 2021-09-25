@@ -33,13 +33,13 @@ class ServerInstance:
         self._udp_thread = threading.Thread(target=self._udp_listener,
                                             name="UDP listener")
         self._server_event = threading.Event()
-        self.server_queue = queue.Queue()
+        self.udp_queue = queue.Queue()
 
         self.connection = None
         self._thread_pool: List[ClientHandle] = []
         self._users = []
         self.error = None
-        self._udp_connections = []
+        self._udp_connections: List[Tuple[str, int], float] = []
 
         try:
             self._tcp_socket.bind(("", tcp_port))
@@ -65,20 +65,35 @@ class ServerInstance:
             packet = PacketType.from_bytes(udp_data)
             if packet == PacketType.ConnectUDP:
                 print("SERVER: Received Connection UDP packet")
-                if udp_addr not in self._udp_connections:
 
-                    for addr in self._udp_connections:
-                        if addr[0] == udp_addr[0]:
-                            self._udp_connections.remove(addr)
+                for connection in reversed(self._udp_connections):
 
-                    self._udp_connections.append(udp_addr)
-                    print(f"SERVER: UDP connections: {self._udp_connections}")
+                    if connection[0][0] == udp_addr[0]:
+                        self._udp_connections.remove(connection)
+
+                self._udp_connections.append(udp_addr)
+                print(f"SERVER: UDP connections: {self._udp_connections}")
 
             elif packet in (PacketType.Telemetry, PacketType.TelemetryRT):
                 self._udp_send_all(udp_data)
 
+            elif packet == PacketType.UDP_OK:
+
+                for connection in self._udp_connections:
+
+                    if connection[0] == udp_addr:
+                        connection[1] = time.time()
+
             else:
                 print(f"SERVER: Received incorrect packet {udp_data}")
+
+            now = time.time()
+            for connection in reversed(self._udp_connections):
+
+                if now - connection[1] > 1.5:
+                    print(f"connection with {connection[0]} timed out")
+                    self.udp_queue.put(connection[0][0])
+                    self._udp_connections.remove(connection)
 
         self._udp_socket.close()
         print("SERVER: UDP listener close")
@@ -95,7 +110,7 @@ class ServerInstance:
         dead_thread_timer = time.time()
         while not self._server_event.is_set():
 
-            if len(self._thread_pool) < 4:
+            if len(self._thread_pool) < 5:
                 try:
                     c_socket, addr = self._tcp_socket.accept()
                     print("SERVER: Accepting new connection")
@@ -114,6 +129,13 @@ class ServerInstance:
                         data = client_thread.rx_queue.get()
                         for thread in self._thread_pool:
                             thread.tx_queue.put(data)
+
+            if self.udp_queue.qsize() > 0:
+
+                ip = self.udp_queue.get()
+                for client in self._thread_pool():
+                    if client.addr[0] == ip:
+                        client.tx_queue.put(PacketType.UDP_RENEW.to_bytes())
 
             if time.time() - dead_thread_timer > 2:
                 dead_thread_timer = time.time()
@@ -275,6 +297,9 @@ class ServerInstance:
                     ServerInstance._send_data(c_socket, net_data)
 
                 elif packet_type == PacketType.UpdateUsers:
+                    ServerInstance._send_data(c_socket, net_data)
+
+                elif packet_type == PacketType.UDP_RENEW:
                     ServerInstance._send_data(c_socket, net_data)
 
         if data == b"":

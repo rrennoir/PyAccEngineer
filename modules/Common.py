@@ -118,6 +118,8 @@ class PacketType(Enum):
     UpdateUsers = 9
     ConnectUDP = 10
     TelemetryRT = 11
+    UDP_OK = 12
+    UDP_RENEW = 13
     Unkown = -1
 
     def to_bytes(self) -> bytes:
