@@ -2,9 +2,10 @@ import queue
 import socket
 import struct
 import threading
+import time
 from typing import Tuple
 
-from modules.Common import NetworkQueue, PacketType, Credidentials
+from modules.Common import Credidentials, NetworkQueue, PacketType
 
 
 class ClientInstance:
@@ -29,7 +30,7 @@ class ClientInstance:
         try:
             self._tcp_socket.settimeout(3)
             self._tcp_socket.connect((self._server_ip, self._tcp_port))
-            self._udp_socket.bind(("", 4271))
+            self._udp_socket.bind(("", 0))
             self._udp_socket.settimeout(0.01)
 
             print(f"CLIENT: Connected to {self._server_ip}")
@@ -68,7 +69,8 @@ class ClientInstance:
                 self._thread_event = threading.Event()
 
                 self._listener_thread = threading.Thread(
-                    target=self._network_listener)
+                    target=self._network_listener,
+                    name="Client listener")
                 self._listener_thread.start()
 
                 buffer = [
@@ -159,6 +161,7 @@ class ClientInstance:
     def _network_listener(self) -> None:
 
         data = None
+        udp_timer = time.time()
         print("CLIENT: Listening for server packets")
         while not (self._thread_event.is_set() or data == b""):
 
@@ -180,6 +183,7 @@ class ClientInstance:
             except ConnectionResetError:
                 data = b""
 
+            self._check_app_state()
             if data is not None and len(data) > 0:
                 self._handle_data(data)
 
@@ -192,12 +196,15 @@ class ClientInstance:
                     self._out_queue.put(NetworkQueue.Telemetry)
                     self._out_queue.put(udp_data[1:])
 
-                if packet_type == PacketType.TelemetryRT:
+                elif packet_type == PacketType.TelemetryRT:
 
                     self._out_queue.put(NetworkQueue.TelemetryRT)
                     self._out_queue.put(udp_data[1:])
 
-            self._check_app_state()
+            if time.time() - udp_timer > 1:
+
+                self._send_udp(PacketType.UDP_OK.to_bytes())
+                udp_timer = time.time()
 
         if data == b"":
             print("CLIENT: Lost connection to server.")
@@ -232,6 +239,16 @@ class ClientInstance:
 
             self._out_queue.put(NetworkQueue.UpdateUsers)
             self._out_queue.put(data[1:])
+
+        elif packet_type == PacketType.UDP_RENEW:
+
+            print("CLIENT: Got UDP renew request")
+            self._udp_socket.close()
+            self._udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self._udp_socket.bind(("", 0))
+            self._udp_socket.settimeout(0.01)
+            self._send_udp(PacketType.ConnectUDP.to_bytes())
+            print("CLIENT: UDP connection restablished")
 
     def _check_app_state(self) -> None:
 
