@@ -20,7 +20,7 @@ from modules.Telemetry import Telemetry, TelemetryRT, TelemetryUI
 from modules.TyreGraph import PrevLapsGraph, TyreGraph
 from modules.Users import UserUI
 
-_VERSION_ = "1.4.2"
+_VERSION_ = "1.4.3"
 
 
 class ConnectionWindow(tkinter.Toplevel):
