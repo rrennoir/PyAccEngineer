@@ -166,7 +166,9 @@ class TyreInfo(ttk.Frame):
             colour = self.colours[0]
 
         else:
-            colour = convert_to_rgb(self.brake_range[side][0], self.brake_range[side][1], brake_temp, self.colours)
+            colour = convert_to_rgb(self.brake_range[side][0],
+                                    self.brake_range[side][1], brake_temp,
+                                    self.colours)
 
         self.tyre_canvas.itemconfig(self.brake_rect, fill=rgbtohex(*colour))
 
