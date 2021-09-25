@@ -4,7 +4,7 @@ import struct
 import threading
 import time
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple
 
 from modules.Common import PacketType
 
@@ -29,6 +29,7 @@ class ServerInstance:
         self._udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._udp_socket.settimeout(0.01)
         self._server_thread = threading.Thread(target=self._server_listener)
+        self._udp_thread = threading.Thread(target=self._udp_listener)
         self._server_event = threading.Event()
         self.server_queue = queue.Queue()
 
@@ -36,6 +37,7 @@ class ServerInstance:
         self._thread_pool: List[ClientHandle] = []
         self._users = []
         self.error = None
+        self._udp_connections = []
 
         try:
             self._tcp_socket.bind(("", tcp_port))
@@ -47,6 +49,37 @@ class ServerInstance:
             return
 
         self._server_thread.start()
+        self._udp_thread.start()
+
+    def _udp_listener(self) -> None:
+
+        print("SERVER: UDP listener started")
+        while not self._server_event.is_set():
+            udp_data, udp_addr = self._get_udp_data()
+
+            if udp_data is None or len(udp_data) == 0:
+                continue
+
+            packet = PacketType.from_bytes(udp_data)
+            if packet == PacketType.ConnectUDP:
+                print("SERVER: Received Connection UDP packet")
+                if udp_addr not in self._udp_connections:
+                    self._udp_connections.append(udp_addr)
+                    print(f"SERVER: UDP connections: {self._udp_connections}")
+
+            elif packet in (PacketType.Telemetry, PacketType.TelemetryRT):
+                self._udp_send_all(udp_data)
+
+            else:
+                print(f"SERVER: Received incorrect packet {udp_data}")
+
+        self._udp_socket.close()
+        print("SERVER: UDP listener close")
+
+    def _udp_send_all(self, data: bytes) -> None:
+
+        for connection in self._udp_connections:
+            self._send_udp(data, connection)
 
     def _server_listener(self) -> None:
 
@@ -64,34 +97,6 @@ class ServerInstance:
                 except socket.timeout:
                     pass
 
-                udp_data, udp_addr = self._get_udp_data()
-
-                if udp_data is not None and len(udp_data) > 0:
-
-                    packet = PacketType.from_bytes(udp_data)
-                    if packet == PacketType.ConnectUDP:
-
-                        lenght = udp_data[1]
-                        name = udp_data[2:lenght+2].decode("utf-8")
-
-                        for client_thread in self._thread_pool:
-
-                            if client_thread.username == name:
-                                client_thread.udp_addr = udp_addr
-
-                                byte_addr = udp_addr[0].encode("utf-8")
-
-                                buffer = [
-                                    packet.to_bytes(),
-                                    struct.pack("!B", len(byte_addr)),
-                                    byte_addr,
-                                    struct.pack("!i", udp_addr[1])
-                                ]
-
-                                client_thread.tx_queue.put(b"".join(buffer))
-
-                        udp_data = None
-
                 for client_thread in self._thread_pool:
 
                     if client_thread.rx_queue.qsize() > 0:
@@ -102,9 +107,6 @@ class ServerInstance:
                         data = client_thread.rx_queue.get()
                         for thread in self._thread_pool:
                             thread.tx_queue.put(data)
-
-                    if udp_data is not None and udp_data != b"":
-                        client_thread.tx_queue.put(udp_data)
 
             if time.time() - dead_thread_timer > 2:
                 dead_thread_timer = time.time()
@@ -120,7 +122,6 @@ class ServerInstance:
                         self._update_user_connected()
 
         self._tcp_socket.close()
-        self._udp_socket.close()
         handler_event.set()
         print("Closing threads")
         for client_thread in self._thread_pool:
@@ -192,7 +193,7 @@ class ServerInstance:
 
         self._thread_pool[0].rx_queue.put(b"".join(buffer))
 
-    def _get_udp_data(self) -> bytes:
+    def _get_udp_data(self) -> Tuple[bytes, Tuple[str, int]]:
 
         try:
             data, addr = self._udp_socket.recvfrom(1024)
@@ -214,8 +215,6 @@ class ServerInstance:
         client_disconnect = False
         c_socket.settimeout(0.01)
         print(f"SERVER: Connected to {addr}")
-
-        udp_addr = None
 
         data = None
         while not (event.is_set() or data == b"" or client_disconnect):
@@ -267,26 +266,8 @@ class ServerInstance:
                 elif packet_type == PacketType.StrategyOK:
                     ServerInstance._send_data(c_socket, net_data)
 
-                elif (packet_type == PacketType.Telemetry
-                      and udp_addr is not None):
-
-                    self._send_udp(net_data, udp_addr)
-
-                elif (packet_type == PacketType.TelemetryRT
-                      and udp_addr is not None):
-
-                    self._send_udp(net_data, udp_addr)
-
                 elif packet_type == PacketType.UpdateUsers:
                     ServerInstance._send_data(c_socket, net_data)
-
-                elif packet_type == PacketType.ConnectUDP:
-                    lenght = net_data[1]
-                    t_addr = net_data[2:lenght+2].decode("utf-8")
-                    port = struct.unpack("!i", net_data[lenght+2:lenght+6])[0]
-
-                    udp_addr = (t_addr, port)
-                    print(udp_addr)
 
         if data == b"":
             print(f"SERVER: Lost connection with client {addr}")
