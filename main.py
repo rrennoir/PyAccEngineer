@@ -384,7 +384,7 @@ class App(tkinter.Tk):
             elif event_type == NetworkQueue.Strategy:
 
                 strategy = self.client_queue_out.get()
-                asm_data = self.strategy_ui.asm.get_data()
+                asm_data = self.strategy_ui.asm.read_shared_memory()
                 if asm_data is not None:
 
                     pit_stop = PitStop.from_bytes(strategy)
