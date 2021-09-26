@@ -179,7 +179,7 @@ class ServerInstance:
 
             lenght = data[1]
             name = data[2:lenght+2].decode("utf-8")
-            driverID = struct.unpack("!i", data[lenght+2:lenght+6])[0]
+            driverID = struct.unpack("!B", data[lenght+2:lenght+3])[0]
 
             packet_type = PacketType.ConnectionReply.to_bytes()
             if name not in [user[0] for user in self._users]:

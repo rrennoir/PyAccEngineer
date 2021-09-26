@@ -1,11 +1,89 @@
+from __future__ import annotations
+from os import error, name
+
 import queue
 import socket
 import struct
 import threading
 import time
-from typing import Tuple
+from typing import Optional, Tuple
+
+from twisted.internet.protocol import DatagramProtocol, Protocol, ClientFactory
+from twisted.internet import reactor
+from twisted.python.failure import Failure
 
 from modules.Common import Credidentials, NetworkQueue, PacketType
+
+
+class ClientInstance2(ClientFactory):
+
+    def __init__(self, credis: Credidentials) -> None:
+
+        self._name = credis.username
+        self._driverID = credis.driverID
+
+    def buildProtocol(self, addr) -> TCP_Client:
+
+        return TCP_Client(self._name, self._driverID)
+
+
+class TCP_Client(Protocol):
+
+    def __init__(self, name: str, driverID: int) -> None:
+
+        self._name = name
+        self._driverID = driverID
+        self._error = ""
+        self._succes: Optional[bool] = None
+
+    def dataReceived(self, data: bytes):
+        print(data)
+
+    def connectionMade(self):
+
+        buffer = []
+        name_byte = self._name.encode("utf-8")
+        name_lenght = struct.pack("!B", len(name_byte))
+
+        buffer.append(PacketType.Connect.to_bytes())
+        buffer.append(name_lenght)
+        buffer.append(name_byte)
+        buffer.append(struct.pack("!B", self._driverID))
+
+        self.transport.write(b"".join(buffer))
+
+    def connectionLost(self, reason: Failure):
+        self._error = str(reason)
+
+    def _decode_packet(self, data: bytes) -> None:
+
+        packet = PacketType.from_bytes(data)
+
+        if packet == PacketType.ConnectionReply:
+            self._succes = struct.unpack("!?", data[1:])[0]
+
+    @property
+    def error(self) -> str:
+        return self._error
+
+    @property
+    def succes(self) -> Optional[bool]:
+        return self._succes
+
+
+class UDPClient(DatagramProtocol):
+
+    def startProtocol(self, host_ip: str, host_port: int) -> None:
+
+        self.transport.connect(host_ip, host_port)
+        self.transport.write(PacketType.UDP_OK.to_bytes())
+
+    def datagramReceived(self, datagram: bytes, addr) -> None:
+        print(f"received {datagram} from {addr}")
+
+    # Possibly invoked if there is no server listening
+    def connectionRefused(self):
+        print("No one listening")
 
 
 class ClientInstance:

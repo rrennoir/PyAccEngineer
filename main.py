@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from twisted.internet import tksupport
+from twisted.internet import reactor
+
 import ipaddress
 import json
 import queue
@@ -10,9 +13,11 @@ import tkinter
 from dataclasses import astuple
 from functools import partial
 from tkinter import messagebox, ttk
-from typing import Tuple
+from typing import Optional, Tuple
 
-from modules.Client import ClientInstance
+from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
+
+from modules.Client import ClientInstance, ClientInstance2
 from modules.Common import CarInfo, NetworkQueue, PitStop, Credidentials
 from modules.Server import ServerInstance
 from modules.Strategy import StrategyUI
@@ -249,6 +254,8 @@ class App(tkinter.Tk):
 
         tkinter.Tk.__init__(self)
 
+        tksupport.install(self)
+
         try:
             with open("./Config/gui.json", "r") as fp:
 
@@ -284,11 +291,13 @@ class App(tkinter.Tk):
         self.resizable(False, False)
 
         self.protocol("WM_DELETE_WINDOW", self.on_close)
-        self.c_loop_id = None
+        self.c_loop_id: Optional[str] = None
 
         # Networking
         self.server = None
         self.client = None
+        self.client_endpoint: Optional[TCP4ClientEndpoint] = None
+        self.server_endpoint: Optional[TCP4ServerEndpoint] = None
         self.client_queue_out = queue.Queue()
         self.client_queue_in = queue.Queue()
 
@@ -349,9 +358,6 @@ class App(tkinter.Tk):
         self.client_loop()
 
         self.eval('tk::PlaceWindow . center')
-        self.mainloop()
-
-        print("APP: Main UI shutdown")
 
     def client_loop(self) -> None:
 
@@ -529,17 +535,22 @@ class App(tkinter.Tk):
 
     def connect_to_server(self, credits: Credidentials) -> Tuple[bool, str]:
 
-        self.client = ClientInstance(credits, self.client_queue_in,
-                                     self.client_queue_out)
+        self.client_endpoint = TCP4ClientEndpoint(reactor, credits.ip, credits.tcp_port)
 
-        succes, msg = self.client.connect()
-        if succes:
+        self.client = ClientInstance2(credits)
+
+        self.client_endpoint.connect(self.client)
+    
+        while self.client.succes is None:
+            continue
+
+        if self.client.succes:
             self.connected(True)
 
         else:
             self.client = None
 
-        return (succes, msg)
+        return (self.client.succes, "none")
 
     def as_server(self, credis: Credidentials) -> Tuple[bool, str]:
 
@@ -605,12 +616,23 @@ class App(tkinter.Tk):
 
         self.disconnect()
 
+        tksupport.uninstall()
+
+        reactor.stop()
+
         self.destroy()
+        print("App closed")
+
+
+def create_gui() -> None:
+
+    App()
 
 
 def main():
 
-    App()
+    reactor.callLater(0, create_gui)
+    reactor.run()
 
 
 if __name__ == "__main__":
