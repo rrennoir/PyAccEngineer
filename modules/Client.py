@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import struct
+import time
 
 from twisted.internet import reactor, task
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -10,7 +11,6 @@ from twisted.python.failure import Failure
 
 from modules.Common import (Credidentials, DataQueue, NetData, NetworkQueue,
                             PacketType)
-
 
 client_log = logging.getLogger(__name__)
 
@@ -176,7 +176,8 @@ class UDPClient(DatagramProtocol):
         self.ip = ip
         self.port = port
         self.queue = queue
-        self.loop_call = task.LoopingCall(self.check_queue)
+        self.udp_imnotdead_timer = time.time()
+        self.loop_call = task.LoopingCall(self.udp_client_loop)
         self.loop_call.start(0.01)
 
     def startProtocol(self) -> None:
@@ -184,7 +185,7 @@ class UDPClient(DatagramProtocol):
         self.transport.connect(self.ip, self.port)
         self.transport.write(b"Hello UDP")
 
-    def check_queue(self) -> None:
+    def udp_client_loop(self) -> None:
 
         for element in self.queue.q_in:
 
@@ -198,7 +199,15 @@ class UDPClient(DatagramProtocol):
 
         self.queue.q_in.clear()
 
+        if time.time() - self.udp_imnotdead_timer > 10:
+            self.transport.write(b"I'm not a dead client")
+            self.udp_imnotdead_timer = time.time()
+
     def datagramReceived(self, datagram: bytes, addr) -> None:
+
+        if datagram == b"I'm not a dead server":
+            return
+
         self._decode_packet(datagram)
 
     def _decode_packet(self, data: bytes) -> None:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import struct
+import time
 from typing import List, Tuple
 
 from twisted.internet import reactor, task
@@ -151,7 +152,8 @@ class UDP_Server(DatagramProtocol):
         self.clients = clients
         self.queue = queue
 
-        self.loop_call = task.LoopingCall(self.check_queue)
+        self.udp_imnotdead_timer = time.time()
+        self.loop_call = task.LoopingCall(self.udp_server_loop)
         self.loop_call.start(0.01)
 
     def datagramReceived(self, datagram: bytes, addr):
@@ -159,14 +161,13 @@ class UDP_Server(DatagramProtocol):
         if addr not in self.clients:
             self.clients.append(addr)
 
-        if datagram == b"Hello UDP":
-            server_log.info(f"Got Hello UDP from {addr}")
+        if datagram in (b"Hello UDP", b"I'm not a dead client"):
             return
 
         for client in self.clients:
             self.transport.write(datagram, client)
 
-    def check_queue(self) -> None:
+    def udp_server_loop(self) -> None:
 
         for element in self.queue.q_in:
 
@@ -174,6 +175,11 @@ class UDP_Server(DatagramProtocol):
                 self.close()
                 self.queue.q_in.remove(element)
                 break
+
+        if time.time() - self.udp_imnotdead_timer > 10:
+            for client in self.clients:
+                self.transport.write(b"I'm not a dead server", client)
+            self.udp_imnotdead_timer = time.time()
 
     def close(self) -> None:
         server_log.info("Close UDP SERVER")
