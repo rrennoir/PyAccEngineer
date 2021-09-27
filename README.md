@@ -1,4 +1,4 @@
-# PyAccEngineer v1.4
+# PyAccEngineer v1.5
 
 ![app](https://i.imgur.com/7g7SAvD.png)
 
@@ -10,6 +10,7 @@ For more images [here](https://imgur.com/a/EwZwhOD)
 - pywin32 module
 - PyAutoGUI module
 - matplotlib module
+- Twisted and service-identity modules
 - Server need open a TCP and UDP port (4269 TCP and 4270 UDP are the default)
 
 ## Download
@@ -46,10 +47,10 @@ For more images [here](https://imgur.com/a/EwZwhOD)
 
 ### Run the server as headless (dedicated server)
 
-Simply run the Server.py, by default port is 4269 (TCP) and 4270 (UDP) use -p or --port to change it
+Simply run the Server.py, by default port is 4269 (TCP) and 4270 (UDP) use -u or --udp_port to change the UDP port and -t or --tcp_port to change the TCP port
 
 ```powershell
-python headless_server.py -p 4269
+python headless_server.py -u 4270 -tcp_port 4269
 ```
 
 To stop the server simply press ctrl C in the cmd / powershell / windows terminal

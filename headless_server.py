@@ -1,56 +1,64 @@
 import getopt
+import logging
 import sys
-import time
-
 from typing import List
+
+from twisted.internet import reactor
 
 from modules.Server import ServerInstance
 
+logging.basicConfig(stream=sys.stdout, level=logging.INFO,
+                    format="%(asctime)s.%(msecs)03d | %(name)s | %(message)s",
+                    datefmt="%H:%M:%S")
+
 
 def headless(argv: List[str]) -> None:
-
     """
     Ugly isn't it ?
     """
 
     try:
-        opts, args = getopt.getopt(argv[1:], "hp:", ["help", "port="])
+        opts, args = getopt.getopt(argv[1:], "hu:t:",
+                                   ["help", "udp_port=", "tcp_port="])
 
     except getopt.GetoptError as err:
 
         print(err)
         sys.exit(2)
 
-    port = 4269
+    tcp_port = 4269
+    udp_port = 4270
     for opt, arg in opts:
 
         if opt in ("-h", "--help"):
-            print("Server.py [-p <port> (default 4269)]")
+            print(f"python {__file__} [-p <port> (default 4269)]")
             sys.exit()
 
-        elif opt in ("-p", "--port"):
+        elif opt in ("-u", "--udp_port"):
 
             if arg.isnumeric():
-                port = int(arg)
+                udp_port = int(arg)
 
             else:
-                print(f"Invalide port arg: {arg}")
+                logging.warning(f"Invalide UDP port arg: {arg}")
                 sys.exit(1)
 
-    server = ServerInstance(port)
-    print("SERVER: Running as headless server")
+        elif opt in ("-t", "--tcp_port"):
 
-    Running = True
-    while Running:
+            if arg.isnumeric():
+                tcp_port = int(arg)
 
-        try:
-            time.sleep(1)
+            else:
+                logging.warning(f"Invalide TCP port arg: {arg}")
+                sys.exit(1)
 
-        except KeyboardInterrupt:
-            Running = False
+    ServerInstance(tcp_port, udp_port)
+    logging.info("Running as headless server"
+                 f" with port TCP:{tcp_port} UDP:{udp_port}")
 
-    server.disconnect()
-    print("SERVER: exiting")
+    reactor.run()
+
+    logging.info("Exiting")
 
 
 if __name__ == "__main__":

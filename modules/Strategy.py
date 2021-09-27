@@ -72,8 +72,7 @@ class StrategyUI(tkinter.Frame):
 
         ttk.Frame.__init__(self, master=root)
 
-        self.asm = accSharedMemory(refresh=60)
-        self.asm.start()
+        self.asm = accSharedMemory()
 
         self.check_reply_id = None
 
@@ -481,7 +480,7 @@ class StrategyUI(tkinter.Frame):
             self.strategy_ok = True
 
         elif self.strat_setter.data_requested():
-            self.data_queue.put(self.asm.get_data())
+            self.data_queue.put(self.asm.read_shared_memory())
 
         self.check_reply_id = self.after(60, self.check_reply)
 
@@ -508,7 +507,7 @@ class StrategyUI(tkinter.Frame):
     def close(self) -> None:
 
         self.strat_setter.stop()
-        self.asm.stop()
+        self.asm.close()
         self.after_cancel(self.check_reply_id)
 
     def set_strategy(self) -> None:
@@ -570,7 +569,7 @@ class StrategyUI(tkinter.Frame):
     def apply_strategy(self, strat: PitStop) -> None:
 
         self.data_queue.put(strat)
-        self.data_queue.put(self.asm.get_data())
+        self.data_queue.put(self.asm.read_shared_memory())
         self.strat_setter.start()
 
     def change_pressure_fl(self, change) -> None:

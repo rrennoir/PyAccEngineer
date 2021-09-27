@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import logging
 import struct
 import tkinter
-from tkinter import ttk
 from dataclasses import astuple, dataclass
+from tkinter import ttk
 from typing import ClassVar, Optional
 
-from SharedMemory.PyAccSharedMemory import Wheels, ACC_SESSION_TYPE
+from SharedMemory.PyAccSharedMemory import ACC_SESSION_TYPE, Wheels
 
-from modules.Common import rgbtohex, string_time_from_ms, convert_to_rgb
+from modules.Common import convert_to_rgb, rgbtohex, string_time_from_ms
+
+log = logging.getLogger(__name__)
 
 
 class TyreInfo(ttk.Frame):
@@ -27,10 +30,17 @@ class TyreInfo(ttk.Frame):
 
         self.has_wet = False
 
+        self.name = name
+
         self.tyre_range = {
             "dry": [26, 29],
             "wet": [28, 32],
             "gt4": [25, 28]
+        }
+
+        self.brake_range = {
+            "front": [150, 850],
+            "rear": [150, 750],
         }
 
         label_width = 20
@@ -148,14 +158,20 @@ class TyreInfo(ttk.Frame):
 
     def update_brake_hud(self, brake_temp: float) -> None:
 
-        if brake_temp > 1000:
+        side = "front"
+        if self.name.startswith("R"):
+            side = "rear"
+
+        if brake_temp > self.brake_range[side][1]:
             colour = self.colours[2]
 
-        elif brake_temp < 100:
+        elif brake_temp < self.brake_range[side][0]:
             colour = self.colours[0]
 
         else:
-            colour = convert_to_rgb(100, 1000, brake_temp, self.colours)
+            colour = convert_to_rgb(self.brake_range[side][0],
+                                    self.brake_range[side][1], brake_temp,
+                                    self.colours)
 
         self.tyre_canvas.itemconfig(self.brake_rect, fill=rgbtohex(*colour))
 
@@ -197,7 +213,7 @@ class TelemetryRT:
 
         if len(data) > cls.byte_size:
 
-            print(f"Telemetry: Warning got packet of {len(data)} bytes")
+            log.warning(f"Telemetry: Warning got packet of {len(data)} bytes")
             data = data[:cls.byte_size]
 
         unpacked_data = struct.unpack(cls.byte_format, data)
@@ -266,8 +282,8 @@ class Telemetry:
 
         if len(data) > expected_packet_size:
             psize = len(data)
-            print(f"Telemetry: Warning got packet of {psize} bytes,"
-                  f" expected {expected_packet_size}")
+            log.warning(f"Got packet of {psize} bytes,"
+                        f" expected {expected_packet_size}")
             data = data[:expected_packet_size + 1]
 
         raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2? B i 12f B", data[1:])
@@ -364,13 +380,13 @@ class TelemetryUI(ttk.Frame):
         l_gear = ttk.Label(f_driver_input, text="Gear", width=7)
         l_gear.grid(row=2, column=0)
 
-        gear_var = ttk.Label(f_driver_input, textvariable=self.gear, width=3)
+        gear_var = ttk.Label(f_driver_input, textvariable=self.gear, width=5)
         gear_var.grid(row=2, column=1)
 
         l_speed = ttk.Label(f_driver_input, text="Speed", width=7)
         l_speed.grid(row=3, column=0)
 
-        speed_var = ttk.Label(f_driver_input, textvariable=self.speed, width=3)
+        speed_var = ttk.Label(f_driver_input, textvariable=self.speed, width=5)
         speed_var.grid(row=3, column=1)
 
     def _build_telemetry_ui(self) -> None:

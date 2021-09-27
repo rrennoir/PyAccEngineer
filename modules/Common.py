@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import struct
 import sys
 from dataclasses import astuple, dataclass
@@ -7,6 +8,9 @@ from enum import Enum, auto
 from typing import ClassVar, List, Tuple, Union
 
 import win32clipboard
+
+
+log = logging.getLogger(__name__)
 
 EPSILON = sys.float_info.epsilon  # Smallest possible difference.
 
@@ -43,7 +47,7 @@ def send_to_clipboard(clip_type, data):
         win32clipboard.SetClipboardData(clip_type, data)
 
     except TypeError as msg:
-        print(msg)
+        log.info(msg)
 
     finally:
         win32clipboard.CloseClipboard()
@@ -118,6 +122,8 @@ class PacketType(Enum):
     UpdateUsers = 9
     ConnectUDP = 10
     TelemetryRT = 11
+    UDP_OK = 12
+    UDP_RENEW = 13
     Unkown = -1
 
     def to_bytes(self) -> bytes:
@@ -138,7 +144,7 @@ class PacketType(Enum):
 
         except ValueError as msg:
 
-            print(f"PacketType: {msg}")
+            log.info(f"PacketType: {msg}")
             packet = PacketType.Unkown
 
         return packet
@@ -154,6 +160,22 @@ class NetworkQueue(Enum):
     Telemetry = auto()
     TelemetryRT = auto()
     UpdateUsers = auto()
+    ConnectionReply = auto()
+    Close = auto()
+
+
+@dataclass
+class DataQueue:
+
+    q_in: List[NetData]
+    q_out: List[NetData]
+
+
+@dataclass
+class NetData:
+
+    data_type: NetworkQueue
+    data: bytes = b""
 
 
 @dataclass
