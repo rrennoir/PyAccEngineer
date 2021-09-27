@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import struct
 
 from twisted.internet import reactor, task
@@ -9,6 +10,9 @@ from twisted.python.failure import Failure
 
 from modules.Common import (Credidentials, DataQueue, NetData, NetworkQueue,
                             PacketType)
+
+
+client_log = logging.getLogger(__name__)
 
 
 class ClientInstance:
@@ -98,7 +102,6 @@ class TCP_Client(Protocol):
                                      + element.data)
 
             elif packet == NetworkQueue.StrategyDone:
-                print("client send strat ok")
                 self.transport.write(PacketType.StrategyOK.to_bytes())
 
             elif packet == NetworkQueue.Close:
@@ -124,12 +127,13 @@ class TCP_Client(Protocol):
 
     def connectionLost(self, reason: Failure):
         self._error = str(reason)
-        print("TCP CLIENT: ", self._error)
+        client_log.info("Lost connection with server"
+                        f" {self.transport.getPeer()}")
 
     def close(self):
 
         if self.transport is not None:
-            print("CLIENT: Close TCP")
+            client_log.info("Close TCP client")
             self.transport.loseConnection()
             self.loop_call.stop()
 
@@ -149,17 +153,16 @@ class TCP_Client(Protocol):
             net_data = NetData(NetworkQueue.Strategy, data)
 
         elif packet == PacketType.StrategyOK:
-            print("receive strat ok client")
             net_data = NetData(NetworkQueue.StrategyDone, data)
 
         elif packet == PacketType.UpdateUsers:
             net_data = NetData(NetworkQueue.UpdateUsers, data)
 
         elif packet == PacketType.UDP_RENEW:
-            print("UDP RENEW")
+            client_log.warning("UDP RENEW")
 
         else:
-            print(f"Invalid packet type {data}")
+            client_log.warning(f"Invalid packet type {data}")
             return
 
         self._data_queue.q_out.append(net_data)
@@ -212,4 +215,4 @@ class UDPClient(DatagramProtocol):
 
     # Possibly invoked if there is no server listening
     def connectionRefused(self):
-        print("No one listening")
+        client_log.warning("No one listening")
