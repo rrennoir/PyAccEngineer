@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import struct
 from typing import List, Tuple
 
@@ -10,6 +11,8 @@ from twisted.internet.protocol import DatagramProtocol, Protocol, ServerFactory
 from twisted.python.failure import Failure
 
 from modules.Common import DataQueue, NetData, NetworkQueue, PacketType
+
+server_log = logging.getLogger(__name__)
 
 
 class TCP_Server(Protocol):
@@ -25,6 +28,7 @@ class TCP_Server(Protocol):
         self.user_connected: List[str, int] = user_connected
 
         self.user_change = False
+        self._error = ""
 
         self.user: Tuple[str, int] = ()
 
@@ -45,7 +49,7 @@ class TCP_Server(Protocol):
                 break
 
     def connectionMade(self) -> None:
-        print("new connection")
+        server_log.info(f"New connection with {self.transport.getPeer()}")
 
     def dataReceived(self, data: bytes) -> None:
 
@@ -66,7 +70,8 @@ class TCP_Server(Protocol):
             name = data[2:lenght+2].decode("utf-8")
             driverID = data[lenght+2]
 
-            print(f"name: {name}, driverID: {driverID}")
+            server_log.info(f"New user info, name: {name},"
+                            f" driverID: {driverID}")
 
             self.user = (name, driverID)
             self.user_connected.append(self.user)
@@ -88,10 +93,10 @@ class TCP_Server(Protocol):
             self.send_to_all_user(data)
 
         elif packet == PacketType.UDP_RENEW:
-            print("SERVER: UDP RENEW")
+            server_log.warning("SERVER: UDP RENEW")
 
         else:
-            print(f"incorrect packet {packet}")
+            server_log.warning(f"incorrect packet {packet}")
 
     def update_user_connected(self) -> None:
 
@@ -107,17 +112,21 @@ class TCP_Server(Protocol):
             buffer.append(lenght + name + driverID)
 
         self.send_to_all_user(b"".join(buffer))
-        print(f"SERVER: Send user update {buffer}")
+        server_log.info(f"Send user update {buffer}")
 
-    def connectionLost(self, reason: Failure = ...):
-        print("SERVER: connection lost: ", reason)
+    def connectionLost(self, reason: Failure):
+
+        self._error = str(reason)
+
+        server_log.info("SERVER: connection lost"
+                        f" with {self.transport.getPeer()}")
         self.user_connected.remove(self.user)
         self.user_change = True
 
     def close(self) -> None:
 
         if self.transport is not None:
-            print("Close TCP SERVER")
+            server_log.info("Close TCP SERVER")
             self.transport.loseConnection()
             self.loop_call.stop()
 
@@ -151,6 +160,7 @@ class UDP_Server(DatagramProtocol):
             self.clients.append(addr)
 
         if datagram == b"Hello UDP":
+            server_log.info(f"Got Hello UDP from {addr}")
             return
 
         for client in self.clients:
@@ -166,7 +176,7 @@ class UDP_Server(DatagramProtocol):
                 break
 
     def close(self) -> None:
-        print("Close UDP SERVER")
+        server_log.info("Close UDP SERVER")
         self.transport.loseConnection()
         self.loop_call.stop()
 
