@@ -1,31 +1,29 @@
 from __future__ import annotations
 
-from twisted.internet import tksupport
-from twisted.internet import reactor
-
 import ipaddress
 import json
-import queue
-import struct
 import time
-from pathlib import Path
 import tkinter
 from dataclasses import astuple
 from functools import partial
+from pathlib import Path
 from tkinter import messagebox, ttk
 from typing import Optional, Tuple
 
+from twisted.internet import reactor, task, tksupport
 from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
 
-from modules.Client import ClientInstance, ClientInstance2
-from modules.Common import CarInfo, NetworkQueue, PitStop, Credidentials
+from modules.Client import ClientInstance
+from modules.Common import (CarInfo, Credidentials, DataQueue, NetData,
+                            NetworkQueue, PitStop)
 from modules.Server import ServerInstance
 from modules.Strategy import StrategyUI
 from modules.Telemetry import Telemetry, TelemetryRT, TelemetryUI
 from modules.TyreGraph import PrevLapsGraph, TyreGraph
 from modules.Users import UserUI
 
-_VERSION_ = "1.4.3"
+
+_VERSION_ = "1.5.0"
 
 
 class ConnectionWindow(tkinter.Toplevel):
@@ -36,6 +34,11 @@ class ConnectionWindow(tkinter.Toplevel):
         self.title("Connection window")
         self.main_app = root
         self.connection_path = "./Config/connection.json"
+
+        self.is_connected = None
+        self.connection_msg = ""
+        self.credis = None
+        self.is_connected_loop = task.LoopingCall(self.check_connection)
 
         self.credidentials = None
         key_check = ("saved_ip", "tcp_port", "udp_port", "username",
@@ -181,7 +184,7 @@ class ConnectionWindow(tkinter.Toplevel):
 
         if error_message == "":
 
-            credits = Credidentials(
+            self.credits = Credidentials(
                 ip=self.cb_ip.get(),
                 tcp_port=int(self.e_tcp_port.get()),
                 udp_port=int(self.e_udp_port.get()),
@@ -191,30 +194,36 @@ class ConnectionWindow(tkinter.Toplevel):
 
             if self.as_server:
 
-                connected, msg = self.main_app.as_server(credits)
-
-                if connected:
-                    self.save_credidentials(credits)
-                    self.on_close()
-
-                else:
-                    messagebox.showerror("Error", msg)
-                    self.b_connect.config(state="active")
+                self.main_app.as_server(self.credits)
 
             else:
-                connected, msg = self.main_app.connect_to_server(credits)
+                self.main_app.connect_to_server(self.credits)
 
-                if connected:
-                    self.save_credidentials(credits)
-                    self.on_close()
-
-                else:
-                    messagebox.showerror("Error", msg)
-                    self.b_connect.config(state="active")
+            self.is_connected_loop.start(0.1)
 
         else:
             messagebox.showerror("Error", error_message)
             self.b_connect.config(state="active")
+
+    def check_connection(self) -> None:
+
+        if self.is_connected is None:
+            return
+
+        if self.is_connected:
+
+            self.is_connected_loop.stop()
+            self.save_credidentials(self.credits)
+            self.on_close()
+
+        else:
+            messagebox.showerror("Error", self.connection_msg)
+            self.b_connect.config(state="active")
+
+    def connected(self, succes: bool, error: str) -> None:
+
+        self.is_connected = succes
+        self.connection_msg = error
 
     def save_credidentials(self, credits: Credidentials) -> None:
 
@@ -294,12 +303,12 @@ class App(tkinter.Tk):
         self.c_loop_id: Optional[str] = None
 
         # Networking
-        self.server = None
-        self.client = None
+        self.is_connected = False
+        self.server: Optional[ServerInstance] = None
         self.client_endpoint: Optional[TCP4ClientEndpoint] = None
         self.server_endpoint: Optional[TCP4ServerEndpoint] = None
-        self.client_queue_out = queue.Queue()
-        self.client_queue_in = queue.Queue()
+        self.net_queue = DataQueue([], [])
+        self.server_queue = DataQueue([], [])
 
         self.connection_window = None
 
@@ -355,56 +364,51 @@ class App(tkinter.Tk):
         self.last_telemetry = time.time()
         self.telemetry_timeout = 2
 
-        self.client_loop()
+        self.client_loopCall = task.LoopingCall(self.client_loop2)
+        self.client_loopCall.start(0.01)
 
         self.eval('tk::PlaceWindow . center')
 
-    def client_loop(self) -> None:
+    def client_loop2(self) -> None:
 
-        rt_delta_time = time.time() - self.rt_last_time
-        delta_time = time.time() - self.last_time
+        for element in self.net_queue.q_out:
 
-        if (self.strategy_ui.is_driver_active and
-                time.time() > self.last_telemetry + self.telemetry_timeout):
-            print("telemetry time out")
-            self.strategy_ui.is_driver_active = False
-            self.user_ui.remove_active()
-            self.telemetry_ui.current_driver = None
+            if element.data_type == NetworkQueue.ConnectionReply:
 
-        if self.client is not None and self.client_queue_out.qsize() > 0:
+                succes = bool(element.data[0])
+                msg = ""  # TODO
 
-            if not self.strategy_ui.is_connected:
-                self.strategy_ui.is_connected = True
+                self.connection_window.connected(succes, msg)
+                self.mb_connected(succes)
+                self.is_connected = True
 
-            event_type = self.client_queue_out.get()
+            elif element.data_type == NetworkQueue.ServerData:
 
-            if event_type == NetworkQueue.ServerData:
-
-                server_data = CarInfo.from_bytes(self.client_queue_out.get())
+                server_data = CarInfo.from_bytes(element.data)
                 is_first_update = self.strategy_ui.server_data is None
                 self.strategy_ui.server_data = server_data
-                if is_first_update:
 
+                if is_first_update:
                     self.strategy_ui.update_values()
 
-            elif event_type == NetworkQueue.Strategy:
+            elif element.data_type == NetworkQueue.Strategy:
 
-                strategy = self.client_queue_out.get()
                 asm_data = self.strategy_ui.asm.read_shared_memory()
                 if asm_data is not None:
 
-                    pit_stop = PitStop.from_bytes(strategy)
+                    pit_stop = PitStop.from_bytes(element.data)
                     self.strategy_ui.apply_strategy(pit_stop)
 
-            elif event_type == NetworkQueue.StrategyDone:
+            elif element.data_type == NetworkQueue.StrategyDone:
+
+                print("app: received start ok")
 
                 self.strategy_ui.b_set_strat.config(state="active")
                 self.strategy_ui.update_values()
 
-            elif event_type == NetworkQueue.Telemetry:
+            elif element.data_type == NetworkQueue.Telemetry:
 
-                telemetry_bytes = self.client_queue_out.get()
-                telemetry = Telemetry.from_bytes(telemetry_bytes)
+                telemetry = Telemetry.from_bytes(element.data)
                 self.telemetry_ui.telemetry = telemetry
                 self.telemetry_ui.update_values()
                 self.tyre_graph.update_data(telemetry)
@@ -415,16 +419,17 @@ class App(tkinter.Tk):
 
                 self.last_telemetry = time.time()
 
-            elif event_type == NetworkQueue.TelemetryRT:
+            elif element.data_type == NetworkQueue.TelemetryRT:
 
-                telemetry_bytes = self.client_queue_out.get()
-                telemetry = TelemetryRT.from_bytes(telemetry_bytes)
+                telemetry = TelemetryRT.from_bytes(element.data)
                 self.telemetry_ui.telemetry_rt = telemetry
                 self.telemetry_ui.update_values_rt()
 
-            elif event_type == NetworkQueue.UpdateUsers:
+            elif element.data_type == NetworkQueue.UpdateUsers:
 
-                user_update = self.client_queue_out.get()
+                print("user update !")
+
+                user_update = element.data
                 nb_users = user_update[0]
                 self.user_ui.reset()
                 self.strategy_ui.reset_drivers()
@@ -436,15 +441,21 @@ class App(tkinter.Tk):
                     index += 1
                     name = user_update[index:index+lenght].decode("utf-8")
                     index += lenght
-                    driverID = struct.unpack("!i",
-                                             user_update[index:index+4])[0]
+                    driverID = user_update[index]
+                    index += 1
 
                     index += 4
                     self.user_ui.add_user(name, driverID)
                     self.strategy_ui.add_driver(name, driverID)
 
-        elif self.client is None and self.strategy_ui.is_connected:
-            self.strategy_ui.is_connected = False
+        self.net_queue.q_out.clear()
+
+        if self.is_connected:
+            if not self.strategy_ui.is_connected:
+                self.strategy_ui.is_connected = True
+
+        else:
+            return
 
         if self.telemetry_ui.driver_swap or self.user_ui.active_user is None:
 
@@ -453,8 +464,19 @@ class App(tkinter.Tk):
                 self.telemetry_ui.driver_swap = False
                 self.strategy_ui.set_driver(self.telemetry_ui.current_driver)
 
+        rt_delta_time = time.time() - self.rt_last_time
+        delta_time = time.time() - self.last_time
+
+        if (self.strategy_ui.is_driver_active and
+                time.time() > self.last_telemetry + self.telemetry_timeout):
+
+            print("telemetry time out")
+            self.strategy_ui.is_driver_active = False
+            self.user_ui.remove_active()
+            self.telemetry_ui.current_driver = None
+
         asm_data = self.strategy_ui.asm.read_shared_memory()
-        if asm_data is not None and self.client is not None:
+        if asm_data is not None:
 
             if self.rt_min_delta < rt_delta_time:
 
@@ -468,8 +490,8 @@ class App(tkinter.Tk):
                     asm_data.Physics.speed_kmh
                 )
 
-                self.client_queue_in.put(NetworkQueue.TelemetryRT)
-                self.client_queue_in.put(telemetry_rt.to_bytes())
+                self.net_queue.q_in.append(NetData(NetworkQueue.TelemetryRT,
+                                           telemetry_rt.to_bytes()))
 
             if self.min_delta < delta_time:
 
@@ -481,8 +503,8 @@ class App(tkinter.Tk):
                     asm_data.Static.max_fuel,
                     asm_data.Graphics.mfd_tyre_set)
 
-                self.client_queue_in.put(NetworkQueue.CarInfoData)
-                self.client_queue_in.put(infos.to_bytes())
+                self.net_queue.q_in.append(NetData(NetworkQueue.CarInfoData,
+                                           infos.to_bytes()))
 
                 # Telemetry
                 name = asm_data.Static.player_name.split("\x00")[0]
@@ -512,65 +534,37 @@ class App(tkinter.Tk):
                     has_wet
                 )
 
-                self.client_queue_in.put(NetworkQueue.Telemetry)
-                self.client_queue_in.put(telemetry_data.to_bytes())
+                self.net_queue.q_in.append(NetData(NetworkQueue.Telemetry,
+                                           telemetry_data.to_bytes()))
 
         if self.strategy_ui.strategy is not None:
 
             strategy = self.strategy_ui.strategy
             self.strategy_ui.strategy = None
-            self.client_queue_in.put(NetworkQueue.StrategySet)
-            self.client_queue_in.put(strategy.to_bytes())
+            self.net_queue.q_in.append(NetData(NetworkQueue.StrategySet,
+                                               strategy.to_bytes()))
 
         if self.strategy_ui.strategy_ok:
 
-            self.client_queue_in.put(NetworkQueue.StrategyDone)
+            print("app send strat ok")
+            self.net_queue.q_in.append(NetData(NetworkQueue.StrategyDone))
             self.strategy_ui.strategy_ok = False
-
-        self.c_loop_id = self.after(10, self.client_loop)
 
     def open_connection_window(self, as_server: bool = False) -> None:
 
         self.connection_window = ConnectionWindow(self, as_server)
 
-    def connect_to_server(self, credits: Credidentials) -> Tuple[bool, str]:
+    def connect_to_server(self, credits: Credidentials) -> None:
 
-        self.client_endpoint = TCP4ClientEndpoint(reactor, credits.ip, credits.tcp_port)
-
-        self.client = ClientInstance2(credits)
-
-        self.client_endpoint.connect(self.client)
-    
-        while self.client.succes is None:
-            continue
-
-        if self.client.succes:
-            self.connected(True)
-
-        else:
-            self.client = None
-
-        return (self.client.succes, "none")
+        self.client = ClientInstance(credits, self.net_queue)
 
     def as_server(self, credis: Credidentials) -> Tuple[bool, str]:
 
         self.server = ServerInstance(credis.tcp_port, credis.udp_port)
 
-        if self.server.error is None:
-            succes, msg = self.connect_to_server(credis)
+        self.connect_to_server(credis)
 
-            if succes:
-                self.connected(True)
-
-            return succes, msg
-
-        else:
-            error = self.server.error
-            self.server = None
-
-            return False, error
-
-    def connected(self, state: bool) -> None:
+    def mb_connected(self, state: bool) -> None:
 
         if state:
             self.menu_bar.entryconfig("Disconnect", state="active")
@@ -585,7 +579,7 @@ class App(tkinter.Tk):
     def disconnect(self) -> None:
 
         self.stop_networking()
-        self.connected(False)
+        self.mb_connected(False)
 
         self.strategy_ui.reset()
         self.user_ui.reset()
@@ -593,23 +587,20 @@ class App(tkinter.Tk):
 
     def stop_networking(self) -> None:
 
-        if self.client is not None:
-            self.client.disconnect()
+        if self.is_connected:
 
-            # Create new empty queues
-            self.client_queue_in = queue.Queue()
-            self.client_queue_out = queue.Queue()
-            self.client = None
+            self.client.close()
+            self.is_connected = False
             print("APP: Client stopped.")
 
         if self.server is not None:
-            self.server.disconnect()
+
+            self.server.close()
             self.server = None
             print("APP: Server stopped.")
 
     def on_close(self) -> None:
 
-        self.after_cancel(self.c_loop_id)
         self.strategy_ui.close()
         self.tyre_graph.close()
         self.prev_lap_graph.close()

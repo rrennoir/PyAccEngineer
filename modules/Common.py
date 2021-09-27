@@ -156,6 +156,22 @@ class NetworkQueue(Enum):
     Telemetry = auto()
     TelemetryRT = auto()
     UpdateUsers = auto()
+    ConnectionReply = auto()
+    Close = auto()
+
+
+@dataclass
+class DataQueue:
+
+    q_in: List[NetData]
+    q_out: List[NetData]
+
+
+@dataclass
+class NetData:
+
+    data_type: NetworkQueue
+    data: bytes = b""
 
 
 @dataclass
