@@ -56,7 +56,8 @@ class ClientInstance:
     def close(self) -> None:
 
         self.looping_call.stop()
-        self.data_queue.q_in.append(NetData(NetworkQueue.Close))
+        self.tcp_queue.q_in.append(NetData(NetworkQueue.Close))
+        self.udp_queue.q_in.append(NetData(NetworkQueue.Close))
 
 
 class TCP_Factory(ClientFactory):
@@ -123,15 +124,14 @@ class TCP_Client(Protocol):
 
     def connectionLost(self, reason: Failure):
         self._error = str(reason)
-        print(self._error)
+        print("TCP CLIENT: ", self._error)
 
     def close(self):
 
         if self.transport is not None:
-            print("CLIENT: Close transport")
+            print("CLIENT: Close TCP")
             self.transport.loseConnection()
             self.loop_call.stop()
-            self._data_queue.q_in.clear()
 
     def _decode_packet(self, data: bytes) -> None:
 
