@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import ipaddress
 import json
+import logging
+import sys
 import time
 import tkinter
 from dataclasses import astuple
@@ -11,7 +13,6 @@ from tkinter import messagebox, ttk
 from typing import Optional, Tuple
 
 from twisted.internet import reactor, task, tksupport
-from twisted.internet.endpoints import TCP4ClientEndpoint, TCP4ServerEndpoint
 
 from modules.Client import ClientInstance
 from modules.Common import (CarInfo, Credidentials, DataQueue, NetData,
@@ -21,6 +22,10 @@ from modules.Strategy import StrategyUI
 from modules.Telemetry import Telemetry, TelemetryRT, TelemetryUI
 from modules.TyreGraph import PrevLapsGraph, TyreGraph
 from modules.Users import UserUI
+
+logging.basicConfig(stream=sys.stdout, level=logging.INFO,
+                    format="%(asctime)s.%(msecs)03d | %(name)s | %(message)s",
+                    datefmt="%H:%M:%S")
 
 
 _VERSION_ = "1.5.0"
@@ -44,6 +49,7 @@ class ConnectionWindow(tkinter.Toplevel):
         key_check = ("saved_ip", "tcp_port", "udp_port", "username",
                      "driverID")
 
+        logging.info(f"Loading {self.connection_path}")
         if Path(self.connection_path).is_file():
             fp = open(self.connection_path, "r")
 
@@ -53,17 +59,17 @@ class ConnectionWindow(tkinter.Toplevel):
                 if (type(self.credidentials) is not dict or
                         tuple(self.credidentials.keys()) != key_check):
 
-                    print(f"Invalid connection.json file")
+                    logging.info(f"Invalid connection.json file")
                     self.credidentials = None
 
             except json.JSONDecodeError as msg:
                 self.credidentials = None
-                print(f"JSON Error: {msg}")
+                logging.info(f"JSON Error: {msg}")
 
             fp.close()
 
         else:
-            print(f"{self.connection_path} not found")
+            logging.info(f"{self.connection_path} not found")
             self.credidentials = None
 
         # Block other window as long as this one is open
@@ -141,7 +147,11 @@ class ConnectionWindow(tkinter.Toplevel):
             self.cb_ip.set("127.0.0.1")
             self.cb_ip["state"] = "disabled"
 
+        logging.info("Displaying connection window")
+
     def connect(self) -> None:
+
+        logging.info("Connect button pressed")
 
         self.b_connect.config(state="disabled")
 
@@ -184,6 +194,8 @@ class ConnectionWindow(tkinter.Toplevel):
 
         if error_message == "":
 
+            logging.info("No error in the credidentials")
+
             self.credits = Credidentials(
                 ip=self.cb_ip.get(),
                 tcp_port=int(self.e_tcp_port.get()),
@@ -193,15 +205,16 @@ class ConnectionWindow(tkinter.Toplevel):
             )
 
             if self.as_server:
-
                 self.main_app.as_server(self.credits)
 
             else:
                 self.main_app.connect_to_server(self.credits)
 
             self.is_connected_loop.start(0.1)
+            logging.info("Waiting for connection confirmation")
 
         else:
+            logging.info(f"Error: {error_message}")
             messagebox.showerror("Error", error_message)
             self.b_connect.config(state="active")
 
@@ -211,12 +224,14 @@ class ConnectionWindow(tkinter.Toplevel):
             return
 
         if self.is_connected:
+            logging.info("Connected")
 
             self.is_connected_loop.stop()
             self.save_credidentials(self.credits)
             self.on_close()
 
         else:
+            logging.info("Connection failed")
             messagebox.showerror("Error", self.connection_msg)
             self.b_connect.config(state="active")
 
@@ -226,6 +241,8 @@ class ConnectionWindow(tkinter.Toplevel):
         self.connection_msg = error
 
     def save_credidentials(self, credits: Credidentials) -> None:
+
+        logging.info("Saving credidentials")
 
         if self.credidentials is None:
             saved_ip = [self.cb_ip.get()]
@@ -255,6 +272,7 @@ class ConnectionWindow(tkinter.Toplevel):
 
         self.grab_release()
         self.destroy()
+        logging.info("Connection window closed")
 
 
 class App(tkinter.Tk):
@@ -304,9 +322,8 @@ class App(tkinter.Tk):
 
         # Networking
         self.is_connected = False
+        self.client: Optional[ClientInstance] = None
         self.server: Optional[ServerInstance] = None
-        self.client_endpoint: Optional[TCP4ClientEndpoint] = None
-        self.server_endpoint: Optional[TCP4ServerEndpoint] = None
         self.net_queue = DataQueue([], [])
         self.server_queue = DataQueue([], [])
 
@@ -364,6 +381,8 @@ class App(tkinter.Tk):
         self.last_telemetry = time.time()
         self.telemetry_timeout = 2
 
+        logging.info("Main UI created.")
+
         self.client_loopCall = task.LoopingCall(self.client_loop2)
         self.client_loopCall.start(0.01)
 
@@ -374,6 +393,8 @@ class App(tkinter.Tk):
         for element in self.net_queue.q_out:
 
             if element.data_type == NetworkQueue.ConnectionReply:
+
+                logging.info("Received Connection reply for server")
 
                 succes = bool(element.data[0])
                 msg = ""  # TODO
@@ -393,6 +414,8 @@ class App(tkinter.Tk):
 
             elif element.data_type == NetworkQueue.Strategy:
 
+                logging.info("Received: Strategy")
+
                 asm_data = self.strategy_ui.asm.read_shared_memory()
                 if asm_data is not None:
 
@@ -401,7 +424,7 @@ class App(tkinter.Tk):
 
             elif element.data_type == NetworkQueue.StrategyDone:
 
-                print("app: received start ok")
+                logging.info("Received: Strategy Done")
 
                 self.strategy_ui.b_set_strat.config(state="active")
                 self.strategy_ui.update_values()
@@ -427,7 +450,7 @@ class App(tkinter.Tk):
 
             elif element.data_type == NetworkQueue.UpdateUsers:
 
-                print("user update !")
+                logging.info("Received user update")
 
                 user_update = element.data
                 nb_users = user_update[0]
@@ -449,12 +472,11 @@ class App(tkinter.Tk):
 
         self.net_queue.q_out.clear()
 
-        if self.is_connected:
-            if not self.strategy_ui.is_connected:
-                self.strategy_ui.is_connected = True
-
-        else:
+        if not self.is_connected:
             return
+
+        if not self.strategy_ui.is_connected:
+            self.strategy_ui.is_connected = True
 
         if self.telemetry_ui.driver_swap or self.user_ui.active_user is None:
 
@@ -469,7 +491,8 @@ class App(tkinter.Tk):
         if (self.strategy_ui.is_driver_active and
                 time.time() > self.last_telemetry + self.telemetry_timeout):
 
-            print("telemetry time out")
+            logging.info("Telemetry timeout, not received "
+                         f"telemetry for {self.telemetry_timeout}s")
             self.strategy_ui.is_driver_active = False
             self.user_ui.remove_active()
             self.telemetry_ui.current_driver = None
@@ -545,20 +568,24 @@ class App(tkinter.Tk):
 
         if self.strategy_ui.strategy_ok:
 
-            print("app send strat ok")
+            logging.log("Send strategy Done")
             self.net_queue.q_in.append(NetData(NetworkQueue.StrategyDone))
             self.strategy_ui.strategy_ok = False
 
     def open_connection_window(self, as_server: bool = False) -> None:
 
+        logging.info("Open ConnectionWindow")
         self.connection_window = ConnectionWindow(self, as_server)
 
     def connect_to_server(self, credits: Credidentials) -> None:
 
+        logging.info("Creating a ClientInstance connecting"
+                     f" to {credits.ip}:{credits.tcp_port}")
         self.client = ClientInstance(credits, self.net_queue)
 
     def as_server(self, credis: Credidentials) -> Tuple[bool, str]:
 
+        logging.info("Creating a ServerInstance")
         self.server = ServerInstance(credis.tcp_port, credis.udp_port)
 
         self.connect_to_server(credis)
@@ -577,6 +604,8 @@ class App(tkinter.Tk):
 
     def disconnect(self) -> None:
 
+        logging.info("Disconnecting")
+
         self.stop_networking()
         self.mb_connected(False)
 
@@ -590,13 +619,13 @@ class App(tkinter.Tk):
 
             self.client.close()
             self.is_connected = False
-            print("APP: Client stopped.")
+            logging.info("Client stopped.")
 
         if self.server is not None:
 
             self.server.close()
             self.server = None
-            print("APP: Server stopped.")
+            logging.info("Server stopped.")
 
     def on_close(self) -> None:
 
@@ -611,11 +640,10 @@ class App(tkinter.Tk):
         reactor.stop()
 
         self.destroy()
-        print("App closed")
+        logging.info("App closed")
 
 
 def create_gui() -> None:
-
     App()
 
 
