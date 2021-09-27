@@ -1,3 +1,5 @@
 PyAutoGUI>=0.9.53
 pywin32>=227
 matplotlib>=3.3.4
+Twisted>=21.7.0
+service-identity>=21.1.0
