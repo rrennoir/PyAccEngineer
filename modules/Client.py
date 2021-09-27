@@ -179,6 +179,7 @@ class UDPClient(DatagramProtocol):
     def startProtocol(self) -> None:
 
         self.transport.connect(self.ip, self.port)
+        self.transport.write(b"Hello UDP")
 
     def check_queue(self) -> None:
 
