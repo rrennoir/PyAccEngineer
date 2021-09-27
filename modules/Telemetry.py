@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+import logging
 import struct
 import tkinter
-from tkinter import ttk
 from dataclasses import astuple, dataclass
+from tkinter import ttk
 from typing import ClassVar, Optional
 
-from SharedMemory.PyAccSharedMemory import Wheels, ACC_SESSION_TYPE
+from SharedMemory.PyAccSharedMemory import ACC_SESSION_TYPE, Wheels
 
-from modules.Common import rgbtohex, string_time_from_ms, convert_to_rgb
+from modules.Common import convert_to_rgb, rgbtohex, string_time_from_ms
+
+log = logging.getLogger(__name__)
 
 
 class TyreInfo(ttk.Frame):
@@ -210,7 +213,7 @@ class TelemetryRT:
 
         if len(data) > cls.byte_size:
 
-            print(f"Telemetry: Warning got packet of {len(data)} bytes")
+            log.warning(f"Telemetry: Warning got packet of {len(data)} bytes")
             data = data[:cls.byte_size]
 
         unpacked_data = struct.unpack(cls.byte_format, data)
@@ -279,8 +282,8 @@ class Telemetry:
 
         if len(data) > expected_packet_size:
             psize = len(data)
-            print(f"Telemetry: Warning got packet of {psize} bytes,"
-                  f" expected {expected_packet_size}")
+            log.warning(f"Got packet of {psize} bytes,"
+                        f" expected {expected_packet_size}")
             data = data[:expected_packet_size + 1]
 
         raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2? B i 12f B", data[1:])

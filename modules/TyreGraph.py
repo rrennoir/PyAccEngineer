@@ -1,5 +1,6 @@
 import copy
 import io
+import logging
 import pathlib
 import tkinter
 from dataclasses import astuple
@@ -16,6 +17,9 @@ from PIL import Image
 
 from modules.Common import avg, send_to_clipboard
 from modules.Telemetry import Telemetry
+
+
+log = logging.getLogger(__name__)
 
 # Use tkinter backend
 matplotlib.use("TkAgg")
@@ -187,10 +191,6 @@ class TyreGraph(ttk.Frame):
     def _animate(self, i) -> None:
 
         if len(self.pressures_fl) == 0:
-            return
-
-        if len(self.time_axis) != len(self.pressures_fl):
-            print("update incomplet")
             return
 
         self.plot_line_fl.set_data(self.time_axis, self.pressures_fl)
@@ -442,7 +442,7 @@ class PrevLapsGraph(ttk.Frame):
 
         lap_data = self.laps[key]
 
-        print(f"Ploting for {key}")
+        log.info(f"Ploting for {key}")
 
         self.graph.clear()
 
