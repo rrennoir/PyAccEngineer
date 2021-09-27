@@ -14,26 +14,28 @@ from modules.Common import DataQueue, NetData, NetworkQueue, PacketType
 
 class TCP_Server(Protocol):
 
-    def __init__(self, users: List[TCP_Server], queue: DataQueue) -> None:
+    def __init__(self, users: List[TCP_Server],
+                 user_connected: List[Tuple[str, int]],
+                 queue: DataQueue) -> None:
+
         super().__init__()
         self.queue = queue
         self.users = users
         self.users.append(self)
-        self.user_connected: List[Tuple[str, int]] = []
+        self.user_connected: List[str, int] = user_connected
 
-        self.nb_user = 0
+        self.user_change = False
 
         self.user: Tuple[str, int] = ()
 
         self.loop_call = task.LoopingCall(self.server_loop)
-        self.loop_call.start(0.01)
+        self.loop_call.start(0.1)
 
     def server_loop(self) -> None:
 
-        if self.nb_user != len(self.user_connected):
-
-            self.nb_user = len(self.user_connected)
+        if self.user_change:
             self.update_user_connected()
+            self.user_change = False
 
         for element in self.queue.q_in:
 
@@ -68,6 +70,7 @@ class TCP_Server(Protocol):
 
             self.user = (name, driverID)
             self.user_connected.append(self.user)
+            self.user_change = True
 
             header = PacketType.ConnectionReply.to_bytes()
             packet = struct.pack("!?", True)
@@ -104,10 +107,12 @@ class TCP_Server(Protocol):
             buffer.append(lenght + name + driverID)
 
         self.send_to_all_user(b"".join(buffer))
-        print(f"SEVER: Send user update {buffer}")
+        print(f"SERVER: Send user update {buffer}")
 
     def connectionLost(self, reason: Failure = ...):
-        print(reason)
+        print("SERVER: connection lost: ", reason)
+        self.user_connected.remove(self.user)
+        self.user_change = True
 
     def close(self) -> None:
 
@@ -122,11 +127,12 @@ class TCP_Factory(ServerFactory):
     def __init__(self, queue: DataQueue) -> None:
         super().__init__()
         self._users: List[TCP_Server] = []
+        self.user_connected: List[Tuple[str, int]] = []
         self.queue = queue
 
     def buildProtocol(self, addr: IAddress):
 
-        return TCP_Server(self._users, self.queue)
+        return TCP_Server(self._users, self.user_connected, self.queue)
 
 
 class UDP_Server(DatagramProtocol):
@@ -143,6 +149,9 @@ class UDP_Server(DatagramProtocol):
 
         if addr not in self.clients:
             self.clients.append(addr)
+
+        if datagram == b"Hello UDP":
+            return
 
         for client in self.clients:
             self.transport.write(datagram, client)
