@@ -444,7 +444,6 @@ class App(tkinter.Tk):
                     driverID = user_update[index]
                     index += 1
 
-                    index += 4
                     self.user_ui.add_user(name, driverID)
                     self.strategy_ui.add_driver(name, driverID)
 
