@@ -1,3 +1,4 @@
+import logging
 import math
 import multiprocessing
 import queue
@@ -7,7 +8,7 @@ from dataclasses import astuple
 from datetime import datetime
 from functools import partial
 from tkinter import ttk
-from typing import List, Union
+from typing import Union
 
 import pyautogui
 import win32com
@@ -16,6 +17,8 @@ import win32gui
 from SharedMemory.PyAccSharedMemory import ACC_map, accSharedMemory
 
 from modules.Common import CarInfo, PitStop
+
+log = logging.getLogger(__name__)
 
 
 def clamp(number: Union[float, int],
@@ -223,7 +226,7 @@ class StrategyUI(tkinter.Frame):
     def _copy_strat(self) -> None:
 
         if self.cb_strat.get() == "":
-            print("No strategy selected")
+            log.warning("No strategy selected")
             return
 
         self.fuel_text.set(self.old_fuel.get())
@@ -237,13 +240,13 @@ class StrategyUI(tkinter.Frame):
     def _show_old_strat(self, _) -> None:
 
         if self.cb_strat.get() == "":
-            print("No strategy selected")
+            log.warning("No strategy selected")
             return
 
         selected_strat = self.cb_strat.get()
 
         if selected_strat not in self.strategies:
-            print(f"{selected_strat} not in strategies")
+            log.warning(f"{selected_strat} not in strategies")
             return
 
         strategy: PitStop = self.strategies[selected_strat]
@@ -385,7 +388,7 @@ class StrategyUI(tkinter.Frame):
     def _next_driver(self) -> None:
 
         if len(self.driver_list) < 2:
-            print("no more than 2 driver connected")
+            log.warning("no more than 2 driver connected")
             return
 
         driver_ids = []
@@ -393,7 +396,7 @@ class StrategyUI(tkinter.Frame):
 
         # find current driver id
         set_driver = self.driver_var.get()
-        print(f"Current: {set_driver}")
+        log.info(f"Current: {set_driver}")
         for driver in self.driver_list:
 
             if driver[0] == set_driver:
@@ -403,7 +406,7 @@ class StrategyUI(tkinter.Frame):
                 driver_ids.append(driver[1])
 
         if current_id is None:
-            print(f"Driver {set_driver} not in driver list")
+            log.warning(f"Driver {set_driver} not in driver list")
             return
 
         # Find next driver in the list
@@ -416,7 +419,7 @@ class StrategyUI(tkinter.Frame):
                 break
 
         if next_driver_id is None:
-            print(f"No next driver found")
+            log.warning(f"No next driver found")
             return
 
         # Find name of next driver id
@@ -431,7 +434,7 @@ class StrategyUI(tkinter.Frame):
     def _prev_driver(self) -> None:
 
         if len(self.driver_list) < 2:
-            print("no more than 2 driver connected")
+            log.warning("no more than 2 driver connected")
             return
 
         driver_ids = []
@@ -439,7 +442,7 @@ class StrategyUI(tkinter.Frame):
 
         # find current driver id
         set_driver = self.driver_var.get()
-        print(f"Current: {set_driver}")
+        log.info(f"Current: {set_driver}")
         for driver in self.driver_list:
 
             if driver[0] == set_driver:
@@ -449,7 +452,7 @@ class StrategyUI(tkinter.Frame):
                 driver_ids.append(driver[1])
 
         if current_id is None:
-            print(f"Driver {set_driver} not in driver list")
+            log.warning(f"Driver {set_driver} not in driver list")
             return
 
         # Find next driver in the list
@@ -462,7 +465,7 @@ class StrategyUI(tkinter.Frame):
                 break
 
         if previous_driver_id is None:
-            print(f"No previous driver found")
+            log.warning(f"No previous driver found")
             return
 
         # Find name of next driver id
@@ -513,11 +516,11 @@ class StrategyUI(tkinter.Frame):
     def set_strategy(self) -> None:
 
         if not self.is_connected:
-            print("Not connected")
+            log.warning("Not connected")
             return
 
         elif not self.is_driver_active:
-            print("No driver active")
+            log.warning("No driver active")
             return
 
         selected_driver = self.driver_var.get()
@@ -737,7 +740,7 @@ class StrategySetter:
 
     def set_strategy(self, strategy: PitStop, sm: ACC_map) -> None:
 
-        print(f"Requested strategy: {strategy}")
+        log.info(f"Requested strategy: {strategy}")
 
         self.set_acc_forground()
 
@@ -826,12 +829,9 @@ class StrategySetter:
 
             if strategy.driver_offset < 0:
                 pyautogui.press("left")
-                print("left")
+
             else:
                 pyautogui.press("right")
-                print("right")
-
-            print(strategy.driver_offset)
 
             time.sleep(0.01)
 
