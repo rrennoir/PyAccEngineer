@@ -568,7 +568,7 @@ class App(tkinter.Tk):
 
         if self.strategy_ui.strategy_ok:
 
-            logging.log("Send strategy Done")
+            logging.info("Send strategy Done")
             self.net_queue.q_in.append(NetData(NetworkQueue.StrategyDone))
             self.strategy_ui.strategy_ok = False
 
