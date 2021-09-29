@@ -288,7 +288,7 @@ class Telemetry:
                         f" expected {expected_packet_size}")
             data = data[:expected_packet_size + 1]
 
-        raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2? B i 12f ? F",
+        raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2? B i 12f ? f",
                                  data[1:])
 
         name = raw_data[0].decode("utf-8")
