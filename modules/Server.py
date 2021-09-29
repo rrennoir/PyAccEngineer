@@ -119,8 +119,7 @@ class TCP_Server(Protocol):
 
         self._error = str(reason)
 
-        server_log.info("SERVER: connection lost"
-                        f" with {self.transport.getPeer()}")
+        server_log.info(f"Lost connection with {self.transport.getPeer()}")
         self.user_connected.remove(self.user)
         self.user_change = True
 

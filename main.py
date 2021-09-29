@@ -312,6 +312,7 @@ class App(tkinter.Tk):
 
         app_style.configure("Users.TFrame", background="#000000")
         app_style.configure("PressureInfo.TFrame", background="#000000")
+        app_style.configure("TEntry", foreground="#000000")
 
         self.title(f"PyAccEngineer {_VERSION_}")
         self.config(bg="Grey")
