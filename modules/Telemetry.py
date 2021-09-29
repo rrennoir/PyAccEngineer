@@ -242,9 +242,10 @@ class Telemetry:
     tyre_temp: Wheels
     brake_temp: Wheels
     has_wet_tyres: bool
+    session_left: float
 
-    byte_size: ClassVar[int] = struct.calcsize("!B i 11f 3i 2? B i 12f B")
-    byte_format: ClassVar[str] = "!B i 11f 3i 2? B i 12f B"
+    byte_size: ClassVar[int] = struct.calcsize("!B i 11f 3i 2? B i 12f ? f")
+    byte_format: ClassVar[str] = "!B i 11f 3i 2? B i 12f ? f"
 
     def to_bytes(self) -> bytes:
 
@@ -269,7 +270,8 @@ class Telemetry:
             struct.pack("!4f", *astuple(self.tyre_pressure)),
             struct.pack("!4f", *astuple(self.tyre_temp)),
             struct.pack("!4f", *astuple(self.brake_temp)),
-            struct.pack("!B", self.has_wet_tyres),
+            struct.pack("!?", self.has_wet_tyres),
+            struct.pack("!f", self.has_wet_tyres),
         ]
 
         return b"".join(buffer)
@@ -286,7 +288,8 @@ class Telemetry:
                         f" expected {expected_packet_size}")
             data = data[:expected_packet_size + 1]
 
-        raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2? B i 12f B", data[1:])
+        raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2? B i 12f ? F",
+                                 data[1:])
 
         name = raw_data[0].decode("utf-8")
         rest = raw_data[1:]
@@ -310,6 +313,7 @@ class Telemetry:
             Wheels(*rest[23:27]),
             Wheels(*rest[27:31]),
             rest[31],
+            rest[32],
         )
 
 
