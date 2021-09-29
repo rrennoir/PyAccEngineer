@@ -8,13 +8,15 @@ from dataclasses import astuple
 from datetime import datetime
 from functools import partial
 from tkinter import ttk
-from typing import Union
+from typing import Optional, Union
 
 import pyautogui
 import win32com
 import win32com.client
 import win32gui
 from SharedMemory.PyAccSharedMemory import ACC_map, accSharedMemory
+from modules.Telemetry import Telemetry
+from modules.Common import string_time_from_ms
 
 from modules.Common import CarInfo, PitStop
 
@@ -34,6 +36,26 @@ def clamp(number: Union[float, int],
     return number
 
 
+def time_str_to_ms(time: str) -> Optional[int]:
+
+    if type(time) != str:
+        return None
+
+    try:
+        minutes, second_and_ms = time.split(":")
+        second, ms = second_and_ms.split(".")
+
+        total_ms = int(minutes) * 60_000
+        total_ms += int(second) * 1000
+        total_ms += int(ms)
+
+    except TypeError:
+        print("type error")
+        return None
+
+    return total_ms
+
+
 def ACCWindowFinderCallback(hwnd: int, obj) -> bool:
     """
     Since win32gui.FindWindow(None, 'AC2') doesn't work since kunos
@@ -45,6 +67,107 @@ def ACCWindowFinderCallback(hwnd: int, obj) -> bool:
         obj.hwnd = hwnd
 
     return True
+
+
+class FuelCalculator(ttk.Frame):
+
+    def __init__(self, root):
+
+        ttk.Frame.__init__(self, root)
+
+        self.fuel_lp = tkinter.DoubleVar()
+        self.duration = tkinter.IntVar()
+        self.lap_time = tkinter.StringVar(value="00:00.000")
+        self.fuel_calc = tkinter.IntVar()
+        self.margin = tkinter.IntVar()
+        self.override = tkinter.BooleanVar(value=False)
+
+        self.current_lap = -1
+
+        l_fuel_pl = ttk.Label(self, text="Fuel per lap")
+        l_fuel_pl.grid(row=0, column=0)
+
+        self.e_fuel_pl = ttk.Entry(self, state="disabled",
+                                   textvariable=self.fuel_lp)
+        self.e_fuel_pl.grid(row=1, column=0)
+
+        l_lap_time = ttk.Label(self, text="lap time")
+        l_lap_time.grid(row=0, column=1)
+
+        self.e_lap_time = ttk.Entry(self, state="disabled",
+                                    textvariable=self.lap_time)
+        self.e_lap_time.grid(row=1, column=1)
+
+        l_duration = ttk.Label(self, text="Duration")
+        l_duration.grid(row=0, column=2)
+
+        self.e_duration = ttk.Entry(self, state="disabled",
+                                    textvariable=self.duration)
+        self.e_duration.grid(row=1, column=2)
+
+        l_fuel_need = ttk.Label(self, text="Fuel needed")
+        l_fuel_need.grid(row=0, column=5)
+
+        l_fuel_cal = ttk.Label(self, textvariable=self.fuel_calc)
+        l_fuel_cal.grid(row=1, column=5)
+
+        l_margin = ttk.Label(self, text="Spare laps")
+        l_margin.grid(row=0, column=3)
+
+        self.e_margin = ttk.Entry(self, textvariable=self.margin)
+        self.e_margin.grid(row=1, column=3)
+
+        cb_override = ttk.Checkbutton(self, text="Override",
+                                      variable=self.override,
+                                      command=self._override_change)
+        cb_override.grid(row=2, column=0)
+
+        self.b_compute = ttk.Button(self, text="Calculate",
+                                    command=self._compute_fuel,
+                                    state="disabled")
+        self.b_compute.grid(row=1, column=4)
+
+    def _compute_fuel(self) -> None:
+
+        fuel_pl = self.fuel_lp.get()
+        lap_time = self.lap_time.get()
+        duration = self.duration.get()
+        margin = self.margin.get()
+
+        lap_time_ms = time_str_to_ms(lap_time)
+        if lap_time_ms is None:
+            log.error("Invalid lap time for fuel calculation")
+            return
+
+        duration_ms = duration * 60_000
+        laps = math.ceil(duration_ms / lap_time_ms) + margin
+        fuel = math.ceil(laps * fuel_pl)
+
+        self.fuel_calc.set(fuel)
+
+    def _override_change(self) -> None:
+
+        if self.override.get():
+            state = "normal"
+
+        else:
+            state = "disabled"
+
+        self.e_fuel_pl.config(state=state)
+        self.e_lap_time.config(state=state)
+        self.e_duration.config(state=state)
+        self.b_compute.config(state=state)
+
+    def update_values(self, telemetry: Telemetry) -> None:
+
+        if telemetry.lap == self.current_lap:
+            return
+
+        self.fuel_lp.set(telemetry.fuel_per_lap)
+        self.lap_time.set(string_time_from_ms(telemetry.previous_time))
+        self.duration.set(telemetry.session_left)
+
+        self._compute_fuel()
 
 
 class ButtonPannel(ttk.Frame):
@@ -219,6 +342,9 @@ class StrategyUI(tkinter.Frame):
                             command=self._copy_strat)
 
         b_copy.grid(row=10, column=0, columnspan=2, padx=4, pady=5)
+
+        self.f_fuel_cal = FuelCalculator(self)
+        self.f_fuel_cal.grid(row=2, column=0, columnspan=2)
 
         self.update_values()
         self.check_reply()
@@ -483,9 +609,13 @@ class StrategyUI(tkinter.Frame):
             self.strategy_ok = True
 
         elif self.strat_setter.data_requested():
-            self.data_queue.put(self.asm.read_shared_memory())
+            self.data_queue.put(self.asm.get_shared_memory_data())
 
         self.check_reply_id = self.after(60, self.check_reply)
+
+    def updae_telemetry_data(self, telemetry: Telemetry) -> None:
+
+        self.f_fuel_cal.update_values(telemetry)
 
     def update_values(self) -> None:
 
@@ -547,12 +677,12 @@ class StrategyUI(tkinter.Frame):
                         self.tyre_set_text.get() - 1,
                         self.tyre_compound_text.get(),
                         (
-                          self.front_left_text.get(),
-                          self.front_right_text.get(),
-                          self.rear_left_text.get(),
-                          self.rear_right_text.get()
-                        ),
-                        driver_offset)
+            self.front_left_text.get(),
+            self.front_right_text.get(),
+            self.rear_left_text.get(),
+            self.rear_right_text.get()
+        ),
+            driver_offset)
 
         time_key = datetime.now().strftime("%H:%M.%S_%d_%m_%Y")
         self.strategies[time_key] = strat
@@ -572,7 +702,7 @@ class StrategyUI(tkinter.Frame):
     def apply_strategy(self, strat: PitStop) -> None:
 
         self.data_queue.put(strat)
-        self.data_queue.put(self.asm.read_shared_memory())
+        self.data_queue.put(self.asm.get_shared_memory_data())
         self.strat_setter.start()
 
     def change_pressure_fl(self, change) -> None:
