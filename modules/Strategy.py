@@ -135,7 +135,7 @@ class FuelCalculator(ttk.Frame):
         margin = self.margin.get()
 
         lap_time_ms = time_str_to_ms(lap_time)
-        if lap_time_ms is None:
+        if lap_time_ms is None or lap_time_ms == 0:
             log.error("Invalid lap time for fuel calculation")
             return
 
@@ -163,9 +163,14 @@ class FuelCalculator(ttk.Frame):
         if telemetry.lap == self.current_lap:
             return
 
+        if self.override.get():
+            return
+
+        self.current_lap = telemetry.lap
+
         self.fuel_lp.set(telemetry.fuel_per_lap)
         self.lap_time.set(string_time_from_ms(telemetry.previous_time))
-        self.duration.set(telemetry.session_left)
+        self.duration.set(telemetry.session_left / 60_000)
 
         self._compute_fuel()
 
