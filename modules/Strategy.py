@@ -76,7 +76,7 @@ class FuelCalculator(ttk.Frame):
         ttk.Frame.__init__(self, root)
 
         self.fuel_lp = tkinter.DoubleVar()
-        self.duration = tkinter.IntVar()
+        self.duration = tkinter.DoubleVar()
         self.lap_time = tkinter.StringVar(value="00:00.000")
         self.fuel_calc = tkinter.IntVar()
         self.margin = tkinter.IntVar()
@@ -168,9 +168,9 @@ class FuelCalculator(ttk.Frame):
 
         self.current_lap = telemetry.lap
 
-        self.fuel_lp.set(telemetry.fuel_per_lap)
+        self.fuel_lp.set(round(telemetry.fuel_per_lap, 2))
         self.lap_time.set(string_time_from_ms(telemetry.previous_time))
-        self.duration.set(telemetry.session_left / 60_000)
+        self.duration.set(round(telemetry.session_left / 60_000, 1))
 
         self._compute_fuel()
 
