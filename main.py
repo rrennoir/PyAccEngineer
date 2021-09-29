@@ -436,6 +436,7 @@ class App(tkinter.Tk):
                 self.telemetry_ui.telemetry = telemetry
                 self.telemetry_ui.update_values()
                 self.tyre_graph.update_data(telemetry)
+                self.strategy_ui.updae_telemetry_data(telemetry)
 
                 if not self.strategy_ui.is_driver_active:
                     self.strategy_ui.is_driver_active = True
