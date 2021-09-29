@@ -197,6 +197,9 @@ class UDPClient(DatagramProtocol):
                 self.transport.write(PacketType.TelemetryRT.to_bytes()
                                      + element.data)
 
+            elif element.data_type == NetworkQueue.Close:
+                self.close()
+
         self.queue.q_in.clear()
 
         if time.time() - self.udp_imnotdead_timer > 10:
@@ -225,3 +228,10 @@ class UDPClient(DatagramProtocol):
     # Possibly invoked if there is no server listening
     def connectionRefused(self):
         client_log.warning("No one listening")
+
+    def close(self):
+
+        if self.transport is not None:
+            client_log.info("Close UDP client")
+            self.transport.loseConnection()
+            self.loop_call.stop()
