@@ -271,7 +271,7 @@ class Telemetry:
             struct.pack("!4f", *astuple(self.tyre_temp)),
             struct.pack("!4f", *astuple(self.brake_temp)),
             struct.pack("!?", self.has_wet_tyres),
-            struct.pack("!f", self.has_wet_tyres),
+            struct.pack("!f", self.session_left),
         ]
 
         return b"".join(buffer)
