@@ -174,8 +174,8 @@ class FuelCalculator(ttk.Frame):
     def update_values(self, telemetry: Telemetry) -> None:
 
         self.fuel_pl_bk = round(telemetry.fuel_per_lap, 2)
-        self.duration_bk = string_time_from_ms(telemetry.previous_time)
-        self.lap_time_bk = round(telemetry.session_left / 60_000, 1)
+        self.duration_bk = round(telemetry.session_left / 60_000, 1)
+        self.lap_time_bk = string_time_from_ms(telemetry.previous_time)
 
         if telemetry.session != self.current_session:
             self.current_lap = -1
