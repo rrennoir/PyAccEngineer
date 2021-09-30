@@ -8,17 +8,18 @@ from dataclasses import astuple
 from datetime import datetime
 from functools import partial
 from tkinter import ttk
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import pyautogui
 import win32com
 import win32com.client
 import win32gui
-from SharedMemory.PyAccSharedMemory import ACC_map, accSharedMemory
-from modules.Telemetry import Telemetry
-from modules.Common import string_time_from_ms
+from SharedMemory.PyAccSharedMemory import (ACC_SESSION_TYPE,
+                                            ACC_TRACK_GRIP_STATUS, ACC_map,
+                                            accSharedMemory)
 
-from modules.Common import CarInfo, PitStop
+from modules.Common import CarInfo, PitStop, avg, string_time_from_ms
+from modules.Telemetry import Telemetry
 
 log = logging.getLogger(__name__)
 
@@ -85,9 +86,11 @@ class FuelCalculator(ttk.Frame):
         self.fuel_pl_bk = 0
         self.duration_bk = 0
         self.lap_time_bk = ""
+        self.lap_avg: List[int] = []
 
         self.current_lap = -1
-        self.current_session = None
+        self.current_session = ACC_SESSION_TYPE.ACC_UNKNOW
+        self.current_grip = ACC_TRACK_GRIP_STATUS.ACC_GREEN
 
         l_fuel_pl = ttk.Label(self, text="Fuel per lap")
         l_fuel_pl.grid(row=0, column=0)
@@ -149,7 +152,7 @@ class FuelCalculator(ttk.Frame):
         fuel = math.ceil(laps * fuel_pl)
 
         log.info(f"Computed fuel: {fuel}L for {laps}laps at {fuel_pl}L per lap"
-                 f"with a lap time of {lap_time}")
+                 f" with a lap time of {lap_time}")
 
         self.fuel_calc.set(fuel)
 
@@ -173,9 +176,17 @@ class FuelCalculator(ttk.Frame):
 
     def update_values(self, telemetry: Telemetry) -> None:
 
+        if telemetry.grip != self.current_grip:
+            self.current_grip = telemetry.grip
+            self.lap_avg.clear()
+
+        self.lap_avg.append(telemetry.previous_time)
+        if len(self.lap_avg) > 5:
+            self.lap_avg.pop(0)
+
         self.fuel_pl_bk = round(telemetry.fuel_per_lap, 2)
         self.duration_bk = round(telemetry.session_left / 60_000, 1)
-        self.lap_time_bk = string_time_from_ms(telemetry.previous_time)
+        self.lap_time_bk = string_time_from_ms(avg(self.lap_avg))
 
         if telemetry.session != self.current_session:
             self.current_lap = -1
@@ -189,7 +200,7 @@ class FuelCalculator(ttk.Frame):
             return
 
         self.fuel_lp.set(round(telemetry.fuel_per_lap, 2))
-        self.lap_time.set(string_time_from_ms(telemetry.previous_time))
+        self.lap_time.set(string_time_from_ms(avg(self.lap_avg)))
         self.duration.set(round(telemetry.session_left / 60_000, 1))
 
         self._compute_fuel()
@@ -199,6 +210,8 @@ class FuelCalculator(ttk.Frame):
         self.duration.set(0)
         self.lap_time.set("00:00.000")
         self.fuel_lp.set(0)
+
+        self.lap_avg.clear()
 
         self.fuel_pl_bk = 0
         self.duration_bk = 0
