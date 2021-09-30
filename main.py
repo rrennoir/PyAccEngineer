@@ -558,7 +558,8 @@ class App(tkinter.Tk):
                     asm_data.Physics.tyre_core_temp,
                     asm_data.Physics.brake_temp,
                     has_wet,
-                    asm_data.Graphics.session_time_left
+                    asm_data.Graphics.session_time_left,
+                    asm_data.Graphics.track_grip_status
                 )
 
                 self.net_queue.q_in.append(NetData(NetworkQueue.Telemetry,

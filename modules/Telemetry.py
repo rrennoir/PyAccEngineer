@@ -7,7 +7,8 @@ from dataclasses import astuple, dataclass
 from tkinter import ttk
 from typing import ClassVar, Optional
 
-from SharedMemory.PyAccSharedMemory import ACC_SESSION_TYPE, Wheels
+from SharedMemory.PyAccSharedMemory import (ACC_SESSION_TYPE,
+                                            ACC_TRACK_GRIP_STATUS, Wheels)
 
 from modules.Common import convert_to_rgb, rgbtohex, string_time_from_ms
 
@@ -190,23 +191,15 @@ class TelemetryRT:
     gas: float
     brake: float
     streering_angle: float
-    gear: float
+    gear: int
     speed: float
 
-    byte_format: ClassVar[str] = "!5f"
+    byte_format: ClassVar[str] = "!3f i f"
     byte_size: ClassVar[int] = struct.calcsize(byte_format)
 
     def to_bytes(self) -> bytes:
 
-        buffer = [
-            struct.pack("!f", self.gas),
-            struct.pack("!f", self.brake),
-            struct.pack("!f", self.streering_angle),
-            struct.pack("!f", self.gear),
-            struct.pack("!f", self.speed),
-        ]
-
-        return b"".join(buffer)
+        return struct.pack(self.byte_format, *astuple(self))
 
     @classmethod
     def from_bytes(cls, data: bytes) -> TelemetryRT:
@@ -243,9 +236,10 @@ class Telemetry:
     brake_temp: Wheels
     has_wet_tyres: bool
     session_left: float
+    grip: ACC_TRACK_GRIP_STATUS
 
-    byte_size: ClassVar[int] = struct.calcsize("!B i 11f 3i 2? B i 12f ? f")
-    byte_format: ClassVar[str] = "!B i 11f 3i 2? B i 12f ? f"
+    byte_size: ClassVar[int] = struct.calcsize("!B i 11f 3i 2? B i 12f ? f B")
+    byte_format: ClassVar[str] = "!B i 11f 3i 2? B i 12f ? f B"
 
     def to_bytes(self) -> bytes:
 
@@ -272,6 +266,7 @@ class Telemetry:
             struct.pack("!4f", *astuple(self.brake_temp)),
             struct.pack("!?", self.has_wet_tyres),
             struct.pack("!f", self.session_left),
+            struct.pack("!B", self.grip.value)
         ]
 
         return b"".join(buffer)
@@ -288,7 +283,7 @@ class Telemetry:
                         f" expected {expected_packet_size}")
             data = data[:expected_packet_size + 1]
 
-        raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2? B i 12f ? f",
+        raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2? B i 12f ? f B",
                                  data[1:])
 
         name = raw_data[0].decode("utf-8")
@@ -314,6 +309,7 @@ class Telemetry:
             Wheels(*rest[27:31]),
             rest[31],
             rest[32],
+            ACC_TRACK_GRIP_STATUS(rest[33]),
         )
 
 
@@ -337,12 +333,13 @@ class TelemetryUI(ttk.Frame):
         self.fuel_var = tkinter.DoubleVar()
         self.fuel_per_lap_var = tkinter.DoubleVar()
         self.fuel_lap_left_var = tkinter.DoubleVar()
+        self.grip_status = tkinter.StringVar()
 
         self.gas = tkinter.DoubleVar()
         self.brake = tkinter.DoubleVar()
         self.steering = tkinter.DoubleVar()
         self.gear = tkinter.IntVar()
-        self.speed = tkinter.DoubleVar()
+        self.speed = tkinter.IntVar()
 
         self._build_telemetry_ui()
 
@@ -458,6 +455,14 @@ class TelemetryUI(ttk.Frame):
             f_info2, textvariable=self.fuel_lap_left_var, width=5)
         l_fuel_lap_left_var.grid(row=0, column=7, padx=1, pady=1)
 
+        # Lap left
+        l_grip = ttk.Label(f_info2, text="Grip status")
+        l_grip.grid(row=0, column=8, padx=1, pady=1)
+
+        l_grip_var = ttk.Label(f_info2, textvariable=self.grip_status,
+                               width=10)
+        l_grip_var.grid(row=0, column=9, padx=1, pady=1)
+
     def update_values(self) -> None:
 
         if self.telemetry is not None:
@@ -465,6 +470,8 @@ class TelemetryUI(ttk.Frame):
             pressure = astuple(self.telemetry.tyre_pressure)
             tyre_temp = astuple(self.telemetry.tyre_temp)
             brake_temp = astuple(self.telemetry.brake_temp)
+
+            self.grip_status.set(self.telemetry.grip)
 
             self.front_left.update_rt_value(pressure[0], tyre_temp[0],
                                             brake_temp[0])
@@ -479,10 +486,10 @@ class TelemetryUI(ttk.Frame):
                                             brake_temp[3])
 
             self.lap_var.set(self.telemetry.lap)
-            self.fuel_var.set(f"{self.telemetry.fuel:.1f}")
-            self.fuel_per_lap_var.set(f"{self.telemetry.fuel_per_lap:.2f}")
-            self.fuel_lap_left_var.set(
-                f"{self.telemetry.fuel_estimated_laps:.1f}")
+            self.fuel_var.set(round(self.telemetry.fuel, 1))
+            self.fuel_per_lap_var.set(round(self.telemetry.fuel_per_lap, 1))
+            self.fuel_lap_left_var.set(round(
+                self.telemetry.fuel_estimated_laps, 1))
 
             pad_wear = astuple(self.telemetry.pad_wear)
             disc_wear = astuple(self.telemetry.disc_wear)
@@ -518,7 +525,7 @@ class TelemetryUI(ttk.Frame):
             self.brake.set(self.telemetry_rt.brake)
             self.steering.set(self.telemetry_rt.streering_angle)
             self.gear.set(self.telemetry_rt.gear - 1)
-            self.speed.set(f"{self.telemetry_rt.speed:.1f}")
+            self.speed.set(int(self.telemetry_rt.speed))
 
             self.c_gas.coords(self.gas_rect, 0,
                               100 - self.gas.get() * 100,  20, 100)
