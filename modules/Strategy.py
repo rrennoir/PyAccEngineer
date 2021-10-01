@@ -38,9 +38,10 @@ def clamp(number: Union[float, int],
 
 
 def time_str_to_ms(time: str) -> Optional[int]:
-
-    if type(time) != str:
-        return None
+    """
+    Convert time string in 00:00.000 format to milliseconds.
+    If it fail return None
+    """
 
     try:
         minutes, second_and_ms = time.split(":")
@@ -50,8 +51,7 @@ def time_str_to_ms(time: str) -> Optional[int]:
         total_ms += int(second) * 1000
         total_ms += int(ms)
 
-    except TypeError:
-        print("type error")
+    except ValueError:
         return None
 
     return total_ms
@@ -200,7 +200,7 @@ class FuelCalculator(ttk.Frame):
             return
 
         self.fuel_lp.set(round(telemetry.fuel_per_lap, 2))
-        self.lap_time.set(string_time_from_ms(avg(self.lap_avg)))
+        self.lap_time.set(string_time_from_ms(int(avg(self.lap_avg))))
         self.duration.set(round(telemetry.session_left / 60_000, 1))
 
         self._compute_fuel()
