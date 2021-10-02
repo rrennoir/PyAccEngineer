@@ -87,8 +87,9 @@ class FuelCalculator(ttk.Frame):
         self.duration_bk = 0
         self.lap_time_bk = ""
         self.lap_avg: List[int] = []
+        self.was_in_pit = False
 
-        self.current_lap = -1
+        self.current_lap = 0
         self.current_session = ACC_SESSION_TYPE.ACC_UNKNOW
         self.current_grip = ACC_TRACK_GRIP_STATUS.ACC_GREEN
 
@@ -176,31 +177,44 @@ class FuelCalculator(ttk.Frame):
 
     def update_values(self, telemetry: Telemetry) -> None:
 
+        if telemetry.in_pit_lane:
+            self.was_in_pit = True
+
+        if telemetry.session != self.current_session:
+            self.current_lap = 0
+            self.current_session = telemetry.session
+
+        if telemetry.lap == self.current_lap:
+            return
+
+        elif telemetry.previous_time == 2_147_483_647:
+            return
+
+        self.current_lap = telemetry.lap
+        if self.was_in_pit:
+            self.was_in_pit = False
+            return
+
         if telemetry.grip != self.current_grip:
             self.current_grip = telemetry.grip
             self.lap_avg.clear()
 
         self.lap_avg.append(telemetry.previous_time)
-        if len(self.lap_avg) > 5:
+        if len(self.lap_avg) > 10:
             self.lap_avg.pop(0)
+
+        self.lap_avg.sort()
+        top_laps_avg = int(avg(self.lap_avg[:5]))
 
         self.fuel_pl_bk = round(telemetry.fuel_per_lap, 2)
         self.duration_bk = round(telemetry.session_left / 60_000, 1)
-        self.lap_time_bk = string_time_from_ms(avg(self.lap_avg))
-
-        if telemetry.session != self.current_session:
-            self.current_lap = -1
-        self.current_session = telemetry.session
-
-        if telemetry.lap == self.current_lap:
-            return
-        self.current_lap = telemetry.lap
+        self.lap_time_bk = string_time_from_ms(top_laps_avg)
 
         if self.override.get():
             return
 
         self.fuel_lp.set(round(telemetry.fuel_per_lap, 2))
-        self.lap_time.set(string_time_from_ms(int(avg(self.lap_avg))))
+        self.lap_time.set(string_time_from_ms(top_laps_avg))
         self.duration.set(round(telemetry.session_left / 60_000, 1))
 
         self._compute_fuel()
