@@ -80,15 +80,15 @@ def string_time_from_ms(time_in_ms: int, hours: bool = False) -> str:
 
     if hours:
         hour = time_in_ms // 3_600_000
-        minute = (time_in_ms % 3_600_000) // 60
-        second = (time_in_ms % 3_600_000) // 60_000
-        millisecond = (time_in_ms % 3_600_000) % 60_000
+        minute = (time_in_ms % 3_600_000) // 60_000
+        second = ((time_in_ms % 3_600_000) % 60_000) // 1_000
+        millisecond = (((time_in_ms % 3_600_000) % 60_000) % 1_000)
 
     else:
         hour = 0
         minute = time_in_ms // 60_000
-        second = (time_in_ms % 60_000) // 1000
-        millisecond = (time_in_ms % 60_000) % 1000
+        second = (time_in_ms % 60_000) // 1_000
+        millisecond = (time_in_ms % 60_000) % 1_000
 
     if hour < 10:
         hour_str = f"0{hour}"
