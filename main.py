@@ -435,8 +435,7 @@ class App(tkinter.Tk):
             elif element.data_type == NetworkQueue.Telemetry:
 
                 telemetry = Telemetry.from_bytes(element.data)
-                self.telemetry_ui.telemetry = telemetry
-                self.telemetry_ui.update_values()
+                self.telemetry_ui.update_values(telemetry)
                 self.tyre_graph.update_data(telemetry)
                 self.strategy_ui.updade_telemetry_data(telemetry)
 
@@ -449,8 +448,7 @@ class App(tkinter.Tk):
             elif element.data_type == NetworkQueue.TelemetryRT:
 
                 telemetry = TelemetryRT.from_bytes(element.data)
-                self.telemetry_ui.telemetry_rt = telemetry
-                self.telemetry_ui.update_values_rt()
+                self.telemetry_ui.update_values_rt(telemetry)
 
             elif element.data_type == NetworkQueue.UpdateUsers:
 
