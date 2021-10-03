@@ -148,15 +148,13 @@ class TyreInfo(ttk.Frame):
         l_disc_wear_var.grid(row=row_count, column=var_column)
 
     def update_value(self, pad_compound: int, pad_wear: float,
-                     disc_wear: float, has_wet: bool) -> None:
+                     disc_wear: float, has_wet: bool, tyre_pressure: float,
+                     tyre_temp: float, brake_temp: float) -> None:
 
         self.pad_compound.set(pad_compound + 1)
         self.pad_wear.set(round(pad_wear, 1))
         self.disc_wear.set(round(disc_wear, 1))
         self.has_wet = has_wet
-
-    def update_rt_value(self, tyre_pressure: float,
-                        tyre_temp: float, brake_temp: float) -> None:
 
         self.tyre_pressure.set(round(tyre_pressure, 1))
         self.tyre_temp.set(round(tyre_temp, 1))
@@ -665,18 +663,6 @@ class TelemetryUI(ttk.Frame):
 
         self.grip_status.set(telemetry.grip)
 
-        self.front_left.update_rt_value(pressure[0], tyre_temp[0],
-                                        brake_temp[0])
-
-        self.front_right.update_rt_value(pressure[1], tyre_temp[1],
-                                         brake_temp[1])
-
-        self.rear_left.update_rt_value(pressure[2], tyre_temp[2],
-                                       brake_temp[2])
-
-        self.rear_right.update_rt_value(pressure[3], tyre_temp[3],
-                                        brake_temp[3])
-
         self.time_left.set(string_time_from_ms(int(telemetry.session_left),
                                                hours=True)[:-4])
         self.session.set(telemetry.session)
@@ -692,16 +678,20 @@ class TelemetryUI(ttk.Frame):
         disc_wear = astuple(telemetry.disc_wear)
 
         self.front_left.update_value(front_pad, pad_wear[0], disc_wear[0],
-                                     telemetry.has_wet_tyres)
+                                     telemetry.has_wet_tyres, pressure[0],
+                                     tyre_temp[0], brake_temp[0])
 
         self.front_right.update_value(front_pad, pad_wear[1], disc_wear[1],
-                                      telemetry.has_wet_tyres)
+                                      telemetry.has_wet_tyres, pressure[1],
+                                      tyre_temp[1], brake_temp[1])
 
         self.rear_left.update_value(rear_pad, pad_wear[2], disc_wear[2],
-                                    telemetry.has_wet_tyres)
+                                    telemetry.has_wet_tyres, pressure[2],
+                                    tyre_temp[2], brake_temp[2])
 
         self.rear_right.update_value(rear_pad, pad_wear[3], disc_wear[3],
-                                     telemetry.has_wet_tyres)
+                                     telemetry.has_wet_tyres, pressure[3],
+                                     tyre_temp[3],  brake_temp[3])
 
         self.lap_time_var.set(string_time_from_ms(telemetry.lap_time))
         self.best_time_var.set(string_time_from_ms(telemetry.best_time))
