@@ -36,9 +36,18 @@ class TyreInfo(ttk.Frame):
         self.name = name
 
         self.tyre_range = {
-            "dry": [26, 29],
-            "wet": [28, 32],
-            "gt4": [25, 28]
+            "dry": {
+                "pressure": [26, 29],
+                "temperature": [40, 110]
+            },
+            "wet": {
+                "pressure": [28, 32],
+                "temperature": [20, 70]
+            },
+            "gt4": {
+                "pressure": [25, 28],
+                "temperatur": [40, 110]
+            }
         }
 
         self.brake_range = {
@@ -54,6 +63,7 @@ class TyreInfo(ttk.Frame):
             tyre_column = 0
             txt_anchor = tkinter.W
             brake_x = 0
+            core_x = 50
 
         else:
             label_column = 0
@@ -61,6 +71,7 @@ class TyreInfo(ttk.Frame):
             tyre_column = 2
             txt_anchor = tkinter.E
             brake_x = 35
+            core_x = 35
 
         row_count = 0
         f_tyre = ttk.Frame(self)
@@ -75,6 +86,9 @@ class TyreInfo(ttk.Frame):
         self.brake_rect = self.tyre_canvas.create_rectangle(brake_x, 25,
                                                             brake_x + 15, 75,
                                                             fill="Grey")
+        self.core_rect = self.tyre_canvas.create_rectangle(core_x - 35, 35,
+                                                           core_x, 65,
+                                                           fill="Grey")
 
         l_tyre = ttk.Label(self, text=name, width=label_width,
                            anchor=txt_anchor)
@@ -148,14 +162,16 @@ class TyreInfo(ttk.Frame):
         self.tyre_temp.set(round(tyre_temp, 1))
         self.brake_temp.set(round(brake_temp, 1))
 
-        self.update_tyre_hud(tyre_pressure)
+        self.update_tyre_hud(tyre_pressure, tyre_temp)
         self.update_brake_hud(brake_temp)
 
-    def update_tyre_hud(self, pressure: float) -> None:
+    def update_tyre_hud(self, pressure: float, temperature: float) -> None:
 
-        pressure_range = self.tyre_range["dry"]
+        pressure_range = self.tyre_range["dry"]["pressure"]
+        temperature_range = self.tyre_range["dry"]["temperature"]
         if self.has_wet:
-            pressure_range = self.tyre_range["wet"]
+            pressure_range = self.tyre_range["wet"]["pressure"]
+            temperature_range = self.tyre_range["wet"]["temperature"]
 
         if pressure > pressure_range[1]:
             colour = self.colours[2]
@@ -168,6 +184,18 @@ class TyreInfo(ttk.Frame):
                                     pressure, self.colours)
 
         self.tyre_canvas.itemconfig(self.tyre_rect, fill=rgbtohex(*colour))
+
+        if temperature > temperature_range[1]:
+            colour = self.colours[2]
+
+        elif temperature < temperature_range[0]:
+            colour = self.colours[0]
+
+        else:
+            colour = convert_to_rgb(temperature_range[0], temperature_range[1],
+                                    temperature, self.colours)
+
+        self.tyre_canvas.itemconfig(self.core_rect, fill=rgbtohex(*colour))
 
     def update_brake_hud(self, brake_temp: float) -> None:
 
