@@ -538,8 +538,6 @@ class App(tkinter.Tk):
                 surname = asm_data.Static.player_surname.split("\x00")[0]
                 driver = f"{name} {surname}"
 
-                has_wet = asm_data.Graphics.rain_tyres
-
                 telemetry_data = Telemetry(
                     driver,
                     asm_data.Graphics.completed_lap,
@@ -558,7 +556,7 @@ class App(tkinter.Tk):
                     asm_data.Physics.wheel_pressure,
                     asm_data.Physics.tyre_core_temp,
                     asm_data.Physics.brake_temp,
-                    has_wet,
+                    asm_data.Graphics.rain_tyres,
                     asm_data.Graphics.session_time_left,
                     asm_data.Graphics.track_grip_status,
                     asm_data.Physics.front_brake_compound,
@@ -572,6 +570,7 @@ class App(tkinter.Tk):
 
         if self.strategy_ui.strategy is not None:
 
+            logging.info("Sending strategy")
             strategy = self.strategy_ui.strategy
             self.strategy_ui.strategy = None
             self.net_queue.q_in.append(NetData(NetworkQueue.StrategySet,
