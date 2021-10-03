@@ -206,7 +206,6 @@ class CarDamageInfo(ttk.Frame):
         self.left_dmg = tkinter.DoubleVar()
         self.right_dmg = tkinter.DoubleVar()
         self.rear_dmg = tkinter.DoubleVar()
-        self.center_dmg = tkinter.DoubleVar()
 
         row_counter = 0
 
@@ -214,39 +213,32 @@ class CarDamageInfo(ttk.Frame):
         widget_tile.grid(row=row_counter, column=0, columnspan=2)
         row_counter += 1
 
-        l_front = ttk.Label(self, text="Front damage", anchor=tkinter.E)
+        l_front = ttk.Label(self, text="Front", width=7, anchor=tkinter.E)
         l_front.grid(row=row_counter, column=0)
-        l_front_var = ttk.Label(self, textvariable=self.front_dmg, width=4,
+        l_front_var = ttk.Label(self, textvariable=self.front_dmg, width=5,
                                 anchor=tkinter.CENTER)
         l_front_var.grid(row=row_counter, column=1)
         row_counter += 1
 
-        l_left = ttk.Label(self, text="Left damage", anchor=tkinter.E)
+        l_left = ttk.Label(self, text="Left", width=7, anchor=tkinter.E)
         l_left.grid(row=row_counter, column=0)
-        l_left_var = ttk.Label(self, textvariable=self.left_dmg, width=4,
+        l_left_var = ttk.Label(self, textvariable=self.left_dmg, width=5,
                                anchor=tkinter.CENTER)
         l_left_var.grid(row=row_counter, column=1)
         row_counter += 1
 
-        l_right = ttk.Label(self, text="Right damage", anchor=tkinter.E)
+        l_right = ttk.Label(self, text="Right", width=7, anchor=tkinter.E)
         l_right.grid(row=row_counter, column=0)
-        l_right_var = ttk.Label(self, textvariable=self.right_dmg, width=4,
+        l_right_var = ttk.Label(self, textvariable=self.right_dmg, width=5,
                                 anchor=tkinter.CENTER)
         l_right_var.grid(row=row_counter, column=1)
         row_counter += 1
 
-        l_rear = ttk.Label(self, text="Rear damage", anchor=tkinter.E)
+        l_rear = ttk.Label(self, text="Rear", width=7, anchor=tkinter.E)
         l_rear.grid(row=row_counter, column=0)
-        l_rear_var = ttk.Label(self, textvariable=self.rear_dmg, width=4,
+        l_rear_var = ttk.Label(self, textvariable=self.rear_dmg, width=5,
                                anchor=tkinter.CENTER)
         l_rear_var.grid(row=row_counter, column=1)
-        row_counter += 1
-
-        l_center = ttk.Label(self, text="Center damage", anchor=tkinter.E)
-        l_center.grid(row=row_counter, column=0)
-        l_center_var = ttk.Label(self, textvariable=self.center_dmg, width=4,
-                                 anchor=tkinter.CENTER)
-        l_center_var.grid(row=row_counter, column=1)
 
     def update_values(self, car_damage: CarDamage) -> None:
 
@@ -254,7 +246,6 @@ class CarDamageInfo(ttk.Frame):
         self.left_dmg.set(round(car_damage.left, 1))
         self.right_dmg.set(round(car_damage.right, 1))
         self.rear_dmg.set(round(car_damage.rear, 1))
-        self.center_dmg.set(round(car_damage.center, 1))
 
 
 class DriverInputs(ttk.Frame):
@@ -268,14 +259,22 @@ class DriverInputs(ttk.Frame):
         self.gear = tkinter.IntVar()
         self.speed = tkinter.IntVar()
 
+        l_gas = ttk.Label(self, text="Gas", anchor=tkinter.CENTER)
+        l_gas.grid(row=0, column=0)
+        l_brake = ttk.Label(self, text="Brake", anchor=tkinter.CENTER)
+        l_brake.grid(row=0, column=1)
+
         self.c_gas = tkinter.Canvas(self, width=20, height=100)
-        self.c_gas.grid(row=0, column=0, padx=10)
+        self.c_gas.grid(row=1, column=0, padx=10)
 
         self.c_brake = tkinter.Canvas(self, width=20, height=100)
-        self.c_brake.grid(row=0, column=1, padx=10)
+        self.c_brake.grid(row=1, column=1, padx=10)
+
+        l_steering = ttk.Label(self, text="Steering", anchor=tkinter.CENTER)
+        l_steering.grid(row=2, column=0, columnspan=2)
 
         self.c_steering = tkinter.Canvas(self, width=100, height=20)
-        self.c_steering.grid(row=1, column=0, padx=10, pady=10, columnspan=2)
+        self.c_steering.grid(row=3, column=0, padx=10, pady=10, columnspan=2)
 
         self.gas_rect = self.c_gas.create_rectangle(0, 0, 20, 100,
                                                     fill="Green")
@@ -286,16 +285,16 @@ class DriverInputs(ttk.Frame):
                                                               fill="Yellow")
 
         l_gear = ttk.Label(self, text="Gear", width=7)
-        l_gear.grid(row=2, column=0)
+        l_gear.grid(row=4, column=0)
 
         gear_var = ttk.Label(self, textvariable=self.gear, width=5)
-        gear_var.grid(row=2, column=1)
+        gear_var.grid(row=4, column=1)
 
         l_speed = ttk.Label(self, text="Speed", width=7)
-        l_speed.grid(row=3, column=0)
+        l_speed.grid(row=5, column=0)
 
         speed_var = ttk.Label(self, textvariable=self.speed, width=5)
-        speed_var.grid(row=3, column=1)
+        speed_var.grid(row=5, column=1)
 
     def update_values(self, data: TelemetryRT) -> None:
 
