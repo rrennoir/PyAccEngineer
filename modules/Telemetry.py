@@ -237,9 +237,13 @@ class Telemetry:
     has_wet_tyres: bool
     session_left: float
     grip: ACC_TRACK_GRIP_STATUS
+    front_pad: int
+    rear_pad: int
+    damage: CarDamage
 
-    byte_size: ClassVar[int] = struct.calcsize("!B i 11f 3i 2? B i 12f ? f B")
-    byte_format: ClassVar[str] = "!B i 11f 3i 2? B i 12f ? f B"
+    byte_size: ClassVar[int] = struct.calcsize(
+        "!B i 11f 3i 2? B i 12f ? f B 2i 5f")
+    byte_format: ClassVar[str] = "!B i 11f 3i 2? B i 12f ? f B 2i 5f"
 
     def to_bytes(self) -> bytes:
 
@@ -266,7 +270,10 @@ class Telemetry:
             struct.pack("!4f", *astuple(self.brake_temp)),
             struct.pack("!?", self.has_wet_tyres),
             struct.pack("!f", self.session_left),
-            struct.pack("!B", self.grip.value)
+            struct.pack("!B", self.grip.value),
+            struct.pack("!i", self.front_pad),
+            struct.pack("!i", self.rear_pad),
+            struct.pack("!5f", *astuple(self.damage)),
         ]
 
         return b"".join(buffer)
@@ -283,7 +290,7 @@ class Telemetry:
                         f" expected {expected_packet_size}")
             data = data[:expected_packet_size + 1]
 
-        raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2? B i 12f ? f B",
+        raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2? B i 12f ? f B 2i 5f",
                                  data[1:])
 
         name = raw_data[0].decode("utf-8")
@@ -310,6 +317,9 @@ class Telemetry:
             rest[31],
             rest[32],
             ACC_TRACK_GRIP_STATUS(rest[33]),
+            rest[34],
+            rest[35],
+            CarDamage(*rest[36:41])
         )
 
 

@@ -559,7 +559,10 @@ class App(tkinter.Tk):
                     asm_data.Physics.brake_temp,
                     has_wet,
                     asm_data.Graphics.session_time_left,
-                    asm_data.Graphics.track_grip_status
+                    asm_data.Graphics.track_grip_status,
+                    asm_data.Physics.front_brake_compound,
+                    asm_data.Physics.rear_brake_compound,
+                    asm_data.Physics.car_damage
                 )
 
                 self.net_queue.q_in.append(NetData(NetworkQueue.Telemetry,
