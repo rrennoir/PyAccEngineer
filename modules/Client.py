@@ -158,9 +158,6 @@ class TCP_Client(Protocol):
         elif packet == PacketType.UpdateUsers:
             net_data = NetData(NetworkQueue.UpdateUsers, data)
 
-        elif packet == PacketType.UDP_RENEW:
-            client_log.warning("UDP RENEW")
-
         else:
             client_log.warning(f"Invalid packet type {data}")
             return
@@ -228,6 +225,7 @@ class UDPClient(DatagramProtocol):
     # Possibly invoked if there is no server listening
     def connectionRefused(self):
         client_log.warning("No one listening")
+        self.close()
 
     def close(self):
 

@@ -226,8 +226,6 @@ class ConnectionPage(ttk.Frame):
 
         if self.is_connected:
             logging.info("Connected")
-
-            self.is_connected_loop.stop()
             self.save_credidentials(self.credits)
 
         else:
@@ -235,6 +233,8 @@ class ConnectionPage(ttk.Frame):
             messagebox.showerror("Error", self.connection_msg)
 
         self.b_connect.config(state="normal")
+        self.is_connected = None
+        self.is_connected_loop.stop()
 
     def connected(self, succes: bool, error: str) -> None:
 
@@ -400,11 +400,14 @@ class App(tkinter.Tk):
                 logging.info("Received Connection reply for server")
 
                 succes = bool(element.data[0])
-                msg = ""  # TODO
+                msg_lenght = element.data[1]
+                msg = element.data[2:2 + msg_lenght]
 
                 self.connection_page.connected(succes, msg)
                 self.mb_connected(succes)
-                self.is_connected = True
+                self.is_connected = succes
+                if not succes:
+                    self.client.close()
 
             elif element.data_type == NetworkQueue.ServerData:
 

@@ -30,6 +30,7 @@ class TCP_Server(Protocol):
 
         self.user_change = False
         self._error = ""
+        self.valid_user = False
 
         self.user: Tuple[str, int] = ()
 
@@ -75,11 +76,27 @@ class TCP_Server(Protocol):
                             f" driverID: {driverID}")
 
             self.user = (name, driverID)
-            self.user_connected.append(self.user)
-            self.user_change = True
+            succes = False
+            if name in [user[0] for user in self.user_connected]:
+                server_log.warning(f"User {name} is already used.")
+                msg = "This username is already connected."
+
+            elif driverID in [user[1] for user in self.user_connected]:
+                server_log.warning(f"DriverID {driverID} is already used.")
+                msg = f"The driver ID {driverID} is already used."
+
+            else:
+                server_log.info(f"Connection succes")
+                self.user_connected.append(self.user)
+                self.user_change = True
+                self.valid_user = True
+                succes = True
+                msg = "Connection succes"
 
             header = PacketType.ConnectionReply.to_bytes()
-            packet = struct.pack("!?", True)
+            info = msg.encode("utf-8")
+            packet = struct.pack("!?B", succes, len(info)) + info
+
             self.transport.write(header + packet)
 
         elif packet == PacketType.SmData:
@@ -92,9 +109,6 @@ class TCP_Server(Protocol):
 
         elif packet == PacketType.StrategyOK:
             self.send_to_all_user(data)
-
-        elif packet == PacketType.UDP_RENEW:
-            server_log.warning("SERVER: UDP RENEW")
 
         else:
             server_log.warning(f"incorrect packet {packet}")
@@ -120,8 +134,10 @@ class TCP_Server(Protocol):
         self._error = str(reason)
 
         server_log.info(f"Lost connection with {self.transport.getPeer()}")
-        self.user_connected.remove(self.user)
-        self.user_change = True
+
+        if self.valid_user:
+            self.user_connected.remove(self.user)
+            self.user_change = True
 
     def close(self) -> None:
 
