@@ -9,7 +9,7 @@ from typing import ClassVar
 
 from SharedMemory.PyAccSharedMemory import (ACC_SESSION_TYPE,
                                             ACC_TRACK_GRIP_STATUS, Wheels,
-                                            CarDamage)
+                                            CarDamage, ACC_RAIN_INTENSITY)
 
 from modules.Common import convert_to_rgb, rgbtohex, string_time_from_ms
 
@@ -136,7 +136,7 @@ class TyreInfo(ttk.Frame):
     def update_value(self, pad_compound: int, pad_wear: float,
                      disc_wear: float, has_wet: bool) -> None:
 
-        self.pad_compound.set(pad_compound)
+        self.pad_compound.set(pad_compound + 1)
         self.pad_wear.set(round(pad_wear, 1))
         self.disc_wear.set(round(disc_wear, 1))
         self.has_wet = has_wet
@@ -214,33 +214,38 @@ class CarDamageInfo(ttk.Frame):
         widget_tile.grid(row=row_counter, column=0, columnspan=2)
         row_counter += 1
 
-        l_front = ttk.Label(self, text="Front damage")
+        l_front = ttk.Label(self, text="Front damage", anchor=tkinter.E)
         l_front.grid(row=row_counter, column=0)
-        l_front_var = ttk.Label(self, textvariable=self.front_dmg)
+        l_front_var = ttk.Label(self, textvariable=self.front_dmg, width=4,
+                                anchor=tkinter.CENTER)
         l_front_var.grid(row=row_counter, column=1)
         row_counter += 1
 
-        l_left = ttk.Label(self, text="Left damage")
+        l_left = ttk.Label(self, text="Left damage", anchor=tkinter.E)
         l_left.grid(row=row_counter, column=0)
-        l_left_var = ttk.Label(self, textvariable=self.left_dmg)
+        l_left_var = ttk.Label(self, textvariable=self.left_dmg, width=4,
+                               anchor=tkinter.CENTER)
         l_left_var.grid(row=row_counter, column=1)
         row_counter += 1
 
-        l_right = ttk.Label(self, text="Right damage")
+        l_right = ttk.Label(self, text="Right damage", anchor=tkinter.E)
         l_right.grid(row=row_counter, column=0)
-        l_right_var = ttk.Label(self, textvariable=self.right_dmg)
+        l_right_var = ttk.Label(self, textvariable=self.right_dmg, width=4,
+                                anchor=tkinter.CENTER)
         l_right_var.grid(row=row_counter, column=1)
         row_counter += 1
 
-        l_rear = ttk.Label(self, text="Rear damage")
+        l_rear = ttk.Label(self, text="Rear damage", anchor=tkinter.E)
         l_rear.grid(row=row_counter, column=0)
-        l_rear_var = ttk.Label(self, textvariable=self.rear_dmg)
+        l_rear_var = ttk.Label(self, textvariable=self.rear_dmg, width=4,
+                               anchor=tkinter.CENTER)
         l_rear_var.grid(row=row_counter, column=1)
         row_counter += 1
 
-        l_center = ttk.Label(self, text="Center damage")
+        l_center = ttk.Label(self, text="Center damage", anchor=tkinter.E)
         l_center.grid(row=row_counter, column=0)
-        l_center_var = ttk.Label(self, textvariable=self.center_dmg)
+        l_center_var = ttk.Label(self, textvariable=self.center_dmg, width=4,
+                                 anchor=tkinter.CENTER)
         l_center_var.grid(row=row_counter, column=1)
 
     def update_values(self, car_damage: CarDamage) -> None:
@@ -364,10 +369,11 @@ class Telemetry:
     front_pad: int
     rear_pad: int
     damage: CarDamage
+    condition: ACC_RAIN_INTENSITY
 
     byte_size: ClassVar[int] = struct.calcsize(
-        "!B i 11f 3i 2? B i 12f ? f B 2i 5f")
-    byte_format: ClassVar[str] = "!B i 11f 3i 2? B i 12f ? f B 2i 5f"
+        "!B i 11f 3i 2? B i 12f ? f B 2B 5f B")
+    byte_format: ClassVar[str] = "!B i 11f 3i 2? B i 12f ? f B 2B 5f B"
 
     def to_bytes(self) -> bytes:
 
@@ -395,9 +401,10 @@ class Telemetry:
             struct.pack("!?", self.has_wet_tyres),
             struct.pack("!f", self.session_left),
             struct.pack("!B", self.grip.value),
-            struct.pack("!i", self.front_pad),
-            struct.pack("!i", self.rear_pad),
+            struct.pack("!B", self.front_pad),
+            struct.pack("!B", self.rear_pad),
             struct.pack("!5f", *astuple(self.damage)),
+            struct.pack("!B", self.condition.value)
         ]
 
         return b"".join(buffer)
@@ -414,8 +421,9 @@ class Telemetry:
                         f" expected {expected_packet_size}")
             data = data[:expected_packet_size + 1]
 
-        raw_data = struct.unpack(f"!{lenght}s i 11f 3i 2? B i 12f ? f B 2i 5f",
-                                 data[1:])
+        raw_data = struct.unpack(
+            f"!{lenght}s i 11f 3i 2? B i 12f ? f B 2B 5f B",
+            data[1:])
 
         name = raw_data[0].decode("utf-8")
         rest = raw_data[1:]
@@ -443,7 +451,8 @@ class Telemetry:
             ACC_TRACK_GRIP_STATUS(rest[33]),
             rest[34],
             rest[35],
-            CarDamage(*rest[36:41])
+            CarDamage(*rest[36:41]),
+            ACC_RAIN_INTENSITY(rest[41])
         )
 
 
@@ -456,21 +465,24 @@ class TelemetryUI(ttk.Frame):
         self.current_driver = None
         self.driver_swap = False
 
-        self.time_left = tkinter.StringVar(value="00:00:00.000")
+        self.session = tkinter.StringVar()
+        self.time_left = tkinter.StringVar(value="00:00:00")
+        self.lap_var = tkinter.IntVar()
+        self.grip_status = tkinter.StringVar()
+        self.condition = tkinter.StringVar()
+
         self.lap_time_var = tkinter.StringVar(value="00:00.000")
         self.best_time_var = tkinter.StringVar(value="00:00.000")
         self.prev_time_var = tkinter.StringVar(value="00:00.000")
 
-        self.lap_var = tkinter.IntVar()
         self.fuel_var = tkinter.DoubleVar()
         self.fuel_per_lap_var = tkinter.DoubleVar()
         self.fuel_lap_left_var = tkinter.DoubleVar()
-        self.grip_status = tkinter.StringVar()
 
         self._build_telemetry_ui()
 
         tyre_frame = ttk.Frame(self)
-        tyre_frame.grid(row=2, column=0)
+        tyre_frame.grid(row=3, column=0)
 
         self.front_left = TyreInfo(tyre_frame, "Front left", False)
         self.front_left.grid(row=0, column=0, padx=10, pady=10)
@@ -485,33 +497,67 @@ class TelemetryUI(ttk.Frame):
         self.rear_right.grid(row=1, column=1, padx=10, pady=10)
 
         f_side_info = ttk.Frame(self)
-        f_side_info.grid(row=0, column=1, rowspan=3)
+        f_side_info.grid(row=0, column=1, rowspan=4)
 
         self.driver_inputs = DriverInputs(f_side_info)
-        self.driver_inputs.grid(row=0, column=0)
+        self.driver_inputs.grid(row=0, column=0, pady=5)
 
         self.damage_info = CarDamageInfo(f_side_info)
-        self.damage_info.grid(row=1, column=0)
+        self.damage_info.grid(row=1, column=0, pady=5)
 
     def _build_telemetry_ui(self) -> None:
 
+        f_main_info = ttk.Frame(self)
+        f_main_info.grid(row=0, column=0)
+
         f_info = ttk.Frame(self)
-        f_info.grid(row=0, column=0, padx=1, pady=1)
+        f_info.grid(row=1, column=0, padx=1, pady=1)
 
         f_info2 = ttk.Frame(self)
-        f_info2.grid(row=1, column=0, padx=1, pady=1)
+        f_info2.grid(row=2, column=0, padx=1, pady=1)
 
         column_count = 0
 
-        # Time left
-        l_lap_time = ttk.Label(f_info, text="Time left")
-        l_lap_time.grid(row=0, column=column_count, padx=1, pady=1)
+        # Session name
+        l_session = ttk.Label(f_main_info, text="Session")
+        l_session.grid(row=0, column=column_count, padx=1, pady=1)
         column_count += 1
 
-        l_lap_time_var = ttk.Label(f_info, textvariable=self.time_left,
-                                   width=12)
-        l_lap_time_var.grid(row=0, column=column_count, padx=1, pady=1)
+        l_session_var = ttk.Label(f_main_info, textvariable=self.session,
+                                  width=8)
+        l_session_var.grid(row=0, column=column_count, padx=1, pady=1)
         column_count += 1
+
+        # Time left
+        l_time_left = ttk.Label(f_main_info, text="Time left")
+        l_time_left.grid(row=0, column=column_count, padx=1, pady=1)
+        column_count += 1
+
+        l_time_left_var = ttk.Label(f_main_info, textvariable=self.time_left,
+                                    width=7)
+        l_time_left_var.grid(row=0, column=column_count, padx=1, pady=1)
+        column_count += 1
+
+        # Grip
+        l_grip = ttk.Label(f_main_info, text="Grip status")
+        l_grip.grid(row=0, column=column_count, padx=1, pady=1)
+        column_count += 1
+
+        l_grip_var = ttk.Label(f_main_info, textvariable=self.grip_status,
+                               width=10)
+        l_grip_var.grid(row=0, column=column_count, padx=1, pady=1)
+        column_count += 1
+
+        # Condition
+        l_condition = ttk.Label(f_main_info, text="Condition")
+        l_condition.grid(row=0, column=column_count, padx=1, pady=1)
+        column_count += 1
+
+        l_condition_var = ttk.Label(f_main_info, textvariable=self.condition,
+                                    width=10)
+        l_condition_var.grid(row=0, column=column_count, padx=1, pady=1)
+
+        column_count = 0
 
         # Lap time
         l_lap_time = ttk.Label(f_info, text="Lap time")
@@ -550,7 +596,7 @@ class TelemetryUI(ttk.Frame):
         column_count += 1
 
         l_lap_var = ttk.Label(f_info2, textvariable=self.lap_var,
-                              width=5)
+                              width=4)
         l_lap_var.grid(row=0, column=column_count, padx=1, pady=1)
         column_count += 1
 
@@ -583,16 +629,6 @@ class TelemetryUI(ttk.Frame):
         l_fuel_lap_left_var = ttk.Label(
             f_info2, textvariable=self.fuel_lap_left_var, width=5)
         l_fuel_lap_left_var.grid(row=0, column=column_count, padx=1, pady=1)
-        column_count += 1
-
-        # Lap left
-        l_grip = ttk.Label(f_info2, text="Grip status")
-        l_grip.grid(row=0, column=column_count, padx=1, pady=1)
-        column_count += 1
-
-        l_grip_var = ttk.Label(f_info2, textvariable=self.grip_status,
-                               width=10)
-        l_grip_var.grid(row=0, column=column_count, padx=1, pady=1)
 
     def update_values(self, telemetry: Telemetry) -> None:
 
@@ -615,7 +651,9 @@ class TelemetryUI(ttk.Frame):
                                         brake_temp[3])
 
         self.time_left.set(string_time_from_ms(int(telemetry.session_left),
-                                               hours=True))
+                                               hours=True)[:-4])
+        self.session.set(telemetry.session)
+        self.condition.set(telemetry.condition)
         self.lap_var.set(telemetry.lap)
         self.fuel_var.set(round(telemetry.fuel, 1))
         self.fuel_per_lap_var.set(round(telemetry.fuel_per_lap, 1))

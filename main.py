@@ -563,7 +563,8 @@ class App(tkinter.Tk):
                     asm_data.Graphics.track_grip_status,
                     asm_data.Physics.front_brake_compound,
                     asm_data.Physics.rear_brake_compound,
-                    asm_data.Physics.car_damage
+                    asm_data.Physics.car_damage,
+                    asm_data.Graphics.rain_intensity
                 )
 
                 self.net_queue.q_in.append(NetData(NetworkQueue.Telemetry,
