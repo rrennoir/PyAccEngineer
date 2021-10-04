@@ -5,7 +5,8 @@ import struct
 import tkinter
 from dataclasses import astuple, dataclass
 from tkinter import ttk
-from typing import ClassVar
+import copy
+from typing import ClassVar, List
 
 from SharedMemory.PyAccSharedMemory import (ACC_SESSION_TYPE,
                                             ACC_TRACK_GRIP_STATUS, Wheels,
@@ -504,10 +505,15 @@ class TelemetryUI(ttk.Frame):
         self.fuel_per_lap_var = tkinter.DoubleVar()
         self.fuel_lap_left_var = tkinter.DoubleVar()
 
+        self.time_pad_failure = tkinter.StringVar(value="00:00:00")
+        self.prev_pad_life: List[int] = []
+        self.prev_time_left: int = 0
+        self.lap = 0
+
         self._build_telemetry_ui()
 
         tyre_frame = ttk.Frame(self)
-        tyre_frame.grid(row=3, column=0)
+        tyre_frame.grid(row=4, column=0)
 
         self.front_left = TyreInfo(tyre_frame, "Front left", False)
         self.front_left.grid(row=0, column=0, padx=10, pady=10)
@@ -540,6 +546,9 @@ class TelemetryUI(ttk.Frame):
 
         f_info2 = ttk.Frame(self)
         f_info2.grid(row=2, column=0, padx=1, pady=1)
+
+        f_info3 = ttk.Frame(self)
+        f_info3.grid(row=3, column=0, padx=1, pady=1)
 
         column_count = 0
 
@@ -655,6 +664,12 @@ class TelemetryUI(ttk.Frame):
             f_info2, textvariable=self.fuel_lap_left_var, width=5)
         l_fuel_lap_left_var.grid(row=0, column=column_count, padx=1, pady=1)
 
+        l_pad_fail = ttk.Label(f_info3, text="Time before brake failure")
+        l_pad_fail.grid(row=0, column=0)
+
+        l_pad_fal_var = ttk.Label(f_info3, textvariable=self.time_pad_failure)
+        l_pad_fal_var.grid(row=0, column=1)
+
     def update_values(self, telemetry: Telemetry) -> None:
 
         pressure = astuple(telemetry.tyre_pressure)
@@ -676,6 +691,34 @@ class TelemetryUI(ttk.Frame):
         rear_pad = telemetry.rear_pad
         pad_wear = astuple(telemetry.pad_wear)
         disc_wear = astuple(telemetry.disc_wear)
+
+        if self.lap != telemetry.lap:
+            self.lap = telemetry.lap
+            if len(self.prev_pad_life) != 0 and self.prev_time_left != 0:
+                wear = []
+                for pad, prev_pad in zip(pad_wear, self.prev_pad_life):
+                    wear.append(prev_pad - pad)
+
+                time_delta = self.prev_time_left - telemetry.session_left
+
+                fail = False
+                time_for_fail = 0
+                pad_life_copy = copy.copy(pad_wear)
+                while not fail:
+
+                    for pad, pad_wear in zip(pad_life_copy, wear):
+                        pad -= pad_wear
+
+                        if pad < 12.5:
+                            fail = True
+
+                    time_for_fail += time_delta
+
+                self.time_pad_failure.set(string_time_from_ms(time_for_fail,
+                                                              True))
+
+            self.prev_time_left = int(telemetry.session_left)
+            self.prev_pad_life = copy.copy(pad_wear)
 
         self.front_left.update_value(front_pad, pad_wear[0], disc_wear[0],
                                      telemetry.has_wet_tyres, pressure[0],
