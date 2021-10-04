@@ -16,6 +16,7 @@ from twisted.internet import reactor, task, tksupport
 from modules.Client import ClientInstance
 from modules.Common import (CarInfo, Credidentials, DataQueue, NetData,
                             NetworkQueue, PitStop)
+from modules.DriverInputs import DriverInputs
 from modules.Server import ServerInstance
 from modules.Strategy import StrategyUI
 from modules.Telemetry import Telemetry, TelemetryRT, TelemetryUI
@@ -356,12 +357,9 @@ class App(tkinter.Tk):
         self.strategy_ui.place(anchor=tkinter.CENTER, in_=f_strategy_ui,
                                relx=.5, rely=.5)
 
-        # Center TelemetryUI in the notebook frame
-        f_telemetry_ui = ttk.Frame(self.tab_control)
-        f_telemetry_ui.pack(fill=tkinter.BOTH, expand=1)
-        self.telemetry_ui = TelemetryUI(f_telemetry_ui)
-        self.telemetry_ui.place(anchor=tkinter.CENTER, in_=f_telemetry_ui,
-                                relx=.5, rely=.5)
+        self.driver_inputs = DriverInputs(self.tab_control)
+        self.driver_inputs.pack(fill=tkinter.BOTH, side=tkinter.LEFT,
+                                expand=tkinter.TRUE)
 
         self.tyre_graph = TyreGraph(self.tab_control, self.gui_config)
         self.tyre_graph.pack(fill=tkinter.BOTH, expand=1)
@@ -371,7 +369,7 @@ class App(tkinter.Tk):
 
         self.tab_control.add(self.f_connection_ui, text="Connection")
         self.tab_control.add(f_strategy_ui, text="Strategy")
-        self.tab_control.add(f_telemetry_ui, text="Telemetry")
+        self.tab_control.add(self.driver_inputs, text="Driver Inputs")
         self.tab_control.add(self.tyre_graph, text="Pressures")
         self.tab_control.add(self.prev_lap_graph, text="Previous Laps")
 
@@ -453,6 +451,8 @@ class App(tkinter.Tk):
                 self.tyre_graph.update_data(telemetry)
                 self.strategy_ui.updade_telemetry_data(telemetry)
 
+                self.driver_inputs.update_lap(telemetry.lap)
+
                 if not self.strategy_ui.is_driver_active:
                     self.strategy_ui.is_driver_active = True
                     self.user_ui.set_active(telemetry.driver)
@@ -462,7 +462,7 @@ class App(tkinter.Tk):
             elif element.data_type == NetworkQueue.TelemetryRT:
 
                 telemetry = TelemetryRT.from_bytes(element.data)
-                self.telemetry_ui.update_values_rt(telemetry)
+                self.driver_inputs.update_values(telemetry)
 
             elif element.data_type == NetworkQueue.UpdateUsers:
 
