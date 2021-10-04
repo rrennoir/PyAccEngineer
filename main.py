@@ -279,6 +279,8 @@ class App(tkinter.Tk):
 
         tksupport.install(self)
 
+        self.geometry("830x580+0+0")
+
         try:
             with open("./Config/gui.json", "r") as fp:
 
@@ -312,7 +314,6 @@ class App(tkinter.Tk):
 
         self.title(f"PyAccEngineer {_VERSION_}")
         self.config(bg="Grey")
-        self.resizable(False, False)
 
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.c_loop_id: Optional[str] = None
@@ -337,10 +338,36 @@ class App(tkinter.Tk):
 
         self.config(menu=self.menu_bar)
 
-        self.user_ui = UserUI(self)
+        self.main_canvas = tkinter.Canvas(self)
+        self.main_frame = ttk.Frame(self)
+
+        self.hsb = ttk.Scrollbar(self)
+        self.vsb = ttk.Scrollbar(self)
+
+        self.main_canvas.config(xscrollcommand=self.hsb.set,
+                                yscrollcommand=self.vsb.set,
+                                highlightthickness=0)
+
+        self.hsb.config(orient=tkinter.HORIZONTAL,
+                        command=self.main_canvas.xview)
+        self.vsb.config(orient=tkinter.VERTICAL,
+                        command=self.main_canvas.yview)
+
+        self.hsb.pack(fill=tkinter.X, side=tkinter.BOTTOM,
+                      expand=tkinter.FALSE)
+        self.vsb.pack(fill=tkinter.Y, side=tkinter.RIGHT,
+                      expand=tkinter.FALSE)
+
+        self.main_canvas.pack(fill=tkinter.BOTH, side=tkinter.LEFT,
+                              expand=tkinter.TRUE)
+
+        self.main_canvas.create_window(0, 0, window=self.main_frame,
+                                       anchor=tkinter.NW)
+
+        self.user_ui = UserUI(self.main_frame)
         self.user_ui.grid(row=1, column=0)
 
-        self.tab_control = ttk.Notebook(self)
+        self.tab_control = ttk.Notebook(self.main_frame)
         self.tab_control.grid(row=0, column=0, pady=3)
 
         self.f_connection_ui = ttk.Frame(self.tab_control)
@@ -357,6 +384,10 @@ class App(tkinter.Tk):
         self.strategy_ui.place(anchor=tkinter.CENTER, in_=f_strategy_ui,
                                relx=.5, rely=.5)
 
+        self.telemetry_ui = TelemetryUI(self.tab_control)
+        self.telemetry_ui.pack(fill=tkinter.BOTH, side=tkinter.LEFT,
+                               expand=tkinter.TRUE)
+
         self.driver_inputs = DriverInputs(self.tab_control)
         self.driver_inputs.pack(fill=tkinter.BOTH, side=tkinter.LEFT,
                                 expand=tkinter.TRUE)
@@ -369,6 +400,7 @@ class App(tkinter.Tk):
 
         self.tab_control.add(self.f_connection_ui, text="Connection")
         self.tab_control.add(f_strategy_ui, text="Strategy")
+        self.tab_control.add(self.telemetry_ui, text="Telemetry")
         self.tab_control.add(self.driver_inputs, text="Driver Inputs")
         self.tab_control.add(self.tyre_graph, text="Pressures")
         self.tab_control.add(self.prev_lap_graph, text="Previous Laps")
@@ -388,11 +420,24 @@ class App(tkinter.Tk):
         self.client_loopCall.start(0.01)
 
         self.eval('tk::PlaceWindow . center')
+        self.updateScrollRegion()
+
+    def updateScrollRegion(self):
+
+        self.main_canvas.update_idletasks()
+        self.main_canvas.config(scrollregion=self.main_frame.bbox())
 
     def client_loop(self) -> None:
 
         selected_tab_name = self.tab_control.tab(self.tab_control.select(),
                                                  "text")
+        if selected_tab_name == "Driver Inputs":
+            if not self.driver_inputs.is_animating:
+                self.driver_inputs.start_animation()
+
+        else:
+            if self.driver_inputs.is_animating:
+                self.driver_inputs.stop_animation()
 
         if selected_tab_name == "Pressures":
             if not self.tyre_graph.is_animating:
