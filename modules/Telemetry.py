@@ -527,8 +527,7 @@ class TelemetryUI(ttk.Frame):
         self.rear_right = TyreInfo(tyre_frame, "Rear right")
         self.rear_right.grid(row=1, column=1, padx=10, pady=10)
 
-        f_side_info = ttk.Frame(self)
-        f_side_info.grid(row=0, column=1, rowspan=4)
+        f_side_info.grid(row=0, column=1, rowspan=6)
 
         self.driver_inputs = DriverInputs(f_side_info)
         self.driver_inputs.grid(row=0, column=0, pady=5)
@@ -692,7 +691,7 @@ class TelemetryUI(ttk.Frame):
         pad_wear = astuple(telemetry.pad_wear)
         disc_wear = astuple(telemetry.disc_wear)
 
-        if self.lap != telemetry.lap:
+        if self.lap != telemetry.lap and telemetry.session_left != -1:
             self.lap = telemetry.lap
             if len(self.prev_pad_life) != 0 and self.prev_time_left != 0:
                 wear = []
@@ -703,15 +702,18 @@ class TelemetryUI(ttk.Frame):
 
                 fail = False
                 time_for_fail = 0
-                pad_life_copy = copy.copy(pad_wear)
+                wear_temp = copy.copy(pad_wear)
                 while not fail:
 
-                    for pad, pad_wear in zip(pad_life_copy, wear):
-                        pad -= pad_wear
+                    temp = []
+                    for pad, lap_wear in zip(wear_temp, wear):
+                        pad += lap_wear
+                        temp.append(pad)
 
                         if pad < 12.5:
                             fail = True
 
+                    wear_temp = temp
                     time_for_fail += time_delta
 
                 self.time_pad_failure.set(string_time_from_ms(time_for_fail,
