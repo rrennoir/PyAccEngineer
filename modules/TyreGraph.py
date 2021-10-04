@@ -43,6 +43,7 @@ class TyreGraph(ttk.Frame):
         self.in_pit_lane = False
 
         self.current_lap = -1
+        self._is_animating = False
 
         self.app_config = config
 
@@ -320,6 +321,22 @@ class TyreGraph(ttk.Frame):
         canvas.get_tk_widget().pack(side=tkinter.BOTTOM)
         self.ani = animation.FuncAnimation(self.figure, self._animate,
                                            interval=500, blit=False)
+
+        self.ani.event_source.stop()
+
+    def stop_animation(self) -> None:
+
+        self.ani.event_source.stop()
+        self._is_animating = False
+
+    def start_animation(self) -> None:
+
+        self.ani.event_source.start()
+        self._is_animating = True
+
+    @property
+    def is_animating(self) -> bool:
+        return self._is_animating
 
 
 class PrevLapsGraph(ttk.Frame):

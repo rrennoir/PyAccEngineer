@@ -386,12 +386,23 @@ class App(tkinter.Tk):
 
         logging.info("Main UI created.")
 
-        self.client_loopCall = task.LoopingCall(self.client_loop2)
+        self.client_loopCall = task.LoopingCall(self.client_loop)
         self.client_loopCall.start(0.01)
 
         self.eval('tk::PlaceWindow . center')
 
-    def client_loop2(self) -> None:
+    def client_loop(self) -> None:
+
+        selected_tab_name = self.tab_control.tab(self.tab_control.select(),
+                                                 "text")
+
+        if selected_tab_name == "Pressures":
+            if not self.tyre_graph.is_animating:
+                self.tyre_graph.start_animation()
+
+        else:
+            if self.tyre_graph.is_animating:
+                self.tyre_graph.stop_animation()
 
         for element in self.net_queue.q_out:
 
