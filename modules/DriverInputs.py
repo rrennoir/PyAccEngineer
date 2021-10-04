@@ -57,13 +57,13 @@ class InputGraph(ttk.Frame):
         self.gas_graph.set_xlabel("Time (Seconds)")
         self.gas_graph.set_ylabel("Throttle (%)")
         self.gas_graph.set_xlim(0, 1)
-        self.gas_graph.set_ylim(0, 100)
+        self.gas_graph.set_ylim(-5, 105)
 
         self.brake_graph.set_title("Brake input over time")
         self.brake_graph.set_xlabel("Time (Seconds)")
         self.brake_graph.set_ylabel("Brake (%)")
         self.brake_graph.set_xlim(0, 1)
-        self.brake_graph.set_ylim(0, 100)
+        self.brake_graph.set_ylim(-5, 105)
 
         canvas = FigureCanvasTkAgg(self.figure, self)
         canvas.get_tk_widget().pack(side=tkinter.BOTTOM)
