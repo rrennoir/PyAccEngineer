@@ -74,8 +74,6 @@ class InputGraph(ttk.Frame):
 
     def _animate(self, i) -> None:
 
-        print("input anim")
-
         if len(self.time_axis) == 0:
             return
 
