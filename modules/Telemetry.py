@@ -275,71 +275,6 @@ class CarDamageInfo(ttk.Frame):
         self.rear_dmg.set(round(car_damage.rear, 1))
 
 
-class DriverInputs(ttk.Frame):
-
-    def __init__(self, root) -> None:
-        ttk.Frame.__init__(self, master=root)
-
-        self.gas = tkinter.DoubleVar()
-        self.brake = tkinter.DoubleVar()
-        self.steering = tkinter.DoubleVar()
-        self.gear = tkinter.IntVar()
-        self.speed = tkinter.IntVar()
-
-        l_gas = ttk.Label(self, text="Gas", anchor=tkinter.CENTER)
-        l_gas.grid(row=0, column=0)
-        l_brake = ttk.Label(self, text="Brake", anchor=tkinter.CENTER)
-        l_brake.grid(row=0, column=1)
-
-        self.c_gas = tkinter.Canvas(self, width=20, height=100)
-        self.c_gas.grid(row=1, column=0, padx=10)
-
-        self.c_brake = tkinter.Canvas(self, width=20, height=100)
-        self.c_brake.grid(row=1, column=1, padx=10)
-
-        l_steering = ttk.Label(self, text="Steering", anchor=tkinter.CENTER)
-        l_steering.grid(row=2, column=0, columnspan=2)
-
-        self.c_steering = tkinter.Canvas(self, width=100, height=20)
-        self.c_steering.grid(row=3, column=0, padx=10, pady=10, columnspan=2)
-
-        self.gas_rect = self.c_gas.create_rectangle(0, 0, 20, 100,
-                                                    fill="Green")
-        self.brake_rect = self.c_brake.create_rectangle(0, 0, 20, 100,
-                                                        fill="Red")
-
-        self.steering_rect = self.c_steering.create_rectangle(0, 0, 100, 20,
-                                                              fill="Yellow")
-
-        l_gear = ttk.Label(self, text="Gear", width=7)
-        l_gear.grid(row=4, column=0)
-
-        gear_var = ttk.Label(self, textvariable=self.gear, width=5)
-        gear_var.grid(row=4, column=1)
-
-        l_speed = ttk.Label(self, text="Speed", width=7)
-        l_speed.grid(row=5, column=0)
-
-        speed_var = ttk.Label(self, textvariable=self.speed, width=5)
-        speed_var.grid(row=5, column=1)
-
-    def update_values(self, data: TelemetryRT) -> None:
-
-        self.gas.set(data.gas)
-        self.brake.set(data.brake)
-        self.steering.set(data.streering_angle)
-        self.gear.set(data.gear - 1)
-        self.speed.set(int(data.speed))
-
-        self.c_gas.coords(self.gas_rect, 0,
-                          100 - self.gas.get() * 100, 20, 100)
-        self.c_brake.coords(self.brake_rect, 0,
-                            100 - self.brake.get() * 100, 20, 100)
-
-        self.c_steering.coords(self.steering_rect,
-                               0, 0, (self.steering.get() + 1) * 50, 20)
-
-
 @dataclass
 class TelemetryRT:
 
@@ -527,13 +462,11 @@ class TelemetryUI(ttk.Frame):
         self.rear_right = TyreInfo(tyre_frame, "Rear right")
         self.rear_right.grid(row=1, column=1, padx=10, pady=10)
 
+        f_side_info = ttk.Frame(self)
         f_side_info.grid(row=0, column=1, rowspan=6)
 
-        self.driver_inputs = DriverInputs(f_side_info)
-        self.driver_inputs.grid(row=0, column=0, pady=5)
-
         self.damage_info = CarDamageInfo(f_side_info)
-        self.damage_info.grid(row=1, column=0, pady=5)
+        self.damage_info.grid(row=0, column=0, pady=5)
 
     def _build_telemetry_ui(self) -> None:
 
@@ -748,7 +681,3 @@ class TelemetryUI(ttk.Frame):
 
             self.current_driver = telemetry.driver
             self.driver_swap = True
-
-    def update_values_rt(self, data: TelemetryRT) -> None:
-
-        self.driver_inputs.update_values(data)
