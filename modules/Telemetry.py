@@ -627,28 +627,17 @@ class TelemetryUI(ttk.Frame):
         if self.lap != telemetry.lap and telemetry.session_left != -1:
             self.lap = telemetry.lap
             if len(self.prev_pad_life) != 0 and self.prev_time_left != 0:
-                wear = []
-                for pad, prev_pad in zip(pad_wear, self.prev_pad_life):
-                    wear.append(prev_pad - pad)
 
                 time_delta = self.prev_time_left - telemetry.session_left
+                time_left = []
+                for pad, prev_pad in zip(pad_wear, self.prev_pad_life):
 
-                fail = False
-                time_for_fail = 0
-                wear_temp = copy.copy(pad_wear)
-                while not fail:
+                    lap_wear = prev_pad - pad
+                    pad_left = pad - 12.5
+                    lap_left = pad_left / lap_wear
+                    time_left.append(lap_left * time_delta)
 
-                    temp = []
-                    for pad, lap_wear in zip(wear_temp, wear):
-                        pad += lap_wear
-                        temp.append(pad)
-
-                        if pad < 12.5:
-                            fail = True
-
-                    wear_temp = temp
-                    time_for_fail += time_delta
-
+                time_for_fail = min(time_left)
                 self.time_pad_failure.set(string_time_from_ms(time_for_fail,
                                                               True))
 
