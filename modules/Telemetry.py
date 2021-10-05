@@ -39,7 +39,7 @@ class TyreInfo(ttk.Frame):
         self.tyre_range = {
             "dry": {
                 "pressure": [26, 29],
-                "temperature": [40, 110]
+                "temperature": [50, 120]
             },
             "wet": {
                 "pressure": [28, 32],
@@ -635,11 +635,11 @@ class TelemetryUI(ttk.Frame):
                     lap_wear = prev_pad - pad
                     pad_left = pad - 12.5
                     lap_left = pad_left / lap_wear
-                    time_left.append(lap_left * time_delta)
+                    time_left.append(int(lap_left * time_delta))
 
                 time_for_fail = min(time_left)
                 self.time_pad_failure.set(string_time_from_ms(time_for_fail,
-                                                              True))
+                                                              True)[:-4])
 
             self.prev_time_left = int(telemetry.session_left)
             self.prev_pad_life = copy.copy(pad_wear)
