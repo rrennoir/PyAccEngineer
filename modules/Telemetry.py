@@ -331,10 +331,11 @@ class Telemetry:
     rear_pad: int
     damage: CarDamage
     condition: ACC_RAIN_INTENSITY
+    suspension_damage: Wheels
 
     byte_size: ClassVar[int] = struct.calcsize(
-        "!B i 11f 3i 2? B i 12f ? f B 2B 5f B")
-    byte_format: ClassVar[str] = "!B i 11f 3i 2? B i 12f ? f B 2B 5f B"
+        "!B i 11f 3i 2? B i 12f ? f B 2B 5f B 4f")
+    byte_format: ClassVar[str] = "!B i 11f 3i 2? B i 12f ? f B 2B 5f B 4f"
 
     def to_bytes(self) -> bytes:
 
@@ -365,7 +366,8 @@ class Telemetry:
             struct.pack("!B", self.front_pad),
             struct.pack("!B", self.rear_pad),
             struct.pack("!5f", *astuple(self.damage)),
-            struct.pack("!B", self.condition.value)
+            struct.pack("!B", self.condition.value),
+            struct.pack("!4f", *astuple(self.suspension_damage))
         ]
 
         return b"".join(buffer)
@@ -383,7 +385,7 @@ class Telemetry:
             data = data[:expected_packet_size + 1]
 
         raw_data = struct.unpack(
-            f"!{lenght}s i 11f 3i 2? B i 12f ? f B 2B 5f B",
+            f"!{lenght}s i 11f 3i 2? B i 12f ? f B 2B 5f B 4f",
             data[1:])
 
         name = raw_data[0].decode("utf-8")
@@ -413,7 +415,8 @@ class Telemetry:
             rest[34],
             rest[35],
             CarDamage(*rest[36:41]),
-            ACC_RAIN_INTENSITY(rest[41])
+            ACC_RAIN_INTENSITY(rest[41]),
+            Wheels(*rest[42:46])
         )
 
 
