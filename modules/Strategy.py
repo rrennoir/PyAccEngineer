@@ -65,6 +65,7 @@ def ACCWindowFinderCallback(hwnd: int, obj) -> bool:
 
     title: str = win32gui.GetWindowText(hwnd)
     if title.find("AC2") != -1:
+        log.info(f"Found 'AC2' window ({title}) with handle: {hwnd}")
         obj.hwnd = hwnd
 
     return True
@@ -871,20 +872,37 @@ class StrategySetter:
 
         return False
 
-    def set_acc_forground(self) -> None:
+    def set_acc_foreground(self) -> bool:
         # List because I need to pass arg by reference and not value
 
         win32gui.EnumWindows(ACCWindowFinderCallback, self)
         if self.hwnd is not None:
 
-            # Weird fix for SetForegroundWindow()
-            shell = win32com.client.Dispatch("WScript.Shell")
-            shell.SendKeys('%')
+            if win32gui.GetFocus() == self.hwnd:
+                log.info("ACC is already focused")
 
-            win32gui.SetForegroundWindow(self.hwnd)
+            else:
+                # Weird fix for SetForegroundWindow()
+                shell = win32com.client.Dispatch("WScript.Shell")
+                shell.SendKeys('%')
+
+                log.info("Setting ACC to foreground")
+                win32gui.SetForegroundWindow(self.hwnd)
+
+                if win32gui.GetFocus() != self.hwnd:
+                    log.info("ACC hasn't been set to foreground")
+                    return False
+
+            return True
+
+        else:
+            log.error("Didn't found ACC window handle")
+            return False
 
     @staticmethod
     def set_tyre_pressure(current: float, target: float) -> None:
+
+        log.info(f"Setting tyre pressure: {current=} | {target=}")
 
         # Fail safe incase of floating point weirdness
         i = 0
@@ -907,6 +925,7 @@ class StrategySetter:
     @staticmethod
     def set_fuel(current: float, target: float) -> None:
 
+        log.info(f"Setting fuel: {current=} | {target=}")
         while not math.isclose(current, target, rel_tol=1e-5):
             if current > target:
                 pyautogui.press("left")
@@ -921,6 +940,7 @@ class StrategySetter:
     @staticmethod
     def set_tyre_set(current: int, target: int) -> None:
 
+        log.info(f"Setting tyre set: {current=} | {target=}")
         while current != target:
 
             if current > target:
@@ -937,11 +957,15 @@ class StrategySetter:
 
         log.info(f"Requested strategy: {strategy}")
 
-        self.set_acc_forground()
+        log.info("Trying to set ACC to foreground")
+        if not self.set_acc_foreground():
+            log.error("ACC couldn't be set to focus or foreground.")
+            return
 
         time.sleep(1)
 
         # Reset MFD cursor to top
+        log.info("Showing MFD pit strategy page")
         pyautogui.press("p")
 
         for _ in range(2):
@@ -1020,6 +1044,7 @@ class StrategySetter:
         pyautogui.press("down")
         time.sleep(0.01)
 
+        log.info(f"Driver offset: {strategy.driver_offset}")
         for _ in range(abs(strategy.driver_offset)):
 
             if strategy.driver_offset < 0:
@@ -1033,6 +1058,7 @@ class StrategySetter:
     @staticmethod
     def set_tyre_compound(compound: str):
 
+        log.info(f"Setting tyre compound to {compound}")
         if compound == "Dry":
             pyautogui.press("left")
 
