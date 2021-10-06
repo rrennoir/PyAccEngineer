@@ -65,7 +65,7 @@ def ACCWindowFinderCallback(hwnd: int, obj) -> bool:
 
     title: str = win32gui.GetWindowText(hwnd)
     if title.find("AC2") != -1:
-        log.info(f"Found 'AC2' window ({title}) with handle: {hwnd}")
+        log.info(f"Found 'AC2' window ('{title}') with handle: {hwnd}")
         obj.hwnd = hwnd
 
     return True
@@ -873,12 +873,11 @@ class StrategySetter:
         return False
 
     def set_acc_foreground(self) -> bool:
-        # List because I need to pass arg by reference and not value
 
         win32gui.EnumWindows(ACCWindowFinderCallback, self)
         if self.hwnd is not None:
 
-            if win32gui.GetFocus() == self.hwnd:
+            if win32gui.GetForegroundWindow() == self.hwnd:
                 log.info("ACC is already focused")
 
             else:
@@ -889,7 +888,10 @@ class StrategySetter:
                 log.info("Setting ACC to foreground")
                 win32gui.SetForegroundWindow(self.hwnd)
 
-                if win32gui.GetFocus() != self.hwnd:
+                # Wait for the window to be set
+                time.sleep(0.5)
+
+                if win32gui.GetForegroundWindow() != self.hwnd:
                     log.info("ACC hasn't been set to foreground")
                     return False
 
