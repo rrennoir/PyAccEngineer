@@ -1,3 +1,4 @@
+import logging
 import math
 import multiprocessing
 import queue
@@ -7,15 +8,20 @@ from dataclasses import astuple
 from datetime import datetime
 from functools import partial
 from tkinter import ttk
-from typing import List, Union
+from typing import List, Optional, Union
 
 import pyautogui
 import win32com
 import win32com.client
 import win32gui
-from SharedMemory.PyAccSharedMemory import ACC_map, accSharedMemory
+from SharedMemory.PyAccSharedMemory import (ACC_SESSION_TYPE,
+                                            ACC_TRACK_GRIP_STATUS, ACC_map,
+                                            accSharedMemory)
 
-from modules.Common import CarInfo, PitStop
+from modules.Common import CarInfo, PitStop, avg, string_time_from_ms
+from modules.Telemetry import Telemetry
+
+log = logging.getLogger(__name__)
 
 
 def clamp(number: Union[float, int],
@@ -31,6 +37,26 @@ def clamp(number: Union[float, int],
     return number
 
 
+def time_str_to_ms(time: str) -> Optional[int]:
+    """
+    Convert time string in 00:00.000 format to milliseconds.
+    If it fail return None
+    """
+
+    try:
+        minutes, second_and_ms = time.split(":")
+        second, ms = second_and_ms.split(".")
+
+        total_ms = int(minutes) * 60_000
+        total_ms += int(second) * 1000
+        total_ms += int(ms)
+
+    except ValueError:
+        return None
+
+    return total_ms
+
+
 def ACCWindowFinderCallback(hwnd: int, obj) -> bool:
     """
     Since win32gui.FindWindow(None, 'AC2') doesn't work since kunos
@@ -39,9 +65,175 @@ def ACCWindowFinderCallback(hwnd: int, obj) -> bool:
 
     title: str = win32gui.GetWindowText(hwnd)
     if title.find("AC2") != -1:
+        log.info(f"Found 'AC2' window ('{title}') with handle: {hwnd}")
         obj.hwnd = hwnd
 
     return True
+
+
+class FuelCalculator(ttk.Frame):
+
+    def __init__(self, root):
+
+        ttk.Frame.__init__(self, root)
+
+        self.fuel_lp = tkinter.DoubleVar()
+        self.duration = tkinter.DoubleVar()
+        self.lap_time = tkinter.StringVar(value="00:00.000")
+        self.fuel_calc = tkinter.IntVar()
+        self.margin = tkinter.IntVar()
+        self.override = tkinter.BooleanVar(value=False)
+
+        self.fuel_pl_bk = 0
+        self.duration_bk = 0
+        self.lap_time_bk = ""
+        self.lap_avg: List[int] = []
+        self.was_in_pit = False
+
+        self.current_lap = 0
+        self.current_session = ACC_SESSION_TYPE.ACC_UNKNOW
+        self.current_grip = ACC_TRACK_GRIP_STATUS.ACC_GREEN
+
+        l_fuel_pl = ttk.Label(self, text="Fuel per lap")
+        l_fuel_pl.grid(row=0, column=0)
+
+        self.e_fuel_pl = ttk.Entry(self, state="disabled",
+                                   textvariable=self.fuel_lp)
+        self.e_fuel_pl.grid(row=1, column=0)
+
+        l_lap_time = ttk.Label(self, text="lap time")
+        l_lap_time.grid(row=0, column=1)
+
+        self.e_lap_time = ttk.Entry(self, state="disabled",
+                                    textvariable=self.lap_time)
+        self.e_lap_time.grid(row=1, column=1)
+
+        l_duration = ttk.Label(self, text="Duration")
+        l_duration.grid(row=0, column=2)
+
+        self.e_duration = ttk.Entry(self, state="disabled",
+                                    textvariable=self.duration)
+        self.e_duration.grid(row=1, column=2)
+
+        l_fuel_need = ttk.Label(self, text="Fuel needed")
+        l_fuel_need.grid(row=0, column=5)
+
+        l_fuel_cal = ttk.Label(self, textvariable=self.fuel_calc)
+        l_fuel_cal.grid(row=1, column=5)
+
+        l_margin = ttk.Label(self, text="Spare laps")
+        l_margin.grid(row=0, column=3)
+
+        self.e_margin = ttk.Entry(self, textvariable=self.margin)
+        self.e_margin.grid(row=1, column=3)
+
+        cb_override = ttk.Checkbutton(self, text="Override",
+                                      variable=self.override,
+                                      command=self._override_change)
+        cb_override.grid(row=2, column=0)
+
+        self.b_compute = ttk.Button(self, text="Calculate",
+                                    command=self._compute_fuel,
+                                    state="disabled")
+        self.b_compute.grid(row=1, column=4)
+
+    def _compute_fuel(self) -> None:
+
+        fuel_pl = self.fuel_lp.get()
+        lap_time = self.lap_time.get()
+        duration = self.duration.get()
+        margin = self.margin.get()
+
+        lap_time_ms = time_str_to_ms(lap_time)
+        if lap_time_ms is None or lap_time_ms == 0:
+            log.error("Invalid lap time for fuel calculation")
+            return
+
+        duration_ms = duration * 60_000
+        laps = math.ceil(duration_ms / lap_time_ms) + margin
+        fuel = math.ceil(laps * fuel_pl)
+
+        log.info(f"Computed fuel: {fuel}L for {laps}laps at {fuel_pl}L per lap"
+                 f" with a lap time of {lap_time}")
+
+        self.fuel_calc.set(fuel)
+
+    def _override_change(self) -> None:
+
+        if self.override.get():
+            state = "normal"
+
+        else:
+            state = "disabled"
+            self.fuel_lp.set(self.fuel_pl_bk)
+            self.duration.set(self.duration_bk)
+            self.lap_time.set(self.lap_time_bk)
+
+        self.e_fuel_pl.config(state=state)
+        self.e_lap_time.config(state=state)
+        self.e_duration.config(state=state)
+        self.b_compute.config(state=state)
+
+        log.info(f"Override set to {self.override.get()}")
+
+    def update_values(self, telemetry: Telemetry) -> None:
+
+        if telemetry.in_pit_lane:
+            self.was_in_pit = True
+
+        if telemetry.session != self.current_session:
+            self.current_lap = 0
+            self.current_session = telemetry.session
+
+        if telemetry.lap == self.current_lap:
+            return
+
+        elif telemetry.previous_time == 2_147_483_647:
+            return
+
+        self.current_lap = telemetry.lap
+        if self.was_in_pit:
+            self.was_in_pit = False
+            return
+
+        if telemetry.grip != self.current_grip:
+            self.current_grip = telemetry.grip
+            self.lap_avg.clear()
+
+        self.lap_avg.append(telemetry.previous_time)
+        if len(self.lap_avg) > 10:
+            self.lap_avg.pop(0)
+
+        self.lap_avg.sort()
+        top_laps_avg = int(avg(self.lap_avg[:5]))
+
+        self.fuel_pl_bk = round(telemetry.fuel_per_lap, 2)
+        self.duration_bk = round(telemetry.session_left / 60_000, 1)
+        self.lap_time_bk = string_time_from_ms(top_laps_avg)
+
+        if self.override.get():
+            return
+
+        self.fuel_lp.set(round(telemetry.fuel_per_lap, 2))
+        self.lap_time.set(string_time_from_ms(top_laps_avg))
+        self.duration.set(round(telemetry.session_left / 60_000, 1))
+
+        self._compute_fuel()
+
+    def reset(self) -> None:
+
+        self.duration.set(0)
+        self.lap_time.set("00:00.000")
+        self.fuel_lp.set(0)
+
+        self.lap_avg.clear()
+
+        self.fuel_pl_bk = 0
+        self.duration_bk = 0
+        self.lap_time_bk = 0
+
+        self.current_lap = None
+        self.current_session = None
 
 
 class ButtonPannel(ttk.Frame):
@@ -96,14 +288,14 @@ class StrategyUI(tkinter.Frame):
 
         self.strategies = {}
 
-        self.fuel_text = tkinter.DoubleVar()
-        self.tyre_set_text = tkinter.IntVar(value=1)
-        self.tyre_compound_text = tkinter.StringVar(value="Dry")
+        self.fuel = tkinter.DoubleVar()
+        self.tyre_set = tkinter.IntVar(value=1)
+        self.tyre_compound = tkinter.StringVar(value="Dry")
 
-        self.front_left_text = tkinter.DoubleVar()
-        self.front_right_text = tkinter.DoubleVar()
-        self.rear_left_text = tkinter.DoubleVar()
-        self.rear_right_text = tkinter.DoubleVar()
+        self.front_left = tkinter.DoubleVar()
+        self.front_right = tkinter.DoubleVar()
+        self.rear_left = tkinter.DoubleVar()
+        self.rear_right = tkinter.DoubleVar()
 
         self.driver_var = tkinter.StringVar(value="FirstName LastName")
 
@@ -217,33 +409,36 @@ class StrategyUI(tkinter.Frame):
 
         b_copy.grid(row=10, column=0, columnspan=2, padx=4, pady=5)
 
+        self.f_fuel_cal = FuelCalculator(self)
+        self.f_fuel_cal.grid(row=2, column=0, columnspan=2)
+
         self.update_values()
         self.check_reply()
 
     def _copy_strat(self) -> None:
 
         if self.cb_strat.get() == "":
-            print("No strategy selected")
+            log.warning("No strategy selected")
             return
 
-        self.fuel_text.set(self.old_fuel.get())
-        self.tyre_set_text.set(self.old_tyre_set.get())
-        self.tyre_compound_text.set(self.old_tyre_compound.get())
-        self.front_left_text.set(f"{self.old_front_left.get():.1f}")
-        self.front_right_text.set(f"{self.old_front_right.get():.1f}")
-        self.rear_left_text.set(f"{self.old_rear_left.get():.1f}")
-        self.rear_right_text.set(f"{self.old_rear_right.get():.1f}")
+        self.fuel.set(self.old_fuel.get())
+        self.tyre_set.set(self.old_tyre_set.get())
+        self.tyre_compound.set(self.old_tyre_compound.get())
+        self.front_left.set(round(self.old_front_left.get(), 1))
+        self.front_right.set(round(self.old_front_right.get(), 1))
+        self.rear_left.set(round(self.old_rear_left.get(), 1))
+        self.rear_right.set(round(self.old_rear_right.get(), 1))
 
     def _show_old_strat(self, _) -> None:
 
         if self.cb_strat.get() == "":
-            print("No strategy selected")
+            log.warning("No strategy selected")
             return
 
         selected_strat = self.cb_strat.get()
 
         if selected_strat not in self.strategies:
-            print(f"{selected_strat} not in strategies")
+            log.warning(f"{selected_strat} not in strategies")
             return
 
         strategy: PitStop = self.strategies[selected_strat]
@@ -251,10 +446,10 @@ class StrategyUI(tkinter.Frame):
         self.old_fuel.set(strategy.fuel)
         self.old_tyre_set.set(strategy.tyre_set + 1)
         self.old_tyre_compound.set(strategy.tyre_compound)
-        self.old_front_left.set(f"{strategy.tyre_pressures[0]:.1f}")
-        self.old_front_right.set(f"{strategy.tyre_pressures[1]:.1f}")
-        self.old_rear_left.set(f"{strategy.tyre_pressures[2]:.1f}")
-        self.old_rear_right.set(f"{strategy.tyre_pressures[3]:.1f}")
+        self.old_front_left.set(round(strategy.tyre_pressures[0], 1))
+        self.old_front_right.set(round(strategy.tyre_pressures[1], 1))
+        self.old_rear_left.set(round(strategy.tyre_pressures[2], 1))
+        self.old_rear_right.set(round(strategy.tyre_pressures[3], 1))
 
     def _build_ui(self) -> None:
 
@@ -268,7 +463,7 @@ class StrategyUI(tkinter.Frame):
                            anchor=tkinter.E)
         l_fuel.grid(row=app_row, column=0, padx=10)
 
-        bp_fuel = ButtonPannel(f_settings, self.fuel_text,
+        bp_fuel = ButtonPannel(f_settings, self.fuel,
                                self.change_fuel, [1, 5, 10])
         bp_fuel.grid(row=app_row, column=1)
 
@@ -279,7 +474,7 @@ class StrategyUI(tkinter.Frame):
                                anchor=tkinter.E)
         l_tyre_set.grid(row=app_row, column=0, padx=10)
 
-        bp_tyre_set = ButtonPannel(f_settings, self.tyre_set_text,
+        bp_tyre_set = ButtonPannel(f_settings, self.tyre_set,
                                    self.change_tyre_set, [1])
         bp_tyre_set.grid(row=app_row, column=1)
         app_row += 1
@@ -300,7 +495,7 @@ class StrategyUI(tkinter.Frame):
         b_add.grid(row=0, column=4, padx=4, pady=2)
 
         l_var = ttk.Label(f_tyre_compound,
-                          textvariable=self.tyre_compound_text, width=10,
+                          textvariable=self.tyre_compound, width=10,
                           anchor=tkinter.CENTER)
         l_var.grid(row=0, column=3, padx=4, pady=2)
 
@@ -311,7 +506,7 @@ class StrategyUI(tkinter.Frame):
         l_tyre_fl = ttk.Label(f_settings, text="Front left", width=13,
                               anchor=tkinter.E)
         l_tyre_fl.grid(row=app_row, column=0, padx=10)
-        bp_tyre_fl = ButtonPannel(f_settings, self.front_left_text,
+        bp_tyre_fl = ButtonPannel(f_settings, self.front_left,
                                   self.change_pressure_fl)
         bp_tyre_fl.grid(row=app_row, column=1)
         app_row += 1
@@ -321,7 +516,7 @@ class StrategyUI(tkinter.Frame):
                               anchor=tkinter.E)
         l_tyre_fr.grid(row=app_row, column=0, padx=10)
 
-        bp_tyre_fr = ButtonPannel(f_settings, self.front_right_text,
+        bp_tyre_fr = ButtonPannel(f_settings, self.front_right,
                                   self.change_pressure_fr,)
         bp_tyre_fr.grid(row=app_row, column=1)
         app_row += 1
@@ -331,7 +526,7 @@ class StrategyUI(tkinter.Frame):
                               anchor=tkinter.E)
         l_tyre_rl.grid(row=app_row, column=0, padx=10)
 
-        bp_tyre_rl = ButtonPannel(f_settings, self.rear_left_text,
+        bp_tyre_rl = ButtonPannel(f_settings, self.rear_left,
                                   self.change_pressure_rl)
         bp_tyre_rl.grid(row=app_row, column=1)
         app_row += 1
@@ -341,7 +536,7 @@ class StrategyUI(tkinter.Frame):
                               anchor=tkinter.E)
         l_tyre_rr.grid(row=app_row, column=0, padx=10)
 
-        bp_tyre_rr = ButtonPannel(f_settings, self.rear_right_text,
+        bp_tyre_rr = ButtonPannel(f_settings, self.rear_right,
                                   self.change_pressure_rr)
         bp_tyre_rr.grid(row=app_row, column=1)
         app_row += 1
@@ -385,7 +580,7 @@ class StrategyUI(tkinter.Frame):
     def _next_driver(self) -> None:
 
         if len(self.driver_list) < 2:
-            print("no more than 2 driver connected")
+            log.warning("no more than 2 driver connected")
             return
 
         driver_ids = []
@@ -393,7 +588,7 @@ class StrategyUI(tkinter.Frame):
 
         # find current driver id
         set_driver = self.driver_var.get()
-        print(f"Current: {set_driver}")
+        log.info(f"Current: {set_driver}")
         for driver in self.driver_list:
 
             if driver[0] == set_driver:
@@ -403,7 +598,7 @@ class StrategyUI(tkinter.Frame):
                 driver_ids.append(driver[1])
 
         if current_id is None:
-            print(f"Driver {set_driver} not in driver list")
+            log.warning(f"Driver {set_driver} not in driver list")
             return
 
         # Find next driver in the list
@@ -416,7 +611,7 @@ class StrategyUI(tkinter.Frame):
                 break
 
         if next_driver_id is None:
-            print(f"No next driver found")
+            log.warning(f"No next driver found")
             return
 
         # Find name of next driver id
@@ -431,7 +626,7 @@ class StrategyUI(tkinter.Frame):
     def _prev_driver(self) -> None:
 
         if len(self.driver_list) < 2:
-            print("no more than 2 driver connected")
+            log.warning("no more than 2 driver connected")
             return
 
         driver_ids = []
@@ -439,7 +634,7 @@ class StrategyUI(tkinter.Frame):
 
         # find current driver id
         set_driver = self.driver_var.get()
-        print(f"Current: {set_driver}")
+        log.info(f"Current: {set_driver}")
         for driver in self.driver_list:
 
             if driver[0] == set_driver:
@@ -449,7 +644,7 @@ class StrategyUI(tkinter.Frame):
                 driver_ids.append(driver[1])
 
         if current_id is None:
-            print(f"Driver {set_driver} not in driver list")
+            log.warning(f"Driver {set_driver} not in driver list")
             return
 
         # Find next driver in the list
@@ -462,7 +657,7 @@ class StrategyUI(tkinter.Frame):
                 break
 
         if previous_driver_id is None:
-            print(f"No previous driver found")
+            log.warning(f"No previous driver found")
             return
 
         # Find name of next driver id
@@ -480,9 +675,13 @@ class StrategyUI(tkinter.Frame):
             self.strategy_ok = True
 
         elif self.strat_setter.data_requested():
-            self.data_queue.put(self.asm.read_shared_memory())
+            self.data_queue.put(self.asm.get_shared_memory_data())
 
         self.check_reply_id = self.after(60, self.check_reply)
+
+    def updade_telemetry_data(self, telemetry: Telemetry) -> None:
+
+        self.f_fuel_cal.update_values(telemetry)
 
     def update_values(self) -> None:
 
@@ -494,15 +693,15 @@ class StrategyUI(tkinter.Frame):
 
             self.max_static_fuel = self.server_data.max_fuel
 
-            self.fuel_text.set(f"{mfd_fuel:.1f}")
-            self.tyre_set_text.set(mfd_tyre_set + 1)
-            self.front_left_text.set(f"{tyres[0]:.1f}")
-            self.front_right_text.set(f"{tyres[1]:.1f}")
-            self.rear_left_text.set(f"{tyres[2]:.1f}")
-            self.rear_right_text.set(f"{tyres[3]:.1f}")
+            self.fuel.set(f"{mfd_fuel:.1f}")
+            self.tyre_set.set(mfd_tyre_set + 1)
+            self.front_left.set(round(tyres[0], 1))
+            self.front_right.set(round(tyres[1], 1))
+            self.rear_left.set(round(tyres[2], 1))
+            self.rear_right.set(round(tyres[3], 1))
 
-            if self.tyre_compound_text.get() == "":
-                self.tyre_compound_text.set("Dry")
+            if self.tyre_compound.get() == "":
+                self.tyre_compound.set("Dry")
 
     def close(self) -> None:
 
@@ -513,11 +712,11 @@ class StrategyUI(tkinter.Frame):
     def set_strategy(self) -> None:
 
         if not self.is_connected:
-            print("Not connected")
+            log.warning("Not connected")
             return
 
         elif not self.is_driver_active:
-            print("No driver active")
+            log.warning("No driver active")
             return
 
         selected_driver = self.driver_var.get()
@@ -540,16 +739,16 @@ class StrategyUI(tkinter.Frame):
         else:
             driver_offset = 0
 
-        strat = PitStop(self.fuel_text.get(),
-                        self.tyre_set_text.get() - 1,
-                        self.tyre_compound_text.get(),
+        strat = PitStop(self.fuel.get(),
+                        self.tyre_set.get() - 1,
+                        self.tyre_compound.get(),
                         (
-                          self.front_left_text.get(),
-                          self.front_right_text.get(),
-                          self.rear_left_text.get(),
-                          self.rear_right_text.get()
-                        ),
-                        driver_offset)
+            self.front_left.get(),
+            self.front_right.get(),
+            self.rear_left.get(),
+            self.rear_right.get()
+        ),
+            driver_offset)
 
         time_key = datetime.now().strftime("%H:%M.%S_%d_%m_%Y")
         self.strategies[time_key] = strat
@@ -561,7 +760,7 @@ class StrategyUI(tkinter.Frame):
     def is_strategy_applied(self, state: bool) -> None:
 
         if state:
-            self.b_set_strat.config(state="active")
+            self.b_set_strat.config(state="normal")
 
         else:
             self.b_set_strat.config(state="disabled")
@@ -569,47 +768,47 @@ class StrategyUI(tkinter.Frame):
     def apply_strategy(self, strat: PitStop) -> None:
 
         self.data_queue.put(strat)
-        self.data_queue.put(self.asm.read_shared_memory())
+        self.data_queue.put(self.asm.get_shared_memory_data())
         self.strat_setter.start()
 
     def change_pressure_fl(self, change) -> None:
 
-        temp = clamp(self.front_left_text.get() + change, 20.3, 35.0)
-        self.front_left_text.set(f"{temp:.1f}")
+        temp = clamp(self.front_left.get() + change, 20.3, 35.0)
+        self.front_left.set(round(temp, 1))
 
     def change_pressure_fr(self, change) -> None:
 
-        temp = clamp(self.front_right_text.get() + change, 20.3, 35.0)
-        self.front_right_text.set(f"{temp:.1f}")
+        temp = clamp(self.front_right.get() + change, 20.3, 35.0)
+        self.front_right.set(round(temp, 1))
 
     def change_pressure_rl(self, change) -> None:
 
-        temp = clamp(self.rear_left_text.get() + change, 20.3, 35.0)
-        self.rear_left_text.set(f"{temp:.1f}")
+        temp = clamp(self.rear_left.get() + change, 20.3, 35.0)
+        self.rear_left.set(round(temp, 1))
 
     def change_pressure_rr(self, change) -> None:
 
-        temp = clamp(self.rear_right_text.get() + change, 20.3, 35.0)
-        self.rear_right_text.set(f"{temp:.1f}")
+        temp = clamp(self.rear_right.get() + change, 20.3, 35.0)
+        self.rear_right.set(round(temp, 1))
 
     def change_fuel(self, change) -> None:
 
-        temp = clamp(self.fuel_text.get() + change, 0, self.max_static_fuel)
-        self.fuel_text.set(f"{temp:.1f}")
+        temp = clamp(self.fuel.get() + change, 0, self.max_static_fuel)
+        self.fuel.set(round(temp, 1))
 
     def change_tyre_set(self, change: int) -> None:
 
-        self.mfd_tyre_set = clamp(self.tyre_set_text.get() + change, 0, 49)
-        self.tyre_set_text.set(self.mfd_tyre_set)
+        self.mfd_tyre_set = clamp(self.tyre_set.get() + change, 0, 49)
+        self.tyre_set.set(self.mfd_tyre_set)
 
     def change_tyre_compound(self, compound: str) -> None:
 
-        self.tyre_compound_text.set(compound)
+        self.tyre_compound.set(compound)
 
     def reset(self) -> None:
 
-        self.b_set_strat.config(state="active")
-        self.b_update_strat.config(state="active")
+        self.b_set_strat.config(state="normal")
+        self.b_update_strat.config(state="normal")
         self.team_size = None
 
 
@@ -673,20 +872,39 @@ class StrategySetter:
 
         return False
 
-    def set_acc_forground(self) -> None:
-        # List because I need to pass arg by reference and not value
+    def set_acc_foreground(self) -> bool:
 
         win32gui.EnumWindows(ACCWindowFinderCallback, self)
         if self.hwnd is not None:
 
-            # Weird fix for SetForegroundWindow()
-            shell = win32com.client.Dispatch("WScript.Shell")
-            shell.SendKeys('%')
+            if win32gui.GetForegroundWindow() == self.hwnd:
+                log.info("ACC is already focused")
 
-            win32gui.SetForegroundWindow(self.hwnd)
+            else:
+                # Weird fix for SetForegroundWindow()
+                shell = win32com.client.Dispatch("WScript.Shell")
+                shell.SendKeys('%')
+
+                log.info("Setting ACC to foreground")
+                win32gui.SetForegroundWindow(self.hwnd)
+
+                # Wait for the window to be set
+                time.sleep(0.5)
+
+                if win32gui.GetForegroundWindow() != self.hwnd:
+                    log.info("ACC hasn't been set to foreground")
+                    return False
+
+            return True
+
+        else:
+            log.error("Didn't found ACC window handle")
+            return False
 
     @staticmethod
     def set_tyre_pressure(current: float, target: float) -> None:
+
+        log.info(f"Setting tyre pressure: {current=} | {target=}")
 
         # Fail safe incase of floating point weirdness
         i = 0
@@ -709,6 +927,7 @@ class StrategySetter:
     @staticmethod
     def set_fuel(current: float, target: float) -> None:
 
+        log.info(f"Setting fuel: {current=} | {target=}")
         while not math.isclose(current, target, rel_tol=1e-5):
             if current > target:
                 pyautogui.press("left")
@@ -723,6 +942,7 @@ class StrategySetter:
     @staticmethod
     def set_tyre_set(current: int, target: int) -> None:
 
+        log.info(f"Setting tyre set: {current=} | {target=}")
         while current != target:
 
             if current > target:
@@ -737,13 +957,17 @@ class StrategySetter:
 
     def set_strategy(self, strategy: PitStop, sm: ACC_map) -> None:
 
-        print(f"Requested strategy: {strategy}")
+        log.info(f"Requested strategy: {strategy}")
 
-        self.set_acc_forground()
+        log.info("Trying to set ACC to foreground")
+        if not self.set_acc_foreground():
+            log.error("ACC couldn't be set to focus or foreground.")
+            return
 
         time.sleep(1)
 
         # Reset MFD cursor to top
+        log.info("Showing MFD pit strategy page")
         pyautogui.press("p")
 
         for _ in range(2):
@@ -822,22 +1046,21 @@ class StrategySetter:
         pyautogui.press("down")
         time.sleep(0.01)
 
+        log.info(f"Driver offset: {strategy.driver_offset}")
         for _ in range(abs(strategy.driver_offset)):
 
             if strategy.driver_offset < 0:
                 pyautogui.press("left")
-                print("left")
+
             else:
                 pyautogui.press("right")
-                print("right")
-
-            print(strategy.driver_offset)
 
             time.sleep(0.01)
 
     @staticmethod
     def set_tyre_compound(compound: str):
 
+        log.info(f"Setting tyre compound to {compound}")
         if compound == "Dry":
             pyautogui.press("left")
 

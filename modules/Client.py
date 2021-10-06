@@ -1,281 +1,235 @@
-import queue
-import socket
-import struct
-import threading
-import time
-from typing import Tuple
+from __future__ import annotations
 
-from modules.Common import Credidentials, NetworkQueue, PacketType
+import logging
+import struct
+import time
+
+from twisted.internet import reactor, task
+from twisted.internet.endpoints import TCP4ClientEndpoint
+from twisted.internet.protocol import ClientFactory, DatagramProtocol, Protocol
+from twisted.python.failure import Failure
+
+from modules.Common import (Credidentials, DataQueue, NetData, NetworkQueue,
+                            PacketType)
+
+client_log = logging.getLogger(__name__)
 
 
 class ClientInstance:
 
-    def __init__(self, credis: Credidentials, in_queue: queue.Queue,
-                 out_queue: queue.Queue) -> None:
+    def __init__(self, credis: Credidentials, queue: DataQueue) -> None:
 
-        self._tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self._server_ip = credis.ip
-        self._tcp_port = credis.tcp_port
-        self._udp_port = credis.udp_port
-        self._username = credis.username
+        self.data_queue = queue
+
+        self.udp_queue = DataQueue([], [])
+        self.tcp_queue = DataQueue([], [])
+
+        self.looping_call = task.LoopingCall(self.check_queue)
+        self.looping_call.start(0.01)
+
+        endpoint = TCP4ClientEndpoint(reactor, credis.ip, credis.tcp_port)
+        endpoint.connect(TCP_Factory(credis, self.tcp_queue))
+
+        reactor.listenUDP(0, UDPClient(credis.ip, credis.udp_port,
+                                       self.udp_queue))
+
+    def check_queue(self) -> None:
+
+        for element in self.data_queue.q_in:
+
+            if (element.data_type in (NetworkQueue.Telemetry,
+                                      NetworkQueue.TelemetryRT)):
+
+                self.udp_queue.q_in.append(element)
+
+            else:
+                self.tcp_queue.q_in.append(element)
+
+        self.data_queue.q_in.clear()
+
+        for element in self.udp_queue.q_out:
+            self.data_queue.q_out.append(element)
+
+        self.udp_queue.q_out.clear()
+
+        for element in self.tcp_queue.q_out:
+            self.data_queue.q_out.append(element)
+
+        self.tcp_queue.q_out.clear()
+
+    def close(self) -> None:
+
+        self.looping_call.stop()
+        self.tcp_queue.q_in.append(NetData(NetworkQueue.Close))
+        self.udp_queue.q_in.append(NetData(NetworkQueue.Close))
+
+
+class TCP_Factory(ClientFactory):
+
+    def __init__(self, credis: Credidentials, queue: DataQueue) -> None:
+
+        self._name = credis.username
         self._driverID = credis.driverID
-        self._listener_thread = None
-        self._thread_event = None
-        self._in_queue = in_queue
-        self._out_queue = out_queue
+        self.data_queue = queue
 
-    def connect(self) -> Tuple[bool, str]:
+    def buildProtocol(self, addr) -> TCP_Client:
 
-        try:
-            self._tcp_socket.settimeout(3)
-            self._tcp_socket.connect((self._server_ip, self._tcp_port))
-            self._udp_socket.bind(("", 0))
-            self._udp_socket.settimeout(0.01)
+        return TCP_Client(self._name, self._driverID, self.data_queue)
 
-            print(f"CLIENT: Connected to {self._server_ip}")
 
-        except socket.timeout as msg:
-            print(f"CLIENT: Timeout while connecting to {self._server_ip}")
-            return (False, msg)
+class TCP_Client(Protocol):
 
-        except ConnectionResetError as msg:
-            print(f"CLIENT: {msg}")
-            return (False, msg)
+    def __init__(self, name: str, driverID: int, queue: DataQueue) -> None:
 
-        except ConnectionRefusedError as msg:
-            print(f"CLIENT: {msg}")
-            return (False, msg)
+        self._name = name
+        self._driverID = driverID
+        self._data_queue = queue
+        self._error = ""
+        self.loop_call = task.LoopingCall(self.check_queue)
+        self.loop_call.start(0.1)
+
+    def check_queue(self) -> None:
+
+        for element in self._data_queue.q_in:
+
+            packet = element.data_type
+            if packet == NetworkQueue.CarInfoData:
+                self.transport.write(PacketType.SmData.to_bytes()
+                                     + element.data)
+
+            elif packet == NetworkQueue.StrategySet:
+                self.transport.write(PacketType.Strategy.to_bytes()
+                                     + element.data)
+
+            elif packet == NetworkQueue.StrategyDone:
+                self.transport.write(PacketType.StrategyOK.to_bytes())
+
+            elif packet == NetworkQueue.Close:
+                self.close()
+
+        self._data_queue.q_in.clear()
+
+    def dataReceived(self, data: bytes):
+        self._decode_packet(data)
+
+    def connectionMade(self):
 
         buffer = []
-        name_byte = self._username.encode("utf-8")
+        name_byte = self._name.encode("utf-8")
         name_lenght = struct.pack("!B", len(name_byte))
 
         buffer.append(PacketType.Connect.to_bytes())
         buffer.append(name_lenght)
         buffer.append(name_byte)
-        buffer.append(struct.pack("!i", self._driverID))
+        buffer.append(struct.pack("!B", self._driverID))
 
-        self._send_tcp(b"".join(buffer))
+        self.transport.write(b"".join(buffer))
 
-        reply = self._tcp_socket.recv(256)
-        self._tcp_socket.settimeout(0.01)
-        packet_type = PacketType.from_bytes(reply)
-        if packet_type == PacketType.ConnectionReply:
+    def connectionLost(self, reason: Failure):
+        self._error = str(reason)
+        client_log.info("Lost connection with server"
+                        f" {self.transport.getPeer()}")
 
-            succes = struct.unpack("!?", reply[1:])[0]
+    def close(self):
 
-            if succes:
-                self._thread_event = threading.Event()
+        if self.transport is not None:
+            client_log.info("Close TCP client")
+            self.transport.loseConnection()
+            self.loop_call.stop()
 
-                self._listener_thread = threading.Thread(
-                    target=self._network_listener,
-                    name="Client listener")
-                self._listener_thread.start()
+    def _decode_packet(self, data: bytes) -> None:
 
-                buffer = [
-                    PacketType.ConnectUDP.to_bytes(),
-                    name_lenght,
-                    name_byte
-                ]
+        packet = PacketType.from_bytes(data)
+        data = data[1:]
 
-                self._send_udp(b"".join(buffer))
+        net_data = None
+        if packet == PacketType.ConnectionReply:
+            net_data = NetData(NetworkQueue.ConnectionReply, data)
 
-                return (True, "Connected")
+        elif packet == PacketType.ServerData:
+            net_data = NetData(NetworkQueue.ServerData, data)
 
-            else:
-                self._tcp_socket.close()
-                self._udp_socket.close()
-                return (False, "Connection rejected")
+        elif packet == PacketType.Strategy:
+            net_data = NetData(NetworkQueue.Strategy, data)
+
+        elif packet == PacketType.StrategyOK:
+            net_data = NetData(NetworkQueue.StrategyDone, data)
+
+        elif packet == PacketType.UpdateUsers:
+            net_data = NetData(NetworkQueue.UpdateUsers, data)
 
         else:
-            # TODO should I ?
-            self._tcp_socket.shutdown(socket.SHUT_RDWR)
-            self._udp_socket.shutdown(socket.SHUT_RDWR)
-            return (False, "Connection refused")
+            client_log.warning(f"Invalid packet type {data}")
+            return
 
-    def disconnect(self) -> None:
+        self._data_queue.q_out.append(net_data)
 
-        if (self._listener_thread is not None
-                and self._listener_thread.is_alive()):
 
-            self._thread_event.set()
-            self._listener_thread.join()
+class UDPClient(DatagramProtocol):
 
-            self._send_tcp(PacketType.Disconnect.to_bytes())
-            self._tcp_socket.shutdown(socket.SHUT_WR)
+    def __init__(self, ip: str, port: int, queue: DataQueue) -> None:
+        super().__init__()
 
-            data = None
-            while data != b"":
+        self.ip = ip
+        self.port = port
+        self.queue = queue
+        self.udp_imnotdead_timer = time.time()
+        self.loop_call = task.LoopingCall(self.udp_client_loop)
+        self.loop_call.start(0.01)
 
-                try:
-                    data = self._tcp_socket.recv(256)
+    def startProtocol(self) -> None:
 
-                except socket.timeout as msg:
-                    print(f"CLIENT: {msg}")
+        self.transport.connect(self.ip, self.port)
+        self.transport.write(b"Hello UDP")
 
-                except ConnectionResetError as msg:
-                    print(f"CLIENT: {msg}")
+    def udp_client_loop(self) -> None:
 
-                except ConnectionRefusedError as msg:
-                    print(f"CLIENT: {msg}")
+        for element in self.queue.q_in:
 
-        print("close socket")
-        self._tcp_socket.close()
-        self._udp_socket.close()
+            if element.data_type == NetworkQueue.Telemetry:
+                self.transport.write(PacketType.Telemetry.to_bytes()
+                                     + element.data)
 
-    def _send_tcp(self, data: bytes) -> None:
+            elif element.data_type == NetworkQueue.TelemetryRT:
+                self.transport.write(PacketType.TelemetryRT.to_bytes()
+                                     + element.data)
 
-        try:
-            self._tcp_socket.send(data)
+            elif element.data_type == NetworkQueue.Close:
+                self.close()
 
-        except ConnectionResetError as msg:
-            print(f"CLIENT: {msg}")
+        self.queue.q_in.clear()
 
-        except ConnectionRefusedError as msg:
-            print(f"CLIENT: {msg}")
+        if time.time() - self.udp_imnotdead_timer > 10:
+            self.transport.write(b"I'm not a dead client")
+            self.udp_imnotdead_timer = time.time()
 
-        except ConnectionResetError as msg:
-            print(f"CLIENT: {msg}")
+    def datagramReceived(self, datagram: bytes, addr) -> None:
 
-        except BrokenPipeError as msg:
-            print(f"CLIENT: {msg}")
+        if datagram == b"I'm not a dead server":
+            return
 
-    def _send_udp(self, data: bytes) -> bool:
+        self._decode_packet(datagram)
 
-        try:
-            self._udp_socket.sendto(data, (self._server_ip, self._udp_port))
+    def _decode_packet(self, data: bytes) -> None:
 
-        except ConnectionResetError as msg:
-            print(f"CLIENT: {msg}")
+        packet = PacketType.from_bytes(data)
 
-        except ConnectionRefusedError as msg:
-            print(f"CLIENT: {msg}")
+        if packet == PacketType.Telemetry:
+            self.queue.q_out.append(NetData(NetworkQueue.Telemetry,
+                                    data[1:]))
 
-        except ConnectionResetError as msg:
-            print(f"CLIENT: {msg}")
+        elif packet == PacketType.TelemetryRT:
+            self.queue.q_out.append(NetData(NetworkQueue.TelemetryRT,
+                                    data[1:]))
 
-        except BrokenPipeError as msg:
-            print(f"CLIENT: {msg}")
+    # Possibly invoked if there is no server listening
+    def connectionRefused(self):
+        client_log.warning("No one listening")
+        self.close()
 
-    def _network_listener(self) -> None:
+    def close(self):
 
-        data = None
-        udp_timer = time.time()
-        print("CLIENT: Listening for server packets")
-        while not (self._thread_event.is_set() or data == b""):
-
-            try:
-                udp_data, _ = self._udp_socket.recvfrom(256)
-
-            except socket.timeout:
-                udp_data = None
-
-            except ConnectionResetError:
-                udp_data = b""
-
-            try:
-                data = self._tcp_socket.recv(256)
-
-            except socket.timeout:
-                data = None
-
-            except ConnectionResetError:
-                data = b""
-
-            self._check_app_state()
-            if data is not None and len(data) > 0:
-                self._handle_data(data)
-
-            if udp_data is not None and len(udp_data) > 0:
-
-                packet_type = PacketType.from_bytes(udp_data)
-
-                if packet_type == PacketType.Telemetry:
-
-                    self._out_queue.put(NetworkQueue.Telemetry)
-                    self._out_queue.put(udp_data[1:])
-
-                elif packet_type == PacketType.TelemetryRT:
-
-                    self._out_queue.put(NetworkQueue.TelemetryRT)
-                    self._out_queue.put(udp_data[1:])
-
-            if time.time() - udp_timer > 1:
-
-                self._send_udp(PacketType.UDP_OK.to_bytes())
-                udp_timer = time.time()
-
-        if data == b"":
-            print("CLIENT: Lost connection to server.")
-
-        self._thread_event.set()
-        print("client_listener STOPPED")
-
-    def _handle_data(self, data: bytes) -> None:
-
-        packet_type = PacketType.from_bytes(data)
-
-        if packet_type == PacketType.ServerData:
-
-            self._out_queue.put(NetworkQueue.ServerData)
-            self._out_queue.put(data[1:])
-
-        elif packet_type == PacketType.Strategy:
-
-            self._out_queue.put(NetworkQueue.Strategy)
-            self._out_queue.put(data[1:])
-
-        elif packet_type == PacketType.StrategyOK:
-
-            self._out_queue.put(NetworkQueue.StrategyDone)
-
-        elif packet_type == PacketType.Telemetry:
-
-            self._out_queue.put(NetworkQueue.Telemetry)
-            self._out_queue.put(data[1:])
-
-        elif packet_type == PacketType.UpdateUsers:
-
-            self._out_queue.put(NetworkQueue.UpdateUsers)
-            self._out_queue.put(data[1:])
-
-        elif packet_type == PacketType.UDP_RENEW:
-
-            print("CLIENT: Got UDP renew request")
-            self._udp_socket.close()
-            self._udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self._udp_socket.bind(("", 0))
-            self._udp_socket.settimeout(0.01)
-            self._send_udp(PacketType.ConnectUDP.to_bytes())
-            print("CLIENT: UDP connection restablished")
-
-    def _check_app_state(self) -> None:
-
-        while self._in_queue.qsize() != 0:
-
-            item_type = self._in_queue.get()
-
-            if item_type == NetworkQueue.CarInfoData:
-
-                info: bytes = self._in_queue.get()
-                self._send_tcp(PacketType.SmData.to_bytes() + info)
-
-            elif item_type == NetworkQueue.StrategySet:
-
-                strategy: bytes = self._in_queue.get()
-                self._send_tcp(PacketType.Strategy.to_bytes() + strategy)
-
-            elif item_type == NetworkQueue.StrategyDone:
-
-                self._send_tcp(PacketType.StrategyOK.to_bytes())
-
-            elif item_type == NetworkQueue.Telemetry:
-
-                telemetry = self._in_queue.get()
-                self._send_udp(PacketType.Telemetry.to_bytes() + telemetry)
-
-            elif item_type == NetworkQueue.TelemetryRT:
-
-                telemetry = self._in_queue.get()
-                self._send_udp(PacketType.TelemetryRT.to_bytes() + telemetry)
+        if self.transport is not None:
+            client_log.info("Close UDP client")
+            self.transport.loseConnection()
+            self.loop_call.stop()

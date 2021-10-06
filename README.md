@@ -1,4 +1,4 @@
-# PyAccEngineer v1.4
+# PyAccEngineer v1.5
 
 ![app](https://i.imgur.com/7g7SAvD.png)
 
@@ -10,6 +10,7 @@ For more images [here](https://imgur.com/a/EwZwhOD)
 - pywin32 module
 - PyAutoGUI module
 - matplotlib module
+- Twisted and service-identity modules
 - Server need open a TCP and UDP port (4269 TCP and 4270 UDP are the default)
 
 ## Download
