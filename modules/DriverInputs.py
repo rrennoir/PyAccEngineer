@@ -30,6 +30,10 @@ class InputGraph(ttk.Frame):
         self.gas_data = []
         self.brake_data = []
 
+        self.gas_20s = []
+        self.brake_20s = []
+        self.time_20s = []
+
         self.figure = pyplot.figure(figsize=(6.5, 4.5), dpi=100)
         self.figure.subplots_adjust(left=0.125,
                                     bottom=0.1,
@@ -41,15 +45,15 @@ class InputGraph(ttk.Frame):
         self.gas_graph = self.figure.add_subplot(2, 1, 1)
         self.brake_graph = self.figure.add_subplot(2, 1, 2)
 
-        self.last_time = 0
+        self.start_lap_time = 0
 
         self.gas_line,  = self.gas_graph.plot(
-            self.time_axis, self.gas_data,
+            self.time_20s, self.gas_20s,
             "#00FF00",
             label="Gas")
 
         self.brake_line,  = self.brake_graph.plot(
-            self.time_axis, self.brake_data,
+            self.time_20s, self.brake_20s,
             "#FF0000",
             label="Brake")
 
@@ -90,22 +94,35 @@ class InputGraph(ttk.Frame):
 
     def update_values(self, throttle: float, brake: float) -> None:
 
+        time_from_start = time.time() - self.start_lap_time
+
         self.gas_data.append(throttle * 100)
         self.brake_data.append(brake * 100)
 
-        if self.last_time != 0:
-            self.time_axis.append(time.time() - self.last_time)
+        if self.start_lap_time != 0:
+            self.time_axis.append(time_from_start)
 
         else:
             self.time_axis.append(0)
-            self.last_time = time.time()
+            self.start_lap_time = time.time()
+
+        self.gas_20s.clear()
+        self.brake_20s.clear()
+        self.time_20s.clear()
+        for throttle, brake, time_s in zip(self.gas_data,
+                                           self.brake_data,
+                                           self.time_axis):
+            if time_from_start - time_s < 20:
+                self.gas_20s.append(throttle)
+                self.brake_20s.append(brake)
+                self.time_20s.append(time_s)
 
     def reset(self) -> None:
 
         self.time_axis.clear()
         self.gas_data.clear()
         self.brake_data.clear()
-        self.last_time = 0
+        self.start_lap_time = 0
 
     def stop_animation(self) -> None:
         self.ani.event_source.stop()
