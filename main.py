@@ -309,6 +309,7 @@ class App(tkinter.Tk):
                             background=self.gui_config["active_driver_colour"])
 
         app_style.configure("Users.TFrame", background="#000000")
+        app_style.configure("TelemetryGrid.TFrame", background="#000000")
         app_style.configure("PressureInfo.TFrame", background="#000000")
         app_style.configure("TEntry", foreground="#000000")
 
