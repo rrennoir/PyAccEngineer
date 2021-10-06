@@ -69,10 +69,13 @@ class InputGraph(ttk.Frame):
         self.brake_graph.set_xlim(0, 1)
         self.brake_graph.set_ylim(-5, 105)
 
+        self.gas_graph.set_xlim(10, 0)
+        self.brake_graph.set_xlim(10, 0)
+
         canvas = FigureCanvasTkAgg(self.figure, self)
         canvas.get_tk_widget().pack(side=tkinter.BOTTOM)
         self.ani = animation.FuncAnimation(self.figure, self._animate,
-                                           interval=500, blit=False)
+                                           interval=100, blit=False)
 
         self.ani.event_source.stop()
 
@@ -81,16 +84,8 @@ class InputGraph(ttk.Frame):
         if len(self.time_axis) == 0:
             return
 
-        self.gas_line.set_data(self.time_axis, self.gas_data)
-        self.brake_line.set_data(self.time_axis, self.brake_data)
-
-        if len(self.time_axis) < 2:
-            self.gas_graph.set_xlim(0, 1)
-            self.brake_graph.set_xlim(0, 1)
-
-        else:
-            self.gas_graph.set_xlim(0, self.time_axis[-1])
-            self.brake_graph.set_xlim(0, self.time_axis[-1])
+        self.gas_line.set_data(self.time_20s, self.gas_20s)
+        self.brake_line.set_data(self.time_20s, self.brake_20s)
 
     def update_values(self, throttle: float, brake: float) -> None:
 
@@ -112,10 +107,10 @@ class InputGraph(ttk.Frame):
         for throttle, brake, time_s in zip(self.gas_data,
                                            self.brake_data,
                                            self.time_axis):
-            if time_from_start - time_s < 20:
+            if time_from_start - time_s < 10:
                 self.gas_20s.append(throttle)
                 self.brake_20s.append(brake)
-                self.time_20s.append(time_s)
+                self.time_20s.append(time_from_start - time_s)
 
     def reset(self) -> None:
 
