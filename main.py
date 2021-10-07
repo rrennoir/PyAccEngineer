@@ -476,7 +476,7 @@ class App(tkinter.Tk):
             elif element.data_type == NetworkQueue.Strategy:
 
                 logging.info("Received: Strategy")
-
+                self.strategy_ui.b_set_strat.config(state="disabled")
                 asm_data = self.strategy_ui.asm.read_shared_memory()
                 if asm_data is not None:
 
@@ -487,7 +487,7 @@ class App(tkinter.Tk):
 
                 logging.info("Received: Strategy Done")
 
-                self.strategy_ui.b_set_strat.config(state="active")
+                self.strategy_ui.b_set_strat.config(state="normal")
                 self.strategy_ui.update_values()
 
             elif element.data_type == NetworkQueue.Telemetry:
