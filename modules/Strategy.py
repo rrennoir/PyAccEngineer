@@ -948,7 +948,8 @@ class StrategySetter:
                  f"\tcurrent: {sm.Graphics.mfd_fuel_to_add}\n"
                  f"\ttarget: {strategy.fuel}")
         StrategySetter.set_value(("left", "right"),
-                                 sm.Graphics.mfd_fuel_to_add, strategy.fuel)
+                                 int(sm.Graphics.mfd_fuel_to_add),
+                                 int(strategy.fuel))
 
         # check if tyre set is on wet, tyre set will be disable
         # so going down 5 times will be FR instead of FL
