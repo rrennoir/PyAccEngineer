@@ -621,7 +621,8 @@ class App(tkinter.Tk):
                     asm_data.Graphics.rain_intensity,
                     asm_data.Physics.suspension_damage,
                     asm_data.Graphics.current_sector_index,
-                    asm_data.Graphics.last_sector_time
+                    asm_data.Graphics.last_sector_time,
+                    asm_data.Graphics.is_valid_lap
                 )
 
                 self.net_queue.q_in.append(NetData(NetworkQueue.Telemetry,
