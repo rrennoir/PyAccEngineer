@@ -317,7 +317,6 @@ class App(tkinter.Tk):
         self.config(bg="Grey")
 
         self.protocol("WM_DELETE_WINDOW", self.on_close)
-        self.c_loop_id: Optional[str] = None
 
         # Networking
         self.is_connected = False
