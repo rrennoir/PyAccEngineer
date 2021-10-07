@@ -8,11 +8,12 @@ from dataclasses import astuple
 from datetime import datetime
 from functools import partial
 from tkinter import ttk
-from typing import List, Optional, Union
+from typing import List, Optional, Tuple, Union
 
-import pyautogui
+import pydirectinput
 import win32com
 import win32com.client
+import win32con
 import win32gui
 from SharedMemory.PyAccSharedMemory import (ACC_SESSION_TYPE,
                                             ACC_TRACK_GRIP_STATUS, ACC_map,
@@ -885,10 +886,12 @@ class StrategySetter:
                 shell = win32com.client.Dispatch("WScript.Shell")
                 shell.SendKeys('%')
 
+                log.info("Activates and displays ACC window")
+                win32gui.ShowWindow(self.hwnd, win32con.SW_RESTORE)
+                time.sleep(0.5)
+
                 log.info("Setting ACC to foreground")
                 win32gui.SetForegroundWindow(self.hwnd)
-
-                # Wait for the window to be set
                 time.sleep(0.5)
 
                 if win32gui.GetForegroundWindow() != self.hwnd:
@@ -902,58 +905,26 @@ class StrategySetter:
             return False
 
     @staticmethod
-    def set_tyre_pressure(current: float, target: float) -> None:
+    def set_value(keys: Tuple, current: Union[int, float],
+                  target: Union[int, float],
+                  interval: int = 0) -> None:
 
-        log.info(f"Setting tyre pressure: {current=} | {target=}")
+        if type(current) == float:
+            nb_press = round((target - current) * 10)
 
-        # Fail safe incase of floating point weirdness
-        i = 0
-        max_iteration = abs((current - target) * 10) + 1
+        else:
+            nb_press = target - current
 
-        while (not math.isclose(current, target, rel_tol=1e-5)
-               and i < max_iteration):
+        if nb_press < 0:
+            direction = keys[0]
 
-            if current > target:
-                pyautogui.press("left")
-                current -= 0.1
+        else:
+            direction = keys[1]
 
-            else:
-                pyautogui.press("right")
-                current += 0.1
+        log.info(f"Pressing {direction} {abs(nb_press)} times")
 
-            time.sleep(0.01)
-            i += 1
-
-    @staticmethod
-    def set_fuel(current: float, target: float) -> None:
-
-        log.info(f"Setting fuel: {current=} | {target=}")
-        while not math.isclose(current, target, rel_tol=1e-5):
-            if current > target:
-                pyautogui.press("left")
-                current -= 1
-
-            else:
-                pyautogui.press("right")
-                current += 1
-
-            time.sleep(0.01)
-
-    @staticmethod
-    def set_tyre_set(current: int, target: int) -> None:
-
-        log.info(f"Setting tyre set: {current=} | {target=}")
-        while current != target:
-
-            if current > target:
-                pyautogui.press("left")
-                current -= 1
-
-            else:
-                pyautogui.press("right")
-                current += 1
-
-            time.sleep(0.01)
+        pydirectinput.press(direction, presses=abs(nb_press),
+                            interval=interval)
 
     def set_strategy(self, strategy: PitStop, sm: ACC_map) -> None:
 
@@ -968,23 +939,24 @@ class StrategySetter:
 
         # Reset MFD cursor to top
         log.info("Showing MFD pit strategy page")
-        pyautogui.press("p")
+        pydirectinput.press("p")
 
-        for _ in range(2):
-            pyautogui.press("down")
-            time.sleep(0.01)
+        # Go down 2 times to the fuel line
+        pydirectinput.press("down", presses=2)
 
-        StrategySetter.set_fuel(sm.Graphics.mfd_fuel_to_add, strategy.fuel)
+        log.info(f"Setting fuel:\n"
+                 f"\tcurrent: {sm.Graphics.mfd_fuel_to_add}\n"
+                 f"\ttarget: {strategy.fuel}")
+        StrategySetter.set_value(("left", "right"),
+                                 sm.Graphics.mfd_fuel_to_add, strategy.fuel)
 
         # check if tyre set is on wet, tyre set will be disable
         # so going down 5 times will be FR instead of FL
         # --------- start ---------------------
-        for _ in range(5):
-            pyautogui.press("down")
-            time.sleep(0.01)
+        pydirectinput.press("down", presses=5)
 
         old_fr = sm.Graphics.mfd_tyre_pressure.front_right
-        pyautogui.press("left")
+        pydirectinput.press("left")
 
         time.sleep(0.1)
         self.child_com.send("NEW_DATA")
@@ -993,13 +965,11 @@ class StrategySetter:
         new_fr = sm.Graphics.mfd_tyre_pressure.front_right
         wet_was_selected = not math.isclose(old_fr, new_fr, rel_tol=1e-5)
 
-        pyautogui.press("right")
+        pydirectinput.press("right")
         time.sleep(0.01)
 
         # Goind back to fuel selection
-        for _ in range(5):
-            pyautogui.press("up")
-            time.sleep(0.01)
+        pydirectinput.press("up", presses=5)
 
         # ---------end of wanky trick----------------------
 
@@ -1008,9 +978,7 @@ class StrategySetter:
         else:
             step_for_compound = 3
 
-        for _ in range(step_for_compound):
-            pyautogui.press("down")
-            time.sleep(0.01)
+        pydirectinput.press("down", presses=step_for_compound)
 
         StrategySetter.set_tyre_compound(strategy.tyre_compound)
 
@@ -1021,50 +989,44 @@ class StrategySetter:
         sm = self.data_queue.get()
 
         if strategy.tyre_compound == "Dry":
-            pyautogui.press("up")
+            pydirectinput.press("up")
             time.sleep(0.01)
 
             mfd_tyre_set = sm.Graphics.mfd_tyre_set
-            self.set_tyre_set(mfd_tyre_set, strategy.tyre_set)
+            log.info(f"Setting Tyre set:\n"
+                     f"\tcurrent: {mfd_tyre_set}\n"
+                     f"\ttarget: {strategy.tyre_set}")
+            self.set_value(("left", "right"), mfd_tyre_set, strategy.tyre_set)
             down = 3
 
         else:
             down = 2
 
-        for _ in range(down):
-            pyautogui.press("down")
-            time.sleep(0.01)
+        pydirectinput.press("down", presses=down)
 
         mfd_pressures = astuple(sm.Graphics.mfd_tyre_pressure)
-        for tyre_index, tyre_pressure in enumerate(mfd_pressures):
+        for tyre_pressure, strat_pressure in zip(mfd_pressures,
+                                                 strategy.tyre_pressures):
 
-            self.set_tyre_pressure(tyre_pressure,
-                                   strategy.tyre_pressures[tyre_index])
-            pyautogui.press("down")
-            time.sleep(0.01)
+            log.info(f"Setting tyre pressure:\n"
+                     f"\tcurrent: {tyre_pressure}\n"
+                     f"\ttarget: {strat_pressure}")
+            self.set_value(("left", "right"), tyre_pressure, strat_pressure)
+            pydirectinput.press("down")
 
-        pyautogui.press("down")
-        time.sleep(0.01)
+        pydirectinput.press("down")
 
         log.info(f"Driver offset: {strategy.driver_offset}")
-        for _ in range(abs(strategy.driver_offset)):
-
-            if strategy.driver_offset < 0:
-                pyautogui.press("left")
-
-            else:
-                pyautogui.press("right")
-
-            time.sleep(0.01)
+        StrategySetter.set_value(("left", "right"), 0, strategy.driver_offset)
 
     @staticmethod
     def set_tyre_compound(compound: str):
 
         log.info(f"Setting tyre compound to {compound}")
         if compound == "Dry":
-            pyautogui.press("left")
+            pydirectinput.press("left")
 
         elif compound == "Wet":
-            pyautogui.press("right")
+            pydirectinput.press("right")
 
         time.sleep(0.01)

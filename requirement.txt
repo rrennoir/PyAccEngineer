@@ -1,4 +1,4 @@
-PyAutoGUI>=0.9.53
+PyDirectInput>=1.0.4
 pywin32>=227
 matplotlib>=3.3.4
 Twisted>=21.7.0

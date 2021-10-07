@@ -8,7 +8,7 @@ For more images [here](https://imgur.com/a/EwZwhOD)
 
 - Need python 3.8+ (download at [python.org](https://www.python.org/downloads/) or [anaconda.com](https://www.anaconda.com/products/individual))
 - pywin32 module
-- PyAutoGUI module
+- PyDirectInput module
 - matplotlib module
 - Twisted and service-identity modules
 - Server need open a TCP and UDP port (4269 TCP and 4270 UDP are the default)
