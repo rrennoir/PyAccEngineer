@@ -620,7 +620,9 @@ class App(tkinter.Tk):
                     asm_data.Physics.rear_brake_compound,
                     asm_data.Physics.car_damage,
                     asm_data.Graphics.rain_intensity,
-                    asm_data.Physics.suspension_damage
+                    asm_data.Physics.suspension_damage,
+                    asm_data.Graphics.current_sector_index,
+                    asm_data.Graphics.last_sector_time
                 )
 
                 self.net_queue.q_in.append(NetData(NetworkQueue.Telemetry,
