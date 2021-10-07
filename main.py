@@ -715,6 +715,8 @@ class App(tkinter.Tk):
 
         self.disconnect()
 
+        self.client_loopCall.stop()
+
         tksupport.uninstall()
 
         reactor.stop()
