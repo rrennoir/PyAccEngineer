@@ -75,7 +75,7 @@ def string_time_from_ms(time_in_ms: int, hours: bool = False) -> str:
         # simply return 00:00.000
         time_in_ms = 0
 
-    elif time_in_ms == -1:
+    elif time_in_ms in (-1, -1000):
         time_in_ms = 0
 
     if hours:
