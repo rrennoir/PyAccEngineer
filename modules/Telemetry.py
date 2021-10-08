@@ -419,11 +419,13 @@ class Telemetry:
     is_lap_valid: bool
     air_temp: float
     road_temp: float
+    wind: float
+    driver_stint_total_time_left: int
 
     byte_size: ClassVar[int] = struct.calcsize("!B i 11f 3i 2? B i 12f ?"
-                                               " f B 2B 5f B 4f 2i ? 2f")
+                                               " f B 2B 5f B 4f 2i ? 3f i")
     byte_format: ClassVar[str] = ("!B i 11f 3i 2? B i 12f ?"
-                                  " f B 2B 5f B 4f 2i ? 2f")
+                                  " f B 2B 5f B 4f 2i ? 3f i")
 
     def to_bytes(self) -> bytes:
 
@@ -461,6 +463,8 @@ class Telemetry:
             struct.pack("!?", self.is_lap_valid),
             struct.pack("!f", self.air_temp),
             struct.pack("!f", self.road_temp),
+            struct.pack("!f", self.wind),
+            struct.pack("!i", self.driver_stint_total_time_left),
         ]
 
         return b"".join(buffer)
@@ -478,7 +482,7 @@ class Telemetry:
             data = data[:expected_packet_size + 1]
 
         raw_data = struct.unpack(
-            f"!{lenght}s i 11f 3i 2? B i 12f ? f B 2B 5f B 4f 2i ? 2f",
+            f"!{lenght}s i 11f 3i 2? B i 12f ? f B 2B 5f B 4f 2i ? 3f i",
             data[1:])
 
         name = raw_data[0].decode("utf-8")
@@ -515,6 +519,8 @@ class Telemetry:
             rest[48],
             rest[49],
             rest[50],
+            rest[51],
+            rest[52],
         )
 
 
@@ -534,6 +540,10 @@ class TelemetryUI(ttk.Frame):
         self.condition = tkinter.StringVar(value="Heavy rain")
         self.air_temp = tkinter.DoubleVar()
         self.road_temp = tkinter.DoubleVar()
+        self.wind = tkinter.DoubleVar()
+        self.position = tkinter.IntVar()
+        self.stint_left = tkinter.StringVar(value="00:00:00")
+        self.driving_left = tkinter.StringVar(value="00:00:00")
 
         self.lap_time_var = tkinter.StringVar(value="00:00.000")
         self.best_time_var = tkinter.StringVar(value="00:00.000")
@@ -667,9 +677,37 @@ class TelemetryUI(ttk.Frame):
 
         # Road temp
         l_lap = ttk.Label(f_top, text="Track", width=8, anchor=tkinter.CENTER)
-        l_lap.grid(row=0, column=column_count, padx=(1, 2), pady=(2, 1))
+        l_lap.grid(row=0, column=column_count, padx=1, pady=(2, 1))
 
         l_lap_var = ttk.Label(f_top, textvariable=self.road_temp,
+                              width=8, anchor=tkinter.CENTER)
+        l_lap_var.grid(row=1, column=column_count, padx=1, pady=(1, 2))
+        column_count += 1
+
+        # Wind
+        l_lap = ttk.Label(f_top, text="Wind", width=8, anchor=tkinter.CENTER)
+        l_lap.grid(row=0, column=column_count, padx=1, pady=(2, 1))
+
+        l_lap_var = ttk.Label(f_top, textvariable=self.wind,
+                              width=8, anchor=tkinter.CENTER)
+        l_lap_var.grid(row=1, column=column_count, padx=1, pady=(1, 2))
+        column_count += 1
+
+        # Stint timer
+        l_lap = ttk.Label(f_top, text="Stint", width=8, anchor=tkinter.CENTER)
+        l_lap.grid(row=0, column=column_count, padx=1, pady=(2, 1))
+
+        l_lap_var = ttk.Label(f_top, textvariable=self.stint_left,
+                              width=8, anchor=tkinter.CENTER)
+        l_lap_var.grid(row=1, column=column_count, padx=1, pady=(1, 2))
+        column_count += 1
+
+        # Driving timer
+        l_lap = ttk.Label(f_top, text="Driving", width=8,
+                          anchor=tkinter.CENTER)
+        l_lap.grid(row=0, column=column_count, padx=(1, 2), pady=(2, 1))
+
+        l_lap_var = ttk.Label(f_top, textvariable=self.driving_left,
                               width=8, anchor=tkinter.CENTER)
         l_lap_var.grid(row=1, column=column_count, padx=(1, 2), pady=(1, 2))
 
@@ -978,6 +1016,12 @@ class TelemetryUI(ttk.Frame):
 
         self.air_temp.set(round(telemetry.air_temp, 1))
         self.road_temp.set(round(telemetry.road_temp, 1))
+        self.driving_left.set(
+            string_time_from_ms(
+                telemetry.driver_stint_total_time_left, hours=True)[:-4])
+        self.driving_left.set(
+            string_time_from_ms(
+                telemetry.driver_stint_time_left, hours=True)[:-4])
 
         # Update state
         self.lap = telemetry.lap

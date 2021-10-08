@@ -625,6 +625,8 @@ class App(tkinter.Tk):
                     asm_data.Graphics.is_valid_lap,
                     asm_data.Physics.air_temp,
                     asm_data.Physics.road_temp,
+                    asm_data.Graphics.wind_speed,
+                    asm_data.Graphics.driver_stint_total_time_left,
                 )
 
                 self.net_queue.q_in.append(NetData(NetworkQueue.Telemetry,
