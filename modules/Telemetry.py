@@ -331,7 +331,7 @@ class CarDamageInfo(ttk.Frame):
         l_rear.grid(row=0, column=3, padx=1, pady=(2, 1))
         l_rear_var = ttk.Label(f_suspension, textvariable=self.sus_rr,
                                width=7, anchor=tkinter.CENTER)
-        l_rear_var.grid(row=1, column=3, padx=(1, 2), pady=(1, 2))
+        l_rear_var.grid(row=1, column=3, padx=1, pady=(1, 2))
 
     def update_values(self, bodywork: CarDamage, suspension: Wheels) -> None:
 
@@ -543,6 +543,30 @@ class TelemetryUI(ttk.Frame):
         self.fuel_per_lap_var = tkinter.DoubleVar()
         self.fuel_lap_left_var = tkinter.DoubleVar()
 
+        self.current_session = ACC_SESSION_TYPE.ACC_UNKNOW
+        self.is_lap_valid = True
+        self.current_sector = 0
+
+        self.current_s1_ms = 0
+        self.current_s2_ms = 0
+        self.current_s3_ms = 0
+
+        self.best_s1_ms = 0
+        self.best_s2_ms = 0
+        self.best_s3_ms = 0
+
+        self.best_s1 = tkinter.StringVar(value="00:00.000")
+        self.best_s2 = tkinter.StringVar(value="00:00.000")
+        self.best_s3 = tkinter.StringVar(value="00:00.000")
+
+        self.last_s1 = tkinter.StringVar(value="00:00.000")
+        self.last_s2 = tkinter.StringVar(value="00:00.000")
+        self.last_s3 = tkinter.StringVar(value="00:00.000")
+
+        self.current_s1 = tkinter.StringVar(value="00:00.000")
+        self.current_s2 = tkinter.StringVar(value="00:00.000")
+        self.current_s3 = tkinter.StringVar(value="00:00.000")
+
         self.time_pad_failure = tkinter.StringVar(value="00:00:00")
         self.prev_pad_life: List[int] = []
         self.prev_time_left: int = 0
@@ -553,10 +577,13 @@ class TelemetryUI(ttk.Frame):
         f_middle = ttk.Frame(self)
         f_middle.pack()
 
-        self._build_left_frame(f_middle)
+        f_left = ttk.Frame(f_middle)
+        f_left.pack(side=tkinter.LEFT)
+
+        self._build_left_top_frame(f_left)
+        self._build_left_bottom_frame(f_left)
         f_center = ttk.Frame(f_middle, style="TelemetryGrid.TFrame")
         f_center.pack(side=tkinter.LEFT)
-        self._build_right_frame(f_middle)
 
         self.front_left = TyreInfo(f_center, "Front left", False)
         self.front_left.grid(row=0, column=0, padx=2, pady=2)
@@ -654,96 +681,149 @@ class TelemetryUI(ttk.Frame):
         self.damage_info = CarDamageInfo(f_bottom)
         self.damage_info.grid(pady=5)
 
-    def _build_right_frame(self, center_frame: ttk.Frame) -> None:
+    def _build_left_bottom_frame(self, center_frame: ttk.Frame) -> None:
 
-        f_right = ttk.Frame(center_frame, style="TelemetryGrid.TFrame")
-        f_right.pack(side=tkinter.RIGHT, padx=(10, 5))
+        f_bottom = ttk.Frame(center_frame, style="TelemetryGrid.TFrame")
+        f_bottom.pack(pady=(2, 5), padx=(0, 5))
 
         row_count = 0
 
         # Fuel
-        l_fuel = ttk.Label(f_right, text="Fuel", width=8,
+        l_fuel = ttk.Label(f_bottom, text="Fuel", width=8,
                            anchor=tkinter.CENTER)
-        l_fuel.grid(row=row_count, column=0, padx=2, pady=(2, 0))
-        row_count += 1
-
-        l_fuel_var = ttk.Label(f_right, textvariable=self.fuel_var,
-                               width=8, anchor=tkinter.CENTER)
-        l_fuel_var.grid(row=row_count, column=0, padx=2, pady=(0, 1))
-        row_count += 1
+        l_fuel.grid(row=row_count, column=0, padx=(2, 1), pady=(2, 1))
 
         # Fuel per lap
-        l_fuel_per_lap = ttk.Label(f_right, text="Fuel/Lap", width=8,
+        l_fuel_per_lap = ttk.Label(f_bottom, text="Fuel/Lap", width=8,
                                    anchor=tkinter.CENTER)
-        l_fuel_per_lap.grid(row=row_count, column=0, padx=2, pady=(1, 0))
+        l_fuel_per_lap.grid(row=row_count, column=1, padx=(1, 2), pady=(2, 1))
         row_count += 1
 
-        l_fuel_per_lap_var = ttk.Label(f_right,
+        l_fuel_var = ttk.Label(f_bottom, textvariable=self.fuel_var,
+                               width=8, anchor=tkinter.CENTER)
+        l_fuel_var.grid(row=row_count, column=0, padx=(2, 1), pady=1)
+
+        l_fuel_per_lap_var = ttk.Label(f_bottom,
                                        textvariable=self.fuel_per_lap_var,
                                        width=8, anchor=tkinter.CENTER)
-        l_fuel_per_lap_var.grid(row=row_count, column=0, padx=2, pady=(0, 1))
+        l_fuel_per_lap_var.grid(row=row_count, column=1, padx=(1, 2), pady=1)
         row_count += 1
 
         # Lap left
-        l_fuel_lap_left = ttk.Label(f_right, text="Est. laps", width=8,
+        l_fuel_lap_left = ttk.Label(f_bottom, text="Est. laps", width=8,
                                     anchor=tkinter.CENTER)
-        l_fuel_lap_left.grid(row=row_count, column=0, padx=2, pady=(1, 0))
-        row_count += 1
-
-        l_fuel_lap_left_var = ttk.Label(f_right,
-                                        textvariable=self.fuel_lap_left_var,
-                                        width=8, anchor=tkinter.CENTER)
-        l_fuel_lap_left_var.grid(row=row_count, column=0, padx=2, pady=(0, 1))
-        row_count += 1
+        l_fuel_lap_left.grid(row=row_count, column=0, padx=(2, 1), pady=1)
 
         # Time before brake fail
-        l_pad_fail = ttk.Label(f_right, text="Brake life", width=8,
+        l_pad_fail = ttk.Label(f_bottom, text="Brake life", width=8,
                                anchor=tkinter.CENTER)
-        l_pad_fail.grid(row=row_count, column=0, padx=2, pady=(1, 0))
+        l_pad_fail.grid(row=row_count, column=1, padx=(1, 2), pady=1)
         row_count += 1
 
-        l_pad_fal_var = ttk.Label(f_right, textvariable=self.time_pad_failure,
+        l_fuel_lap_left_var = ttk.Label(f_bottom,
+                                        textvariable=self.fuel_lap_left_var,
+                                        width=8, anchor=tkinter.CENTER)
+        l_fuel_lap_left_var.grid(
+            row=row_count, column=0, padx=(2, 1), pady=(1, 2))
+
+        l_pad_fal_var = ttk.Label(f_bottom, textvariable=self.time_pad_failure,
                                   width=8, anchor=tkinter.CENTER)
-        l_pad_fal_var.grid(row=row_count, column=0, padx=2, pady=(0, 1))
+        l_pad_fal_var.grid(row=row_count, column=1, padx=(1, 2), pady=(1, 2))
 
-    def _build_left_frame(self, center_frame: ttk.Frame) -> None:
+    def _build_left_top_frame(self, center_frame: ttk.Frame) -> None:
 
-        f_left = ttk.Frame(center_frame, style="TelemetryGrid.TFrame")
-        f_left.pack(side=tkinter.LEFT, padx=(0, 5))
+        f_top = ttk.Frame(center_frame, style="TelemetryGrid.TFrame")
+        f_top.pack(pady=(5, 2), padx=(0, 5))
 
         row_count = 0
 
-        # Lap time
-        l_lap_time = ttk.Label(f_left, text="Lap time", width=12,
+        l_lap_time = ttk.Label(f_top, text="Current", width=10,
                                anchor=tkinter.CENTER)
-        l_lap_time.grid(row=row_count, column=0, padx=2, pady=(2, 0))
-        row_count += 1
+        l_lap_time.grid(row=row_count, column=0, padx=(2, 1), pady=2)
 
-        l_lap_time_var = ttk.Label(f_left, textvariable=self.lap_time_var,
-                                   width=12, anchor=tkinter.CENTER)
-        l_lap_time_var.grid(row=row_count, column=0, padx=2, pady=(0, 1))
-        row_count += 1
-
-        # best time
-        l_best_time = ttk.Label(f_left, text="Best time", width=12,
+        l_best_time = ttk.Label(f_top, text="Best", width=10,
                                 anchor=tkinter.CENTER)
-        l_best_time.grid(row=row_count, column=0, padx=1, pady=(1, 0))
-        row_count += 1
+        l_best_time.grid(row=row_count, column=1, padx=1, pady=2)
 
-        l_best_time_var = ttk.Label(f_left, textvariable=self.best_time_var,
-                                    width=12, anchor=tkinter.CENTER)
-        l_best_time_var.grid(row=row_count, column=0, padx=1, pady=(0, 1))
-        row_count += 1
-
-        # Previous time
-        l_prev_time = ttk.Label(f_left, text="Previous time", width=12,
+        l_prev_time = ttk.Label(f_top, text="Previous", width=10,
                                 anchor=tkinter.CENTER)
-        l_prev_time.grid(row=row_count, column=0, padx=1, pady=(1, 0))
+        l_prev_time.grid(row=row_count, column=2, padx=(1, 2), pady=2)
         row_count += 1
 
-        l_prev_time_var = ttk.Label(f_left, textvariable=self.prev_time_var,
-                                    width=12, anchor=tkinter.CENTER)
-        l_prev_time_var.grid(row=row_count, column=0, padx=1, pady=(0, 2))
+        # Time
+        l_time = ttk.Label(f_top, text="Lap time", width=31,
+                           anchor=tkinter.CENTER)
+        l_time.grid(row=row_count, column=0, padx=2, pady=1, columnspan=3)
+        row_count += 1
+
+        l_lap_time_var = ttk.Label(f_top, textvariable=self.lap_time_var,
+                                   width=10, anchor=tkinter.CENTER)
+        l_lap_time_var.grid(row=row_count, column=0, padx=(2, 1), pady=1)
+
+        l_best_time_var = ttk.Label(f_top, textvariable=self.best_time_var,
+                                    width=10, anchor=tkinter.CENTER)
+        l_best_time_var.grid(row=row_count, column=1, padx=1, pady=1)
+
+        l_prev_time_var = ttk.Label(f_top, textvariable=self.prev_time_var,
+                                    width=10, anchor=tkinter.CENTER)
+        l_prev_time_var.grid(row=row_count, column=2, padx=(1, 2), pady=1)
+        row_count += 1
+
+        # S1
+        l_s1 = ttk.Label(f_top, text="Sector 1", width=31,
+                         anchor=tkinter.CENTER)
+        l_s1.grid(row=row_count, column=0, padx=2, pady=1, columnspan=3)
+        row_count += 1
+
+        l_s1_var = ttk.Label(f_top, textvariable=self.current_s1,
+                             width=10, anchor=tkinter.CENTER)
+        l_s1_var.grid(row=row_count, column=0, padx=(2, 1), pady=1)
+
+        l_best_s1_var = ttk.Label(f_top, textvariable=self.best_s1,
+                                  width=10, anchor=tkinter.CENTER)
+        l_best_s1_var.grid(row=row_count, column=1, padx=1, pady=1)
+
+        l_prev_s1_var = ttk.Label(f_top, textvariable=self.last_s1,
+                                  width=10, anchor=tkinter.CENTER)
+        l_prev_s1_var.grid(row=row_count, column=2, padx=(1, 2), pady=1)
+        row_count += 1
+
+        # S2
+        l_s2 = ttk.Label(f_top, text="Sector 2", width=31,
+                         anchor=tkinter.CENTER)
+        l_s2.grid(row=row_count, column=0, padx=2, pady=1, columnspan=3)
+        row_count += 1
+
+        l_s1_var = ttk.Label(f_top, textvariable=self.current_s2,
+                             width=10, anchor=tkinter.CENTER)
+        l_s1_var.grid(row=row_count, column=0, padx=(2, 1), pady=1)
+
+        l_best_s1_var = ttk.Label(f_top, textvariable=self.best_s2,
+                                  width=10, anchor=tkinter.CENTER)
+        l_best_s1_var.grid(row=row_count, column=1, padx=1, pady=1)
+
+        l_prev_s1_var = ttk.Label(f_top, textvariable=self.last_s2,
+                                  width=10, anchor=tkinter.CENTER)
+        l_prev_s1_var.grid(row=row_count, column=2, padx=(1, 2), pady=1)
+        row_count += 1
+
+        # S3
+        l_s3 = ttk.Label(f_top, text="Sector 3", width=31,
+                         anchor=tkinter.CENTER)
+        l_s3.grid(row=row_count, column=0, padx=2, pady=1, columnspan=3)
+        row_count += 1
+
+        l_s1_var = ttk.Label(f_top, textvariable=self.current_s3,
+                             width=10, anchor=tkinter.CENTER)
+        l_s1_var.grid(row=row_count, column=0, padx=(2, 1), pady=(1, 2))
+
+        l_best_s1_var = ttk.Label(f_top, textvariable=self.best_s3,
+                                  width=10, anchor=tkinter.CENTER)
+        l_best_s1_var.grid(row=row_count, column=1, padx=1, pady=(1, 2))
+
+        l_prev_s1_var = ttk.Label(f_top, textvariable=self.last_s3,
+                                  width=10, anchor=tkinter.CENTER)
+        l_prev_s1_var.grid(row=row_count, column=2, padx=(1, 2), pady=(1, 2))
 
     def update_values(self, telemetry: Telemetry) -> None:
 
@@ -768,7 +848,6 @@ class TelemetryUI(ttk.Frame):
         disc_wear = astuple(telemetry.disc_wear)
 
         if self.lap != telemetry.lap and telemetry.session_left != -1:
-            self.lap = telemetry.lap
             if len(self.prev_pad_life) != 0 and self.prev_time_left != 0:
 
                 time_delta = self.prev_time_left - telemetry.session_left
@@ -810,6 +889,88 @@ class TelemetryUI(ttk.Frame):
         self.damage_info.update_values(telemetry.damage,
                                        telemetry.suspension_damage)
 
+        if self.current_sector != telemetry.current_sector_index:
+
+            if self.current_sector == 0:
+                self.current_s1.set(string_time_from_ms(
+                    telemetry.last_sector_time))
+
+            elif self.current_sector == 1:
+                self.current_s2.set(string_time_from_ms(
+                    telemetry.last_sector_time - self.current_s1_ms))
+
+            elif self.current_sector == 2:
+                self.current_s3.set(string_time_from_ms(telemetry.previous_time
+                                                        - self.current_s1_ms
+                                                        - self.current_s2_ms))
+
+        else:
+            if self.current_sector == 0:
+                self.current_s1_ms = telemetry.lap_time
+                self.current_s1.set(string_time_from_ms(self.current_s1_ms))
+
+            elif self.current_sector == 1:
+                self.current_s2_ms = telemetry.lap_time - self.current_s1_ms
+                self.current_s2.set(string_time_from_ms(self.current_s2_ms))
+
+            elif self.current_sector == 2:
+                self.current_s3_ms = (telemetry.lap_time
+                                      - self.current_s1_ms
+                                      - self.current_s2_ms)
+                self.current_s3.set(string_time_from_ms(self.current_s3_ms))
+
+        if self.lap != telemetry.lap:
+
+            self.current_s3_ms = (telemetry.previous_time
+                                  - self.current_s1_ms
+                                  - self.current_s2_ms)
+
+            self.last_s1.set(string_time_from_ms(self.current_s1_ms))
+            self.last_s2.set(string_time_from_ms(self.current_s2_ms))
+            self.last_s3.set(string_time_from_ms(self.current_s3_ms))
+
+            self.current_s1.set("00:00.000")
+            self.current_s2.set("00:00.000")
+            self.current_s3.set("00:00.000")
+
+            if self.is_lap_valid and self.lap > 1:
+
+                if (self.best_s1_ms == 0
+                        or self.best_s1_ms > self.current_s1_ms):
+
+                    self.best_s1_ms = self.current_s1_ms
+                    self.best_s1.set(string_time_from_ms(self.current_s1_ms))
+
+                if (self.best_s2_ms == 0
+                        or self.best_s2_ms > self.current_s2_ms):
+
+                    self.best_s2_ms = self.current_s2_ms
+                    self.best_s2.set(string_time_from_ms(self.current_s2_ms))
+
+                if (self.best_s3_ms == 0
+                        or self.best_s3_ms > self.current_s3_ms):
+
+                    self.best_s3_ms = self.current_s3_ms
+                    self.best_s3.set(string_time_from_ms(self.current_s3_ms))
+
+        if self.current_session != telemetry.session:
+
+            self.current_s1.set("00:00.000")
+            self.current_s2.set("00:00.000")
+            self.current_s3.set("00:00.000")
+
+            self.current_s1_ms = 0
+            self.current_s2_ms = 0
+            self.current_s3_ms = 0
+
+            self.best_s1_ms = 0
+            self.best_s2_ms = 0
+            self.best_s3_ms = 0
+            self.lap = 0
+
+            self.current_sector = 0
+            self.is_lap_valid = True
+
         if self.current_driver != telemetry.driver:
 
             self.current_driver = telemetry.driver
@@ -817,3 +978,9 @@ class TelemetryUI(ttk.Frame):
 
         self.air_temp.set(round(telemetry.air_temp, 1))
         self.road_temp.set(round(telemetry.road_temp, 1))
+
+        # Update state
+        self.lap = telemetry.lap
+        self.current_sector = telemetry.current_sector_index
+        self.is_lap_valid = telemetry.is_lap_valid
+        self.current_session = telemetry.session
