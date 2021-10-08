@@ -417,10 +417,13 @@ class Telemetry:
     current_sector_index: int
     last_sector_time: int
     is_lap_valid: bool
+    air_temp: float
+    road_temp: float
 
-    byte_size: ClassVar[int] = struct.calcsize(
-        "!B i 11f 3i 2? B i 12f ? f B 2B 5f B 4f 2i ?")
-    byte_format: ClassVar[str] = "!B i 11f 3i 2? B i 12f ? f B 2B 5f B 4f 2i ?"
+    byte_size: ClassVar[int] = struct.calcsize("!B i 11f 3i 2? B i 12f ?"
+                                               " f B 2B 5f B 4f 2i ? 2f")
+    byte_format: ClassVar[str] = ("!B i 11f 3i 2? B i 12f ?"
+                                  " f B 2B 5f B 4f 2i ? 2f")
 
     def to_bytes(self) -> bytes:
 
@@ -455,7 +458,9 @@ class Telemetry:
             struct.pack("!4f", *astuple(self.suspension_damage)),
             struct.pack("!i", self.current_sector_index),
             struct.pack("!i", self.last_sector_time),
-            struct.pack("!i?", self.is_lap_valid),
+            struct.pack("!?", self.is_lap_valid),
+            struct.pack("!f", self.air_temp),
+            struct.pack("!f", self.road_temp),
         ]
 
         return b"".join(buffer)
@@ -473,7 +478,7 @@ class Telemetry:
             data = data[:expected_packet_size + 1]
 
         raw_data = struct.unpack(
-            f"!{lenght}s i 11f 3i 2? B i 12f ? f B 2B 5f B 4f 2i ?",
+            f"!{lenght}s i 11f 3i 2? B i 12f ? f B 2B 5f B 4f 2i ? 2f",
             data[1:])
 
         name = raw_data[0].decode("utf-8")
@@ -508,6 +513,8 @@ class Telemetry:
             rest[46],
             rest[47],
             rest[48],
+            rest[49],
+            rest[50],
         )
 
 
@@ -525,6 +532,8 @@ class TelemetryUI(ttk.Frame):
         self.lap_var = tkinter.IntVar()
         self.grip_status = tkinter.StringVar(value="Optimum")
         self.condition = tkinter.StringVar(value="Heavy rain")
+        self.air_temp = tkinter.DoubleVar()
+        self.road_temp = tkinter.DoubleVar()
 
         self.lap_time_var = tkinter.StringVar(value="00:00.000")
         self.best_time_var = tkinter.StringVar(value="00:00.000")
@@ -613,9 +622,27 @@ class TelemetryUI(ttk.Frame):
 
         # Lap
         l_lap = ttk.Label(f_top, text="Lap", width=8, anchor=tkinter.CENTER)
-        l_lap.grid(row=0, column=column_count, padx=(1, 2), pady=(2, 1))
+        l_lap.grid(row=0, column=column_count, padx=1, pady=(2, 1))
 
         l_lap_var = ttk.Label(f_top, textvariable=self.lap_var,
+                              width=8, anchor=tkinter.CENTER)
+        l_lap_var.grid(row=1, column=column_count, padx=1, pady=(1, 2))
+        column_count += 1
+
+        # Air temp
+        l_lap = ttk.Label(f_top, text="Air", width=8, anchor=tkinter.CENTER)
+        l_lap.grid(row=0, column=column_count, padx=1, pady=(2, 1))
+
+        l_lap_var = ttk.Label(f_top, textvariable=self.air_temp,
+                              width=8, anchor=tkinter.CENTER)
+        l_lap_var.grid(row=1, column=column_count, padx=1, pady=(1, 2))
+        column_count += 1
+
+        # Road temp
+        l_lap = ttk.Label(f_top, text="Track", width=8, anchor=tkinter.CENTER)
+        l_lap.grid(row=0, column=column_count, padx=(1, 2), pady=(2, 1))
+
+        l_lap_var = ttk.Label(f_top, textvariable=self.road_temp,
                               width=8, anchor=tkinter.CENTER)
         l_lap_var.grid(row=1, column=column_count, padx=(1, 2), pady=(1, 2))
 
@@ -787,3 +814,6 @@ class TelemetryUI(ttk.Frame):
 
             self.current_driver = telemetry.driver
             self.driver_swap = True
+
+        self.air_temp.set(round(telemetry.air_temp, 1))
+        self.road_temp.set(round(telemetry.road_temp, 1))

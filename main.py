@@ -622,7 +622,9 @@ class App(tkinter.Tk):
                     asm_data.Physics.suspension_damage,
                     asm_data.Graphics.current_sector_index,
                     asm_data.Graphics.last_sector_time,
-                    asm_data.Graphics.is_valid_lap
+                    asm_data.Graphics.is_valid_lap,
+                    asm_data.Physics.air_temp,
+                    asm_data.Physics.road_temp,
                 )
 
                 self.net_queue.q_in.append(NetData(NetworkQueue.Telemetry,
