@@ -203,10 +203,30 @@ class FuelCalculator(ttk.Frame):
 
         self.lap_avg.append(telemetry.previous_time)
         if len(self.lap_avg) > 10:
-            self.lap_avg.pop(0)
 
-        self.lap_avg.sort()
-        top_laps_avg = int(avg(self.lap_avg[:5]))
+            already_poped = False
+            lap_avg = int(avg(self.lap_avg))
+            for lap in reversed(self.lap_avg):
+                if lap > (lap_avg * 1.07):
+                    self.lap_avg.remove(lap)
+                    already_poped = True
+
+            if not already_poped:
+                self.lap_avg.pop(0)
+
+        if len(self.lap_avg) > 2:
+            self.lap_avg.sort()
+
+            lap_avg = int(avg(self.lap_avg))
+            outlier_free = []
+            for lap in self.lap_avg:
+                if lap < (lap_avg * 1.07):
+                    outlier_free.append(lap)
+
+            top_laps_avg = int(avg(outlier_free[:5]))
+
+        elif len(self.lap_avg) <= 2:
+            top_laps_avg = min(self.lap_avg)
 
         self.fuel_pl_bk = round(telemetry.fuel_per_lap, 2)
         self.duration_bk = round(telemetry.session_left / 60_000, 1)
