@@ -1016,6 +1016,7 @@ class TelemetryUI(ttk.Frame):
 
         self.air_temp.set(round(telemetry.air_temp, 1))
         self.road_temp.set(round(telemetry.road_temp, 1))
+        self.wind.set(round(telemetry.wind, 1))
         self.driving_left.set(
             string_time_from_ms(
                 telemetry.driver_stint_total_time_left, hours=True)[:-4])
