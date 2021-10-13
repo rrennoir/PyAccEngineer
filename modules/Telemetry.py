@@ -1020,7 +1020,7 @@ class TelemetryUI(ttk.Frame):
         self.driving_left.set(
             string_time_from_ms(
                 telemetry.driver_stint_total_time_left, hours=True)[:-4])
-        self.driving_left.set(
+        self.stint_left.set(
             string_time_from_ms(
                 telemetry.driver_stint_time_left, hours=True)[:-4])
 

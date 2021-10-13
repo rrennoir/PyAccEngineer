@@ -72,11 +72,11 @@ def string_time_from_ms(time_in_ms: int, hours: bool = False) -> str:
     """
 
     # if no time time_in_ms is equal to the maximum value of a 32bit int
-    if time_in_ms == 2147483647:
+    if time_in_ms == 2147483647 or time_in_ms == 65_535_000:
         # simply return 00:00.000
         time_in_ms = 0
 
-    elif time_in_ms in (-1, -1000):
+    elif time_in_ms < 0:
         time_in_ms = 0
 
     if hours:
