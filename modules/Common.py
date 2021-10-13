@@ -3,14 +3,29 @@ from __future__ import annotations
 import logging
 import struct
 import sys
+import os
 from dataclasses import astuple, dataclass
 from enum import Enum, auto
 from typing import ClassVar, List, Tuple, Union
 
-import win32clipboard
-
-
 log = logging.getLogger(__name__)
+
+if os.name == "nt":
+    import win32clipboard
+
+    def send_to_clipboard(clip_type, data):
+
+        win32clipboard.OpenClipboard()
+        try:
+            win32clipboard.EmptyClipboard()
+            win32clipboard.SetClipboardData(clip_type, data)
+
+        except TypeError as msg:
+            log.info(msg)
+
+        finally:
+            win32clipboard.CloseClipboard()
+
 
 EPSILON = sys.float_info.epsilon  # Smallest possible difference.
 
@@ -37,20 +52,6 @@ def convert_to_rgb(minval, maxval, val, colours):
     else:
         (r1, g1, b1), (r2, g2, b2) = colours[i], colours[i+1]
         return int(r1 + f*(r2-r1)), int(g1 + f*(g2-g1)), int(b1 + f*(b2-b1))
-
-
-def send_to_clipboard(clip_type, data):
-
-    win32clipboard.OpenClipboard()
-    try:
-        win32clipboard.EmptyClipboard()
-        win32clipboard.SetClipboardData(clip_type, data)
-
-    except TypeError as msg:
-        log.info(msg)
-
-    finally:
-        win32clipboard.CloseClipboard()
 
 
 def rgbtohex(r: int, g: int, b: int) -> str:
