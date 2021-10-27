@@ -1,5 +1,12 @@
 # PyAccEngineer v1.5
 
+# Table of Contents
+1. [Requirements](#requirements)
+2. [Download](#download)
+3. [Usefull info](#warnings)
+4. [Donate](#donation)
+
+
 ![app](https://i.imgur.com/7g7SAvD.png)
 
 For more images [here](https://imgur.com/a/EwZwhOD)
@@ -64,3 +71,8 @@ To stop the server simply press ctrl C in the cmd / powershell / windows termina
 ## ***Will you controle my pc for other things ?***
 
 No and if you don't trust me just read the code 😂
+
+## Donation
+
+If you have too much money you can donate [here](https://www.paypal.com/donate?hosted_button_id=H8LHDCTB7R2KC) 😊
+(and now gop will stop asking for a donate link 🐒)
