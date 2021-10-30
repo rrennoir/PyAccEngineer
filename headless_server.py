@@ -1,10 +1,15 @@
 import getopt
+import logging
 import sys
-import time
-
 from typing import List
 
+from twisted.internet import reactor
+
 from modules.Server import ServerInstance
+
+logging.basicConfig(stream=sys.stdout, level=logging.INFO,
+                    format="%(asctime)s.%(msecs)03d | %(name)s | %(message)s",
+                    datefmt="%H:%M:%S")
 
 
 def headless(argv: List[str]) -> None:
@@ -21,12 +26,12 @@ def headless(argv: List[str]) -> None:
         print(err)
         sys.exit(2)
 
-    udp_port = 4269
-    tcp_port = 4270
+    tcp_port = 4269
+    udp_port = 4270
     for opt, arg in opts:
 
         if opt in ("-h", "--help"):
-            print("Server.py [-p <port> (default 4269)]")
+            print(f"python {__file__} [-p <port> (default 4269)]")
             sys.exit()
 
         elif opt in ("-u", "--udp_port"):
@@ -35,7 +40,7 @@ def headless(argv: List[str]) -> None:
                 udp_port = int(arg)
 
             else:
-                print(f"Invalide UDP port arg: {arg}")
+                logging.warning(f"Invalide UDP port arg: {arg}")
                 sys.exit(1)
 
         elif opt in ("-t", "--tcp_port"):
@@ -44,23 +49,16 @@ def headless(argv: List[str]) -> None:
                 tcp_port = int(arg)
 
             else:
-                print(f"Invalide TCP port arg: {arg}")
+                logging.warning(f"Invalide TCP port arg: {arg}")
                 sys.exit(1)
 
-    server = ServerInstance(tcp_port, udp_port)
-    print("SERVER: Running as headless server")
+    ServerInstance(tcp_port, udp_port)
+    logging.info("Running as headless server"
+                 f" with port TCP:{tcp_port} UDP:{udp_port}")
 
-    Running = True
-    while Running:
+    reactor.run()
 
-        try:
-            time.sleep(1)
-
-        except KeyboardInterrupt:
-            Running = False
-
-    server.disconnect()
-    print("SERVER: exiting")
+    logging.info("Exiting")
 
 
 if __name__ == "__main__":

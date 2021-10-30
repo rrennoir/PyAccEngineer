@@ -1,12 +1,31 @@
 from __future__ import annotations
 
+import logging
 import struct
 import sys
+import os
 from dataclasses import astuple, dataclass
 from enum import Enum, auto
 from typing import ClassVar, List, Tuple, Union
 
-import win32clipboard
+log = logging.getLogger(__name__)
+
+if os.name == "nt":
+    import win32clipboard
+
+    def send_to_clipboard(clip_type, data):
+
+        win32clipboard.OpenClipboard()
+        try:
+            win32clipboard.EmptyClipboard()
+            win32clipboard.SetClipboardData(clip_type, data)
+
+        except TypeError as msg:
+            log.info(msg)
+
+        finally:
+            win32clipboard.CloseClipboard()
+
 
 EPSILON = sys.float_info.epsilon  # Smallest possible difference.
 
@@ -35,20 +54,6 @@ def convert_to_rgb(minval, maxval, val, colours):
         return int(r1 + f*(r2-r1)), int(g1 + f*(g2-g1)), int(b1 + f*(b2-b1))
 
 
-def send_to_clipboard(clip_type, data):
-
-    win32clipboard.OpenClipboard()
-    try:
-        win32clipboard.EmptyClipboard()
-        win32clipboard.SetClipboardData(clip_type, data)
-
-    except TypeError as msg:
-        print(msg)
-
-    finally:
-        win32clipboard.CloseClipboard()
-
-
 def rgbtohex(r: int, g: int, b: int) -> str:
     "Convert RGB values to hex"
 
@@ -60,16 +65,37 @@ def avg(value: Union[List, Tuple]) -> Union[float, int]:
     return sum(value) / len(value)
 
 
-def string_time_from_ms(time_in_ms: int) -> str:
+def string_time_from_ms(time_in_ms: int, hours: bool = False) -> str:
+    """
+    Convert timestamp in millisecond in a string with the format mm:ss.xxx
+    If hours is true the format will be hh:mm:ss.xx
+    """
 
     # if no time time_in_ms is equal to the maximum value of a 32bit int
-    if time_in_ms == 2147483647:
+    if time_in_ms == 2147483647 or time_in_ms == 65_535_000:
         # simply return 00:00.000
         time_in_ms = 0
 
-    minute = time_in_ms // 60_000
-    second = (time_in_ms % 60_000) // 1000
-    millisecond = (time_in_ms % 60_000) % 1000
+    elif time_in_ms < 0:
+        time_in_ms = 0
+
+    if hours:
+        hour = time_in_ms // 3_600_000
+        minute = (time_in_ms % 3_600_000) // 60_000
+        second = ((time_in_ms % 3_600_000) % 60_000) // 1_000
+        millisecond = (((time_in_ms % 3_600_000) % 60_000) % 1_000)
+
+    else:
+        hour = 0
+        minute = time_in_ms // 60_000
+        second = (time_in_ms % 60_000) // 1_000
+        millisecond = (time_in_ms % 60_000) % 1_000
+
+    if hour < 10:
+        hour_str = f"0{hour}"
+
+    else:
+        hour_str = str(hour)
 
     if minute < 10:
         minute_str = f"0{minute}"
@@ -83,7 +109,7 @@ def string_time_from_ms(time_in_ms: int) -> str:
     else:
         second_str = str(second)
 
-    if millisecond < 100:
+    if 10 < millisecond < 100:
         millisecond_str = f"0{millisecond}"
 
     elif millisecond < 10:
@@ -92,7 +118,11 @@ def string_time_from_ms(time_in_ms: int) -> str:
     else:
         millisecond_str = str(millisecond)
 
-    return f"{minute_str}:{second_str}.{millisecond_str}"
+    if hours:
+        return f"{hour_str}:{minute_str}:{second_str}.{millisecond_str}"
+
+    else:
+        return f"{minute_str}:{second_str}.{millisecond_str}"
 
 
 @dataclass
@@ -140,7 +170,7 @@ class PacketType(Enum):
 
         except ValueError as msg:
 
-            print(f"PacketType: {msg}")
+            log.info(f"PacketType: {msg}")
             packet = PacketType.Unkown
 
         return packet
@@ -156,6 +186,22 @@ class NetworkQueue(Enum):
     Telemetry = auto()
     TelemetryRT = auto()
     UpdateUsers = auto()
+    ConnectionReply = auto()
+    Close = auto()
+
+
+@dataclass
+class DataQueue:
+
+    q_in: List[NetData]
+    q_out: List[NetData]
+
+
+@dataclass
+class NetData:
+
+    data_type: NetworkQueue
+    data: bytes = b""
 
 
 @dataclass

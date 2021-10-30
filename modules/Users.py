@@ -48,46 +48,54 @@ class UserUI(ttk.Frame):
                             anchor=tkinter.CENTER)
         l_user5.grid(row=0, column=column_count, padx=1, pady=1)
 
-        UserBox = namedtuple("UserBox", ["var", "label"])
-
-        self.user_vars = [
-            UserBox(user1, l_user1),
-            UserBox(user2, l_user2),
-            UserBox(user3, l_user3),
-            UserBox(user4, l_user4),
-            UserBox(user5, l_user5),
-        ]
+        self.user_vars = {
+            1: {
+                "label": l_user1,
+                "var": user1
+            },
+            2: {
+                "label": l_user2,
+                "var": user2
+            },
+            3: {
+                "label": l_user3,
+                "var": user3
+            },
+            4: {
+                "label": l_user4,
+                "var": user4
+            },
+            5: {
+                "label": l_user5,
+                "var": user5
+            },
+        }
 
         f_background.pack()
 
     def add_user(self, name: str, driverID: int) -> None:
 
-        if len(self.user_list) < 4 and name not in self.user_list:
+        if len(self.user_list) < 5 and name not in self.user_list:
             self.user_list.append(name)
-
-            for user in self.user_vars:
-
-                if user.var.get() == "":
-                    user.var.set(f"{name} ({driverID})")
-                    break
+            self.user_vars[driverID]["var"].set(f"{name} ({driverID})")
 
     def set_active(self, name: str) -> None:
 
-        for user in self.user_vars:
+        for user in self.user_vars.values():
 
-            if user.var.get()[:-4] == name:
-                user.label.configure(style="ActiveDriver.TLabel")
+            if user["var"].get()[:-4] == name:
+                user["label"].configure(style="ActiveDriver.TLabel")
                 self.active_user = name
 
             else:
-                user.label.configure(style="TLabel")
+                user["label"].configure(style="TLabel")
 
     def remove_active(self) -> None:
 
-        for user in self.user_vars:
+        for user in self.user_vars.values():
 
-            if user.var.get()[:-4] == self.active_user:
-                user.label.configure(style="TLabel")
+            if user["var"].get()[:-4] == self.active_user:
+                user["label"].configure(style="TLabel")
 
         self.active_user = None
 
@@ -95,6 +103,6 @@ class UserUI(ttk.Frame):
 
         self.user_list.clear()
         self.active_user = None
-        for user in self.user_vars:
-            user.var.set("")
-            user.label.configure(style="TLabel")
+        for user in self.user_vars.values():
+            user["var"].set("")
+            user["label"].configure(style="TLabel")
