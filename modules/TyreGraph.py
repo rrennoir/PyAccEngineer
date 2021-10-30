@@ -39,6 +39,12 @@ class TyreGraph(ttk.Frame):
         self.pressures_fr = []
         self.pressures_rl = []
         self.pressures_rr = []
+
+        self.pressures_prev_fl = []
+        self.pressures_prev_fr = []
+        self.pressures_prev_rl = []
+        self.pressures_prev_rr = []
+
         self.time_axis = []
         self.in_pit_lane = False
 
@@ -79,6 +85,26 @@ class TyreGraph(ttk.Frame):
             self.time_axis, self.pressures_rr,
             self.app_config["graph_colour"]["rear_right"],
             label="Rear right")
+
+        self.plot_line_prev_fl,  = self.graph.plot(
+            self.time_axis, self.pressures_prev_fl,
+            self.app_config["graph_colour"]["prev_front_left"],
+            label="Prev Front left")
+
+        self.plot_line_prev_fr,  = self.graph.plot(
+            self.time_axis, self.pressures_prev_fr,
+            self.app_config["graph_colour"]["prev_front_right"],
+            label="Prev Front right")
+
+        self.plot_line_prev_rl,  = self.graph.plot(
+            self.time_axis, self.pressures_prev_rl,
+            self.app_config["graph_colour"]["prev_rear_left"],
+            label="Prev Rear left")
+
+        self.plot_line_prev_rr,  = self.graph.plot(
+            self.time_axis, self.pressures_prev_rr,
+            self.app_config["graph_colour"]["prev_rear_right"],
+            label="Prev Rear right")
 
         self.graph.set_title("Pressures over time")
         self.graph.set_xlabel("Time (Seconds)")
@@ -135,6 +161,11 @@ class TyreGraph(ttk.Frame):
 
                 TyreGraph.previous_laps[key_name] = lap_pressure
             self.graph.set_title(f"Pressures over time of {key_name}")
+
+            self.pressures_prev_fl = copy.copy(self.pressures_fl)
+            self.pressures_prev_fr = copy.copy(self.pressures_fr)
+            self.pressures_prev_rl = copy.copy(self.pressures_rl)
+            self.pressures_prev_rr = copy.copy(self.pressures_rr)
 
             self._reset_pressures()
             self.current_lap = telemetry.lap
@@ -194,10 +225,25 @@ class TyreGraph(ttk.Frame):
         if len(self.pressures_fl) == 0:
             return
 
+        if len(self.time_axis) != len(self.pressures_fl):
+            print("update incomplet")
+            return
+
+        current_element = len(self.time_axis)
+
         self.plot_line_fl.set_data(self.time_axis, self.pressures_fl)
         self.plot_line_fr.set_data(self.time_axis, self.pressures_fr)
         self.plot_line_rl.set_data(self.time_axis, self.pressures_rl)
         self.plot_line_rr.set_data(self.time_axis, self.pressures_rr)
+
+        self.plot_line_prev_fl.set_data(
+            self.time_axis, self.pressures_prev_fl[:current_element])
+        self.plot_line_prev_fr.set_data(
+            self.time_axis, self.pressures_prev_fr[:current_element])
+        self.plot_line_prev_rl.set_data(
+            self.time_axis, self.pressures_prev_rl[:current_element])
+        self.plot_line_prev_rr.set_data(
+            self.time_axis, self.pressures_prev_rr[:current_element])
 
         min_all = self._find_lowest_pressure()
         max_all = self._find_higest_pressure()

@@ -9,7 +9,11 @@
         "front_left": "#592F93",
         "front_right": "#0465B2",
         "rear_left": "#F58225",
-        "rear_right": "#FEF102"
+        "rear_right": "#FEF102",
+        "prev_front_left": "#2e184d",
+        "prev_front_right": "#023259",
+        "prev_rear_left": "#784012",
+        "prev_rear_right": "#807a01"
     },
     "live_graph_inverval": 1,
     "saved_graph_step": 5,
