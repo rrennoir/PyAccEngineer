@@ -1,11 +1,11 @@
-# PyAccEngineer v1.5
+# PyAccEngineer v1.5.4
 
-# Table of Contents
+## Table of Contents
+
 1. [Requirements](#requirements)
 2. [Download](#download)
 3. [Usefull info](#warnings)
 4. [Donate](#donation)
-
 
 ![app](https://i.imgur.com/7g7SAvD.png)
 
@@ -14,6 +14,7 @@ For more images [here](https://imgur.com/a/EwZwhOD)
 ## Requirements
 
 - Need python 3.8+ (download at [python.org](https://www.python.org/downloads/) or [anaconda.com](https://www.anaconda.com/products/individual))
+- Don't forget to add python to your path while installing
 - pywin32 module
 - PyDirectInput module
 - matplotlib module
