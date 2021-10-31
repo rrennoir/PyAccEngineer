@@ -648,12 +648,12 @@ class TelemetryUI(ttk.Frame):
         column_count += 1
 
         # Condition
-        l_condition = ttk.Label(f_top, text="Condition", width=10,
+        l_condition = ttk.Label(f_top, text="Condition", width=12,
                                 anchor=tkinter.CENTER)
         l_condition.grid(row=0, column=column_count, padx=1, pady=(2, 1))
 
         l_condition_var = ttk.Label(f_top, textvariable=self.condition,
-                                    width=10, anchor=tkinter.CENTER)
+                                    width=12, anchor=tkinter.CENTER)
         l_condition_var.grid(row=1, column=column_count, padx=1, pady=(1, 2))
         column_count += 1
 
