@@ -894,12 +894,17 @@ class TelemetryUI(ttk.Frame):
 
                     lap_wear = prev_pad - pad
                     pad_left = pad - 12.5
-                    lap_left = pad_left / lap_wear
-                    time_left.append(int(lap_left * time_delta))
+                    # TODO Find proper fix later
+                    try:
+                        lap_left = pad_left / lap_wear
+                        time_left.append(int(lap_left * time_delta))
+                    except ZeroDivisionError:
+                        pass
 
-                time_for_fail = min(time_left)
-                self.time_pad_failure.set(string_time_from_ms(time_for_fail,
-                                                              True)[:-4])
+                if len(time_left) != 0:
+                    time_for_fail = min(time_left)
+                    self.time_pad_failure.set(
+                        string_time_from_ms(time_for_fail, True)[:-4])
 
             self.prev_time_left = int(telemetry.session_left)
             self.prev_pad_life = copy.copy(pad_wear)
