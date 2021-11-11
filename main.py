@@ -30,7 +30,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     datefmt="%H:%M:%S")
 
 
-_VERSION_ = "1.5.4"
+_VERSION_ = "1.5.5"
 
 
 class ConnectionPage(ttk.Frame):
