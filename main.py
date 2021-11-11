@@ -23,6 +23,8 @@ from modules.Telemetry import Telemetry, TelemetryRT, TelemetryUI
 from modules.TyreGraph import PrevLapsGraph, TyreGraph
 from modules.Users import UserUI
 
+from idlelib.tooltip import Hovertip
+
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     format="%(asctime)s.%(msecs)03d | %(name)s | %(message)s",
                     datefmt="%H:%M:%S")
@@ -95,11 +97,14 @@ class ConnectionPage(ttk.Frame):
                                         text="Username",
                                         anchor=tkinter.E, width=10)
         self.l_username.grid(row=3, column=0, padx=5, pady=2)
+        Hovertip(self.l_username, "Your name in ACC", 10)
 
         self.l_driverID = tkinter.Label(self.f_connection_info,
                                         text="Driver ID",
                                         anchor=tkinter.E, width=10)
         self.l_driverID.grid(row=4, column=0, padx=5, pady=2)
+        Hovertip(self.l_driverID, "Driver ID for driver swap "
+                 "(Driver 1, 2, 3, 4, etc), not your SteamID", 10)
 
         if self.credidentials is None:
             self.cb_ip = ttk.Combobox(self.f_connection_info, width=30,
@@ -118,9 +123,12 @@ class ConnectionPage(ttk.Frame):
 
         self.e_username = tkinter.Entry(self.f_connection_info, width=30)
         self.e_username.grid(row=3, column=1, padx=5, pady=2)
+        Hovertip(self.e_username, "Your name in ACC", 10)
 
         self.e_driverID = tkinter.Entry(self.f_connection_info, width=30)
         self.e_driverID.grid(row=4, column=1, padx=5, pady=2)
+        Hovertip(self.e_driverID, "Driver ID for driver swap "
+                 "(Driver 1, 2, 3, 4, etc), not your SteamID", 10)
 
         self.b_connect = tkinter.Button(self, text="Connect",
                                         command=self.connect)
