@@ -195,12 +195,16 @@ class ConnectionPage(ttk.Frame):
             error_message += "Invalide username\n"
 
         driverID = self.e_driverID.get()
-        if driverID != "" and driverID.isnumeric():
+        if driverID != "" and driverID.isnumeric() and int(driverID) <= 5:
             self.e_driverID.config(background="White")
 
         else:
             self.e_driverID.config(background="Red")
-            error_message += "Invalide driver ID\n"
+            if (int(driverID) > 5):
+                error_message += ("Are you sure you are the driver N° "
+                                  f"{driverID} in your team ?")
+            else:
+                error_message += "Invalide driver ID\n"
 
         if error_message == "":
 
