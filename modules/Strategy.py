@@ -15,6 +15,7 @@ import win32com
 import win32com.client
 import win32con
 import win32gui
+from idlelib.tooltip import Hovertip
 from SharedMemory.PyAccSharedMemory import (ACC_SESSION_TYPE,
                                             ACC_TRACK_GRIP_STATUS, ACC_map,
                                             accSharedMemory)
@@ -132,6 +133,7 @@ class FuelCalculator(ttk.Frame):
                                       variable=self.override,
                                       command=self._override_change)
         cb_override.grid(row=2, column=0)
+        Hovertip(cb_override, "Override fuel calculation values", 10)
 
         self.b_compute = ttk.Button(self, text="Calculate",
                                     command=self._compute_fuel,
@@ -337,10 +339,15 @@ class StrategyUI(tkinter.Frame):
         self.b_update_strat = ttk.Button(f_button_grid, text="Update values",
                                          command=self.update_values)
 
+        Hovertip(self.b_update_strat, "Load current MFD values", 10)
+
         self.b_update_strat.pack(side=tkinter.LEFT, padx=5, pady=2)
 
         self.b_set_strat = ttk.Button(f_button_grid, text="Set Strategy",
                                       command=self.set_strategy)
+
+        Hovertip(self.b_set_strat, "Send strategy to the person"
+                 " currently driving", 10)
 
         self.b_set_strat.pack(side=tkinter.RIGHT, padx=5, pady=2)
 
@@ -427,6 +434,7 @@ class StrategyUI(tkinter.Frame):
 
         b_copy = ttk.Button(f_previous_strat, text="Copy",
                             command=self._copy_strat)
+        Hovertip(b_copy, "Load previous values to strategy setter", 10)
 
         b_copy.grid(row=10, column=0, columnspan=2, padx=4, pady=5)
 
