@@ -150,6 +150,7 @@ class PacketType(Enum):
     TelemetryRT = 11
     UDP_OK = 12
     UDP_RENEW = 13
+    StategyHistory = 14
     Unkown = -1
 
     def to_bytes(self) -> bytes:
@@ -181,6 +182,7 @@ class NetworkQueue(Enum):
     ServerData = auto()
     Strategy = auto()
     StrategyDone = auto()
+    StategyHistory = auto()
     CarInfoData = auto()
     StrategySet = auto()
     Telemetry = auto()
@@ -231,6 +233,7 @@ class CarInfo:
 @dataclass
 class PitStop:
 
+    timestamp: str
     fuel: float
     tyre_set: int
     tyre_compound: str
@@ -240,11 +243,12 @@ class PitStop:
     repairs_bodywork: bool = True
     repairs_suspension: bool = True
 
-    byte_format: ClassVar[str] = "!f i 3s 4f 2i 2?"
+    byte_format: ClassVar[str] = "! 8s f i 3s 4f 2i 2?"
     byte_size: ClassVar[int] = struct.calcsize(byte_format)
 
     def to_bytes(self) -> bytes:
         buffer = []
+        buffer.append(struct.pack("!8s", self.timestamp.encode("utf-8")))
         buffer.append(struct.pack("!f", self.fuel))
         buffer.append(struct.pack("!i", self.tyre_set))
         buffer.append(struct.pack("!3s", self.tyre_compound.encode("utf-8")))
@@ -262,14 +266,15 @@ class PitStop:
         temp_data = struct.unpack(cls.byte_format, data[:cls.byte_size])
 
         pit_data = [
-            temp_data[0],
+            temp_data[0].decode("utf-8"),
             temp_data[1],
-            temp_data[2].decode("utf-8"),
-            tuple(temp_data[3:7]),
-            temp_data[7],
+            temp_data[2],
+            temp_data[3].decode("utf-8"),
+            tuple(temp_data[4:8]),
             temp_data[8],
             temp_data[9],
             temp_data[10],
+            temp_data[11],
         ]
 
         return PitStop(*pit_data)

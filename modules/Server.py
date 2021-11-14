@@ -11,7 +11,8 @@ from twisted.internet.interfaces import IAddress
 from twisted.internet.protocol import DatagramProtocol, Protocol, ServerFactory
 from twisted.python.failure import Failure
 
-from modules.Common import DataQueue, NetData, NetworkQueue, PacketType
+from modules.Common import (DataQueue, NetData, NetworkQueue,
+                            PacketType, PitStop)
 
 server_log = logging.getLogger(__name__)
 
@@ -19,6 +20,7 @@ server_log = logging.getLogger(__name__)
 class TCP_Server(Protocol):
 
     def __init__(self, users: List[TCP_Server],
+                 strategies: List[PitStop],
                  user_connected: List[Tuple[str, int]],
                  queue: DataQueue) -> None:
 
@@ -31,8 +33,12 @@ class TCP_Server(Protocol):
         self.user_change = False
         self._error = ""
         self.valid_user = False
+        self.sent_strat_history = False
+        self.timer = time.time()
 
         self.user: Tuple[str, int] = ()
+
+        self.strategies: List[PitStop] = strategies
 
         self.loop_call = task.LoopingCall(self.server_loop)
         self.loop_call.start(0.1)
@@ -42,6 +48,19 @@ class TCP_Server(Protocol):
         if self.user_change:
             self.update_user_connected()
             self.user_change = False
+
+        # why the fuck I'm not allowed to send 2 TCP packet 1ms apart?
+        if (self.valid_user and not self.sent_strat_history
+                and time.time() > self.timer + 0.5):
+
+            self.sent_strat_history = True
+            header = PacketType.StategyHistory.to_bytes()
+
+            packet = struct.pack("!B", len(self.strategies))
+            for strategy in self.strategies:
+                packet += strategy.to_bytes()
+
+            self.transport.write(header + packet)
 
         for element in self.queue.q_in:
 
@@ -105,6 +124,8 @@ class TCP_Server(Protocol):
             self.send_to_all_user(header + data[1:])
 
         elif packet == PacketType.Strategy:
+
+            self.strategies.append(PitStop.from_bytes(data[1:]))
             self.send_to_all_user(data)
 
         elif packet == PacketType.StrategyOK:
@@ -152,12 +173,14 @@ class TCP_Factory(ServerFactory):
     def __init__(self, queue: DataQueue) -> None:
         super().__init__()
         self._users: List[TCP_Server] = []
+        self._strategies: List[PitStop] = []
         self.user_connected: List[Tuple[str, int]] = []
         self.queue = queue
 
     def buildProtocol(self, addr: IAddress):
 
-        return TCP_Server(self._users, self.user_connected, self.queue)
+        return TCP_Server(self._users, self._strategies,
+                          self.user_connected, self.queue)
 
 
 class UDP_Server(DatagramProtocol):

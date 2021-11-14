@@ -152,6 +152,9 @@ class TCP_Client(Protocol):
         elif packet == PacketType.Strategy:
             net_data = NetData(NetworkQueue.Strategy, data)
 
+        elif packet == PacketType.StategyHistory:
+            net_data = NetData(NetworkQueue.StategyHistory, data)
+
         elif packet == PacketType.StrategyOK:
             net_data = NetData(NetworkQueue.StrategyDone, data)
 

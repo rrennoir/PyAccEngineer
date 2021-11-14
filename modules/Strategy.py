@@ -313,10 +313,10 @@ class StrategyUI(tkinter.Frame):
         self.tyre_set = tkinter.IntVar(value=1)
         self.tyre_compound = tkinter.StringVar(value="Dry")
 
-        self.front_left = tkinter.DoubleVar()
-        self.front_right = tkinter.DoubleVar()
-        self.rear_left = tkinter.DoubleVar()
-        self.rear_right = tkinter.DoubleVar()
+        self.front_left = tkinter.DoubleVar(value=20.3)
+        self.front_right = tkinter.DoubleVar(value=20.3)
+        self.rear_left = tkinter.DoubleVar(value=20.3)
+        self.rear_right = tkinter.DoubleVar(value=20.3)
 
         self.driver_var = tkinter.StringVar(value="FirstName LastName")
 
@@ -760,23 +760,32 @@ class StrategyUI(tkinter.Frame):
         else:
             driver_offset = 0
 
-        strat = PitStop(self.fuel.get(),
-                        self.tyre_set.get() - 1,
-                        self.tyre_compound.get(),
-                        (
-            self.front_left.get(),
-            self.front_right.get(),
-            self.rear_left.get(),
-            self.rear_right.get()
-        ),
+        strat = PitStop(
+            datetime.utcnow().strftime("%H:%M:%S"),
+            self.fuel.get(),
+            self.tyre_set.get() - 1,
+            self.tyre_compound.get(),
+            (
+                self.front_left.get(),
+                self.front_right.get(),
+                self.rear_left.get(),
+                self.rear_right.get()
+            ),
             driver_offset)
-
-        time_key = datetime.now().strftime("%H:%M.%S_%d_%m_%Y")
-        self.strategies[time_key] = strat
-        self.cb_strat["value"] = (*self.cb_strat["value"], time_key)
 
         self.strategy = strat
         self.b_set_strat.config(state="disabled")
+
+    def save_strategy(self, strategy: PitStop) -> None:
+
+        time_key = strategy.timestamp
+        self.strategies[time_key] = strategy
+        self.cb_strat["value"] = (*self.cb_strat["value"], time_key)
+
+    def clear_strategy_history(self) -> None:
+
+        self.strategies.clear()
+        self.cb_strat["value"] = ()
 
     def is_strategy_applied(self, state: bool) -> None:
 

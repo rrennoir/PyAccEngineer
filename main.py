@@ -30,7 +30,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     datefmt="%H:%M:%S")
 
 
-_VERSION_ = "1.5.5"
+_VERSION_ = "1.5.6"
 
 
 class ConnectionPage(ttk.Frame):
@@ -487,12 +487,26 @@ class App(tkinter.Tk):
             elif element.data_type == NetworkQueue.Strategy:
 
                 logging.info("Received: Strategy")
+
                 self.strategy_ui.b_set_strat.config(state="disabled")
                 asm_data = self.strategy_ui.asm.read_shared_memory()
-                if asm_data is not None:
+                pit_stop = PitStop.from_bytes(element.data)
+                self.strategy_ui.save_strategy(pit_stop)
 
-                    pit_stop = PitStop.from_bytes(element.data)
+                if asm_data is not None:
                     self.strategy_ui.apply_strategy(pit_stop)
+
+            elif element.data_type == NetworkQueue.StategyHistory:
+
+                self.strategy_ui.clear_strategy_history()
+
+                strategy_count = element.data[0]
+                byte_index = 1
+                for _ in range(strategy_count):
+
+                    strat = PitStop.from_bytes(element.data[byte_index:])
+                    self.strategy_ui.save_strategy(strat)
+                    byte_index += PitStop.byte_size
 
             elif element.data_type == NetworkQueue.StrategyDone:
 
