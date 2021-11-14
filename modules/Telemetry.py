@@ -6,7 +6,7 @@ import struct
 import tkinter
 from dataclasses import astuple, dataclass
 from tkinter import ttk
-from typing import ClassVar, List
+from typing import ClassVar, List, Optional, Tuple
 
 from SharedMemory.PyAccSharedMemory import (ACC_RAIN_INTENSITY,
                                             ACC_SESSION_TYPE,
@@ -422,18 +422,17 @@ class Telemetry:
     wind: float
     driver_stint_total_time_left: int
 
-    byte_size: ClassVar[int] = struct.calcsize("!B i 11f 3i 2? B i 12f ?"
-                                               " f B 2B 5f B 4f 2i ? 3f i")
     byte_format: ClassVar[str] = ("!B i 11f 3i 2? B i 12f ?"
                                   " f B 2B 5f B 4f 2i ? 3f i")
+    byte_size: ClassVar[int] = struct.calcsize(byte_format)
 
     def to_bytes(self) -> bytes:
 
-        driver_lenght = len(self.driver)
+        driver_bytes = self.driver.encode("utf-8")
 
         buffer = [
-            struct.pack("!B", driver_lenght),
-            self.driver.encode("utf-8"),
+            struct.pack("!B", len(driver_bytes)),
+            driver_bytes,
             struct.pack("!i", self.lap),
             struct.pack("!f", self.fuel),
             struct.pack("!f", self.fuel_per_lap),
@@ -470,7 +469,7 @@ class Telemetry:
         return b"".join(buffer)
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> Telemetry:
+    def from_bytes(cls, data: bytes) -> Tuple[Optional[Telemetry], str]:
 
         lenght = data[0]
         expected_packet_size = cls.byte_size + lenght
@@ -479,16 +478,21 @@ class Telemetry:
             psize = len(data)
             log.warning(f"Got packet of {psize} bytes,"
                         f" expected {expected_packet_size}")
-            data = data[:expected_packet_size + 1]
+            data = data[:expected_packet_size]
 
-        raw_data = struct.unpack(
-            f"!{lenght}s i 11f 3i 2? B i 12f ? f B 2B 5f B 4f 2i ? 3f i",
-            data[1:])
+        try:
+            raw_data = struct.unpack(
+                f"!{lenght}s i 11f 3i 2? B i 12f ? f B 2B 5f B 4f 2i ? 3f i",
+                data[1:])
+
+        except struct.error as err:
+            log.error(f"{err}")
+            return (None, err)
 
         name = raw_data[0].decode("utf-8")
         rest = raw_data[1:]
 
-        return Telemetry(
+        return (Telemetry(
             name,
             rest[0],
             rest[1],
@@ -521,7 +525,7 @@ class Telemetry:
             rest[50],
             rest[51],
             rest[52],
-        )
+        ), "ok")
 
 
 class TelemetryUI(ttk.Frame):

@@ -517,7 +517,12 @@ class App(tkinter.Tk):
 
             elif element.data_type == NetworkQueue.Telemetry:
 
-                telemetry = Telemetry.from_bytes(element.data)
+                telemetry, err = Telemetry.from_bytes(element.data)
+                if (telemetry is None):
+                    messagebox.showerror("Unexpected error", err)
+                    self.on_close()
+                    return
+
                 self.telemetry_ui.update_values(telemetry)
                 self.tyre_graph.update_data(telemetry)
                 self.strategy_ui.updade_telemetry_data(telemetry)
