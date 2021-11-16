@@ -170,6 +170,7 @@ class TCP_Client(Protocol):
 
         else:
             client_log.warning(f"Invalid packet type {data}")
+            client_log.warning(f"Size: {len(data)}")
             return
 
         self._data_queue.q_out.append(net_data)

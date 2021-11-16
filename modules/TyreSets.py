@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import zlib
 import struct
 import time
 import tkinter
@@ -73,7 +74,11 @@ class TyreSets(ttk.Frame):
         self.observer.schedule(self.fs_event_handler,
                                self.path, recursive=False)
 
-        self.observer.start()
+        try:
+            self.observer.start()
+
+        except FileNotFoundError:
+            pass
 
     def _build_UI(self) -> None:
 
@@ -271,6 +276,9 @@ class TyreSets(ttk.Frame):
 
     def _show_tyre_set_info(self, event) -> None:
 
+        if len(self.tyres_data) == 0:
+            return
+
         selected_item = self.tyre_set_cb.current()
 
         tyre_data = self.tyres_data[selected_item]
@@ -327,7 +335,7 @@ class TyreSets(ttk.Frame):
             with open(path) as fp:
                 tyre_set_data = json.load(fp)
 
-        except FileExistsError as msg:
+        except FileNotFoundError as msg:
             return
 
         for tyre_set in tyre_set_data["tyreSets"]:
@@ -409,10 +417,15 @@ class TyresSetData:
             self.RR.to_bytes(),
         ]
 
-        return b"".join(buffer)
+        data = b"".join(buffer)
+        data_compressed = zlib.compress(data)
+        print(f"{len(data)} vs {len(data_compressed)}")
+        return data_compressed
 
     @classmethod
     def from_bytes(cls, data: bytes) -> TyresSetData:
+
+        data = zlib.decompress(data)
 
         temp = []
         byte_index = 0
