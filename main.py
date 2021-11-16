@@ -675,6 +675,7 @@ class App(tkinter.Tk):
                     asm_data.Physics.road_temp,
                     asm_data.Graphics.wind_speed,
                     asm_data.Graphics.driver_stint_total_time_left,
+                    asm_data.Graphics.current_tyre_set,
                 )
 
                 self.net_queue.q_in.append(NetData(NetworkQueue.Telemetry,

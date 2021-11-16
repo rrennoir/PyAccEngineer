@@ -421,9 +421,10 @@ class Telemetry:
     road_temp: float
     wind: float
     driver_stint_total_time_left: int
+    current_tyreset: int
 
     byte_format: ClassVar[str] = ("!B i 11f 3i 2? B i 12f ?"
-                                  " f B 2B 5f B 4f 2i ? 3f i")
+                                  " f B 2B 5f B 4f 2i ? 3f 2i")
     byte_size: ClassVar[int] = struct.calcsize(byte_format)
 
     def to_bytes(self) -> bytes:
@@ -464,6 +465,7 @@ class Telemetry:
             struct.pack("!f", self.road_temp),
             struct.pack("!f", self.wind),
             struct.pack("!i", self.driver_stint_total_time_left),
+            struct.pack("!i", self.current_tyreset),
         ]
 
         return b"".join(buffer)
@@ -482,7 +484,7 @@ class Telemetry:
 
         try:
             raw_data = struct.unpack(
-                f"!{lenght}s i 11f 3i 2? B i 12f ? f B 2B 5f B 4f 2i ? 3f i",
+                f"!{lenght}s i 11f 3i 2? B i 12f ? f B 2B 5f B 4f 2i ? 3f 2i",
                 data[1:])
 
         except struct.error as err:
@@ -525,6 +527,7 @@ class Telemetry:
             rest[50],
             rest[51],
             rest[52],
+            rest[53],
         ), "ok")
 
 
