@@ -358,8 +358,9 @@ class TyreSets(ttk.Frame):
 
     def close(self) -> None:
 
-        self.observer.stop()
-        self.observer.join()
+        if (self.observer.is_alive()):
+            self.observer.stop()
+            self.observer.join()
 
 
 @dataclass
@@ -417,15 +418,10 @@ class TyresSetData:
             self.RR.to_bytes(),
         ]
 
-        data = b"".join(buffer)
-        data_compressed = zlib.compress(data)
-        print(f"{len(data)} vs {len(data_compressed)}")
-        return data_compressed
+        return b"".join(buffer)
 
     @classmethod
     def from_bytes(cls, data: bytes) -> TyresSetData:
-
-        data = zlib.decompress(data)
 
         temp = []
         byte_index = 0

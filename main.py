@@ -10,6 +10,7 @@ from dataclasses import astuple
 from pathlib import Path
 from tkinter import messagebox, ttk
 from typing import Optional, Tuple
+import zlib
 
 from twisted.internet import reactor, task, tksupport
 
@@ -569,9 +570,11 @@ class App(tkinter.Tk):
 
             elif element.data_type == NetworkQueue.TyreSets:
 
+                data = zlib.decompress(element.data)
+
                 tyres_data = []
                 for _ in range(50):
-                    tyres_data.append(TyresSetData.from_bytes(element.data))
+                    tyres_data.append(TyresSetData.from_bytes(data))
 
                 self.tyre_sets.tyres_data = tyres_data
 
@@ -696,7 +699,11 @@ class App(tkinter.Tk):
             for tyre_set in self.tyre_sets.tyres_data:
                 data += tyre_set.to_bytes()
 
-            self.net_queue.q_in.append(NetData(NetworkQueue.TyreSets, data))
+            data_compressed = zlib.compress(data)
+            print(f"{len(data)} vs {len(data_compressed)}")
+
+            self.net_queue.q_in.append(NetData(NetworkQueue.TyreSets,
+                                               data_compressed))
             self.tyre_sets.updated = False
             logging.info("Sending tyre set data")
 
