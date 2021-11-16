@@ -306,9 +306,6 @@ class App(tkinter.Tk):
 
         self.font = (self.gui_config["font"], self.gui_config["font_size"])
 
-        if self.gui_config["icon"]:
-            self.iconbitmap(self.gui_config["icon_path"])
-
         app_style = ttk.Style(self)
         app_style.configure('.',
                             font=self.font,
