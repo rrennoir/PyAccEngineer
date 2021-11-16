@@ -151,6 +151,7 @@ class PacketType(Enum):
     UDP_OK = 12
     UDP_RENEW = 13
     StategyHistory = 14
+    TyreSets = 15
     Unkown = -1
 
     def to_bytes(self) -> bytes:
@@ -189,6 +190,7 @@ class NetworkQueue(Enum):
     TelemetryRT = auto()
     UpdateUsers = auto()
     ConnectionReply = auto()
+    TyreSets = auto()
     Close = auto()
 
 

@@ -104,6 +104,10 @@ class TCP_Client(Protocol):
             elif packet == NetworkQueue.StrategyDone:
                 self.transport.write(PacketType.StrategyOK.to_bytes())
 
+            elif packet == NetworkQueue.TyreSets:
+                self.transport.write(PacketType.TyreSets.to_bytes() +
+                                     element.data)
+
             elif packet == NetworkQueue.Close:
                 self.close()
 
@@ -160,6 +164,9 @@ class TCP_Client(Protocol):
 
         elif packet == PacketType.UpdateUsers:
             net_data = NetData(NetworkQueue.UpdateUsers, data)
+
+        elif packet == PacketType.TyreSets:
+            net_data = NetData(NetworkQueue.TyreSets, data)
 
         else:
             client_log.warning(f"Invalid packet type {data}")

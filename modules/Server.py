@@ -131,6 +131,10 @@ class TCP_Server(Protocol):
         elif packet == PacketType.StrategyOK:
             self.send_to_all_user(data)
 
+        elif packet == PacketType.TyreSets:
+            server_log.info("Received Tyre sets data")
+            self.send_to_all_user(data)
+
         else:
             server_log.warning(f"incorrect packet {packet}")
 

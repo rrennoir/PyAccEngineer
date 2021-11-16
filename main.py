@@ -22,6 +22,7 @@ from modules.Strategy import StrategyUI
 from modules.Telemetry import Telemetry, TelemetryRT, TelemetryUI
 from modules.TyreGraph import PrevLapsGraph, TyreGraph
 from modules.Users import UserUI
+from modules.TyreSets import TyreSets, TyresSetData
 
 from idlelib.tooltip import Hovertip
 
@@ -410,12 +411,16 @@ class App(tkinter.Tk):
         self.prev_lap_graph = PrevLapsGraph(self.tab_control, self.gui_config)
         self.prev_lap_graph.pack(fill=tkinter.BOTH, expand=1)
 
+        self.tyre_sets = TyreSets(self.tab_control, self.gui_config)
+        self.tyre_sets.pack(fill=tkinter.BOTH, expand=1)
+
         self.tab_control.add(self.f_connection_ui, text="Connection")
         self.tab_control.add(f_strategy_ui, text="Strategy")
         self.tab_control.add(self.telemetry_ui, text="Telemetry")
         self.tab_control.add(self.driver_inputs, text="Driver Inputs")
         self.tab_control.add(self.tyre_graph, text="Pressures")
         self.tab_control.add(self.prev_lap_graph, text="Previous Laps")
+        self.tab_control.add(self.tyre_sets, text="Tyre sets")
 
         self.tab_control.hide(0)
 
@@ -562,6 +567,14 @@ class App(tkinter.Tk):
                     self.user_ui.add_user(name, driverID)
                     self.strategy_ui.add_driver(name, driverID)
 
+            elif element.data_type == NetworkQueue.TyreSets:
+
+                tyres_data = []
+                for _ in range(50):
+                    tyres_data.append(TyresSetData.from_bytes(element.data))
+
+                self.tyre_sets.tyres_data = tyres_data
+
         self.net_queue.q_out.clear()
 
         if not self.is_connected:
@@ -677,6 +690,16 @@ class App(tkinter.Tk):
             self.net_queue.q_in.append(NetData(NetworkQueue.StrategyDone))
             self.strategy_ui.strategy_ok = False
 
+        if self.tyre_sets.updated:
+
+            data = b""
+            for tyre_set in self.tyre_sets.tyres_data:
+                data += tyre_set.to_bytes()
+
+            self.net_queue.q_in.append(NetData(NetworkQueue.TyreSets, data))
+            self.tyre_sets.updated = False
+            logging.info("Sending tyre set data")
+
     def show_connection_page(self, as_server: bool = False) -> None:
 
         logging.info("Show connection page")
@@ -747,6 +770,7 @@ class App(tkinter.Tk):
         self.strategy_ui.close()
         self.tyre_graph.close()
         self.prev_lap_graph.close()
+        self.tyre_sets.close()
 
         self.disconnect()
 
