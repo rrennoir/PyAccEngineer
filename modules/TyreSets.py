@@ -322,8 +322,13 @@ class TyreSets(ttk.Frame):
 
         self.tyres_data.clear()
         tyre_set_data = None
-        with open(path) as fp:
-            tyre_set_data = json.load(fp)
+
+        try:
+            with open(path) as fp:
+                tyre_set_data = json.load(fp)
+
+        except FileExistsError as msg:
+            return
 
         for tyre_set in tyre_set_data["tyreSets"]:
 
