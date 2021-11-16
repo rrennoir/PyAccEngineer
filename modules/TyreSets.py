@@ -409,6 +409,8 @@ class TyresSetData:
     RL: TyreSetData
     RR: TyreSetData
 
+    byte_size: ClassVar[int] = TyreSetData.byte_size * 4
+
     def to_bytes(self) -> bytes:
 
         buffer = [

@@ -573,8 +573,12 @@ class App(tkinter.Tk):
                 data = zlib.decompress(element.data)
 
                 tyres_data = []
+                byte_index = 0
                 for _ in range(50):
-                    tyres_data.append(TyresSetData.from_bytes(data))
+                    tyre_info = TyresSetData.from_bytes(
+                        data[byte_index:byte_index+TyresSetData.byte_size])
+                    tyres_data.append(tyre_info)
+                    byte_index += TyresSetData.byte_size
 
                 self.tyre_sets.tyres_data = tyres_data
 
