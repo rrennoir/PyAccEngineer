@@ -305,6 +305,7 @@ class StrategyUI(tkinter.Frame):
 
         self.max_static_fuel = 120
 
+        self.current_tyre_set = -1
         self.driver_set = False
         self.current_driver = ""
         self.driver_list = []
@@ -711,6 +712,7 @@ class StrategyUI(tkinter.Frame):
     def updade_telemetry_data(self, telemetry: Telemetry) -> None:
 
         self.f_fuel_cal.update_values(telemetry)
+        self.current_tyre_set = telemetry.current_tyreset
 
     def update_values(self) -> None:
 
@@ -836,7 +838,16 @@ class StrategyUI(tkinter.Frame):
 
     def change_tyre_set(self, change: int) -> None:
 
-        self.mfd_tyre_set = clamp(self.tyre_set.get() + change, 0, 49)
+        self.mfd_tyre_set = clamp(self.tyre_set.get() + change, 1, 50)
+        if self.mfd_tyre_set == self.current_tyre_set:
+
+            self.mfd_tyre_set += change
+            if self.mfd_tyre_set == 51:
+                self.mfd_tyre_set = 49
+
+            elif self.mfd_tyre_set == 0:
+                self.mfd_tyre_set = 2
+
         self.tyre_set.set(self.mfd_tyre_set)
 
     def change_tyre_compound(self, compound: str) -> None:
@@ -1034,6 +1045,17 @@ class StrategySetter:
             log.info(f"Setting Tyre set:\n"
                      f"\tcurrent: {mfd_tyre_set}\n"
                      f"\ttarget: {strategy.tyre_set}")
+
+            current_tyre = sm.Graphics.current_tyre_set
+
+            if mfd_tyre_set < current_tyre - 1 < strategy.tyre_set:
+                log.info("Current tyre in between reduce steps by 1")
+                strategy.tyre_set -= 1
+
+            elif mfd_tyre_set > current_tyre - 1 > strategy.tyre_set:
+                log.info("Current tyre in between reduce steps by 1")
+                strategy.tyre_set += 1
+
             self.set_value(("left", "right"), mfd_tyre_set, strategy.tyre_set)
             down = 3
 
