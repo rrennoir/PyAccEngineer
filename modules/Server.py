@@ -60,7 +60,7 @@ class TCP_Server(Protocol):
             for strategy in self.strategies:
                 packet += strategy.to_bytes()
 
-            self.transport.write(header + packet)
+            self.send_message(header + packet)
 
         for element in self.queue.q_in:
 
@@ -74,12 +74,28 @@ class TCP_Server(Protocol):
 
     def dataReceived(self, data: bytes) -> None:
 
-        self.decode_data(data)
+        byte_offset = 0
+        while (len(data) != byte_offset):
+
+            packet_size = struct.unpack("!H",
+                                        data[byte_offset:byte_offset+2])[0]
+            byte_offset += 2
+            self.decode_data(data[byte_offset:byte_offset+packet_size])
+            byte_offset += packet_size
 
     def send_to_all_user(self, data: bytes) -> None:
 
+        data_header = struct.pack("!H", len(data))
+        message = data_header + data
+
         for user in self.users:
-            user.transport.write(data)
+            user.transport.write(message)
+
+    def send_message(self, data: bytes) -> None:
+
+        data_header = struct.pack("!H", len(data))
+        message = data_header + data
+        self.transport.write(message)
 
     def decode_data(self, data: bytes) -> None:
 
@@ -116,7 +132,7 @@ class TCP_Server(Protocol):
             info = msg.encode("utf-8")
             packet = struct.pack("!?B", succes, len(info)) + info
 
-            self.transport.write(header + packet)
+            self.send_message(header + packet)
 
         elif packet == PacketType.SmData:
 

@@ -93,28 +93,43 @@ class TCP_Client(Protocol):
         for element in self._data_queue.q_in:
 
             packet = element.data_type
+
             if packet == NetworkQueue.CarInfoData:
-                self.transport.write(PacketType.SmData.to_bytes()
-                                     + element.data)
+                self.send_message(PacketType.SmData.to_bytes()
+                                  + element.data)
 
             elif packet == NetworkQueue.StrategySet:
-                self.transport.write(PacketType.Strategy.to_bytes()
-                                     + element.data)
+                self.send_message(PacketType.Strategy.to_bytes()
+                                  + element.data)
 
             elif packet == NetworkQueue.StrategyDone:
-                self.transport.write(PacketType.StrategyOK.to_bytes())
+                self.send_message(PacketType.StrategyOK.to_bytes())
 
             elif packet == NetworkQueue.TyreSets:
-                self.transport.write(PacketType.TyreSets.to_bytes() +
-                                     element.data)
+                self.send_message(PacketType.TyreSets.to_bytes()
+                                  + element.data)
 
             elif packet == NetworkQueue.Close:
                 self.close()
 
         self._data_queue.q_in.clear()
 
+    def send_message(self, data: bytes) -> None:
+
+        data_header = struct.pack("!H", len(data))
+        message = data_header + data
+        self.transport.write(message)
+
     def dataReceived(self, data: bytes):
-        self._decode_packet(data)
+
+        byte_offset = 0
+        while (len(data) != byte_offset):
+
+            packet_size = struct.unpack("!H",
+                                        data[byte_offset:byte_offset+2])[0]
+            byte_offset += 2
+            self._decode_packet(data[byte_offset:byte_offset+packet_size])
+            byte_offset += packet_size
 
     def connectionMade(self):
 
@@ -127,7 +142,7 @@ class TCP_Client(Protocol):
         buffer.append(name_byte)
         buffer.append(struct.pack("!B", self._driverID))
 
-        self.transport.write(b"".join(buffer))
+        self.send_message(b"".join(buffer))
 
     def connectionLost(self, reason: Failure):
         self._error = str(reason)
