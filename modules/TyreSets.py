@@ -10,6 +10,7 @@ import tkinter
 from dataclasses import dataclass
 from tkinter import ttk
 from typing import ClassVar, List
+from idlelib.tooltip import Hovertip
 
 from watchdog.events import FileModifiedEvent, FileSystemEventHandler
 from watchdog.observers import Observer
@@ -342,6 +343,16 @@ class TyreSets(ttk.Frame):
         tyreRR_grain_l = ttk.Label(tyreRR_f, textvariable=self.tyreRR_marble,
                                    width=16, anchor=tkinter.CENTER)
         tyreRR_grain_l.grid(row=6, column=0, columnspan=3)
+
+        what_f = ttk.Frame(self, padding=(220, 0))
+        what_f.grid(row=3, column=0, columnspan=2)
+
+        what_l = ttk.Label(what_f, text="What is this ?",
+                           anchor=tkinter.CENTER)
+        what_l.pack()
+        Hovertip(what_f, "After a driver swap acc dump information about"
+                 " the tyre wear, this read it and display the information",
+                 10)
 
     def _show_tyre_set_info(self, event) -> None:
 
