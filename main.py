@@ -6,12 +6,15 @@ import logging
 import sys
 import time
 import tkinter
+import zlib
 from dataclasses import astuple
 from pathlib import Path
 from tkinter import messagebox, ttk
 from typing import Optional, Tuple
-import zlib
 
+import dns
+import dns.resolver
+from idlelib.tooltip import Hovertip
 from twisted.internet import reactor, task, tksupport
 
 from modules.Client import ClientInstance
@@ -22,17 +25,15 @@ from modules.Server import ServerInstance
 from modules.Strategy import StrategyUI
 from modules.Telemetry import Telemetry, TelemetryRT, TelemetryUI
 from modules.TyreGraph import PrevLapsGraph, TyreGraph
-from modules.Users import UserUI
 from modules.TyreSets import TyreSets, TyresSetData
-
-from idlelib.tooltip import Hovertip
+from modules.Users import UserUI
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     format="%(asctime)s.%(msecs)03d | %(name)s | %(message)s",
                     datefmt="%H:%M:%S")
 
 
-_VERSION_ = "1.5.7"
+_VERSION_ = "1.5.7b"
 
 
 class ConnectionPage(ttk.Frame):
@@ -169,11 +170,35 @@ class ConnectionPage(ttk.Frame):
 
         error_message = ""
 
+        ip = None
         try:
-            ipaddress.ip_address(self.cb_ip.get())
+            ip = ipaddress.ip_address(self.cb_ip.get()).compressed
 
         except ValueError:
-            error_message += "Invalide IP address\n"
+
+            logging.info("Querrying dns server...")
+
+            try:
+                results = dns.resolver.resolve(self.cb_ip.get())
+                for result in results:
+                    logging.info(f"Found ip: {result.address}")
+
+                logging.info(f"Picking first dns answer: {results[0].address}")
+                ip = results[0].address
+
+            except dns.resolver.NXDOMAIN:
+                error_message += "Invalide IP address or Domain name\n"
+
+            except dns.resolver.NoAnswer:
+                error_message += ("DNS didn't replied to the request"
+                                  f" for {self.cb_ip.get()}")
+
+            except dns.resolver.NoNameservers:
+                error_message += "No DNS server available"
+
+            except dns.resolver.YXDOMAIN:
+                error_message += ("The query name is too long after "
+                                  "DNAME substitution")
 
         if self.e_tcp_port.get().isnumeric():
             self.e_tcp_port.config(background="White")
@@ -213,7 +238,7 @@ class ConnectionPage(ttk.Frame):
             logging.info("No error in the credidentials")
 
             self.credits = Credidentials(
-                ip=self.cb_ip.get(),
+                ip=ip,
                 tcp_port=int(self.e_tcp_port.get()),
                 udp_port=int(self.e_udp_port.get()),
                 username=self.e_username.get(),
