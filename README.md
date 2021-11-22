@@ -16,8 +16,10 @@ For more images [here](https://imgur.com/a/ZlYYni5)
 - Need python 3.8 or 3.9 (**don't use 3.10 it has problem installing some modules**), preferred [anaconda](https://www.anaconda.com/products/individual) or [python](https://www.python.org/downloads/)
 - Check to box while installing to ADD TO PATH
 - Download the zip file in the [Release](https://github.com/rrennoir/PyAccEngineer/releases) or use git: `git clone https://github.com/rrennoir/PyAccEngineer.git --recursive`
-- Install the modules required, use the ps1 script or do a `pip install -r requirement.txt` in the terminal
-- Server need open a TCP and UDP port (4269 TCP and 4270 UDP are the default)
+- Install the modules required, use the `install_module.ps1` script or do a `pip install -r requirement.txt` in the terminal
+
+For sever host only, client doesn't need to open anything
+- Open a TCP and UDP port (4269 TCP and 4270 UDP are the default)
 
 ## Usage
 
@@ -27,10 +29,10 @@ For more images [here](https://imgur.com/a/ZlYYni5)
 
 or if you know what you are doing
 
-- Open Command Prompt / Powershell / Windows Terminal
+- Open terminal
 - Navigate to the PyAccEngineer folder
 - Start venv (if used)
-- Type `python main.py`
+- `python main.py`
 
 #### Possible problems
 
