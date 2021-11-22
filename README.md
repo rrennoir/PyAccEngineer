@@ -2,8 +2,8 @@
 
 # Table of Contents
 
-1. [Requirements](#requirements)
-2. [Download](#download)
+1. [Install](#Install)
+2. [Usage](#Usage)
 3. [Usefull info](#warnings)
 4. [Donate](#donation)
 
@@ -11,33 +11,26 @@
 
 For more images [here](https://imgur.com/a/ZlYYni5)
 
-## Requirements
+## Install
 
 - Need python 3.8 or 3.9 (**don't use 3.10 it has problem installing some modules**), preferred [anaconda](https://www.anaconda.com/products/individual) or [python](https://www.python.org/downloads/)
 - Check to box while installing to ADD TO PATH
-- Bunch of modules use the ps1 script or do a `pip install -r requirement.txt` to install them
+- Download the zip file in the [Release](https://github.com/rrennoir/PyAccEngineer/releases) or use git: `git clone https://github.com/rrennoir/PyAccEngineer.git --recursive`
+- Install the modules required, use the ps1 script or do a `pip install -r requirement.txt` in the terminal
 - Server need open a TCP and UDP port (4269 TCP and 4270 UDP are the default)
-
-## Download
-
-### With git
-
-`git clone https://github.com/rrennoir/PyAccEngineer.git --recursive`
-
-### Basic download
-
- Go to [Release](https://github.com/rrennoir/PyAccEngineer/releases) and download the latest PyAccEngineer.zip file :)
 
 ## Usage
 
 ### Open the app
 
+- Use the start_PyAccEngineer.ps1 scrip
+
+or if you know what you are doing
+
 - Open Command Prompt / Powershell / Windows Terminal
 - Navigate to the PyAccEngineer folder
+- Start venv (if used)
 - Type `python main.py`
-- There you go PyAccEngineer is running
-
-![The lazy way](https://i.imgur.com/LTrFK2S.gif)
 
 #### Possible problems
 
@@ -53,6 +46,7 @@ For more images [here](https://imgur.com/a/ZlYYni5)
 ### Run the server as headless (dedicated server)
 
 Simply run the Server.py, by default port is 4269 (TCP) and 4270 (UDP) use -u or --udp_port to change the UDP port and -t or --tcp_port to change the TCP port
+
 
 ```powershell
 python headless_server.py -u 4270 -tcp_port 4269
