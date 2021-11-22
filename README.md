@@ -13,11 +13,9 @@ For more images [here](https://imgur.com/a/ZlYYni5)
 
 ## Requirements
 
-- Need python 3.8+, preferred [anaconda](https://www.anaconda.com/products/individual) or [python](https://www.python.org/downloads/)
-- pywin32 module
-- PyDirectInput module
-- matplotlib module
-- Twisted and service-identity modules
+- Need python 3.8 or 3.9 (**don't use 3.10 it has problem installing some modules**), preferred [anaconda](https://www.anaconda.com/products/individual) or [python](https://www.python.org/downloads/)
+- Check to box while installing to ADD TO PATH
+- Bunch of modules use the ps1 script or do a `pip install -r requirement.txt` to install them
 - Server need open a TCP and UDP port (4269 TCP and 4270 UDP are the default)
 
 ## Download
