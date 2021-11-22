@@ -18,14 +18,14 @@ For more images [here](https://imgur.com/a/ZlYYni5)
 - Download the zip file in the [Release](https://github.com/rrennoir/PyAccEngineer/releases) or use git: `git clone https://github.com/rrennoir/PyAccEngineer.git --recursive`
 - Install the modules required, use the `install_module.ps1` script or do a `pip install -r requirement.txt` in the terminal
 
-For sever host only, client doesn't need to open anything
+**For sever host only**, client doesn't need to open anything on their router.
 - Open a TCP and UDP port (4269 TCP and 4270 UDP are the default)
 
 ## Usage
 
 ### Open the app
 
-- Use the start_PyAccEngineer.ps1 scrip
+- Use the start_PyAccEngineer.ps1 script
 
 or if you know what you are doing
 
