@@ -91,7 +91,7 @@ class TyreSets(ttk.Frame):
         tyre_set_l.grid(row=0, column=0)
 
         self.tyre_set_cb = ttk.Combobox(selector_f,
-                                        values=[i for i in range(1, 51)],
+                                        values=(),
                                         state="readonly", width=10)
         self.tyre_set_cb.grid(row=0, column=1)
         self.tyre_set_cb.bind("<<ComboboxSelected>>", self._show_tyre_set_info)
@@ -354,12 +354,16 @@ class TyreSets(ttk.Frame):
                  " the tyre wear, this read it and display the information",
                  10)
 
+    def update_tyre_set_data(self, new_data) -> None:
+
+        self.tyre_set_cb["values"] = tuple(i for i in range(1, len(new_data) + 1))
+        self.tyres_data = new_data
+
     def _show_tyre_set_info(self, event) -> None:
 
+        selected_item = self.tyre_set_cb.current()
         if len(self.tyres_data) == 0:
             return
-
-        selected_item = self.tyre_set_cb.current()
 
         tyre_data = self.tyres_data[selected_item]
 
@@ -468,6 +472,10 @@ class TyreSetData:
 
     @classmethod
     def from_bytes(cls, data: bytes) -> TyreSetData:
+
+        if len(data) > cls.byte_size:
+            logger.warning(f"Telemetry: Warning got packet of {len(data)} bytes")
+            data = data[:cls.byte_size]
 
         raw_data = struct.unpack(cls.byte_format, data)
 

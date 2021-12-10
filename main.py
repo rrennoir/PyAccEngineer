@@ -3,6 +3,7 @@ from __future__ import annotations
 import ipaddress
 import json
 import logging
+import struct
 import sys
 import time
 import tkinter
@@ -33,7 +34,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     datefmt="%H:%M:%S")
 
 
-_VERSION_ = "1.5.7b"
+_VERSION_ = "1.5.8"
 
 
 class ConnectionPage(ttk.Frame):
@@ -595,14 +596,15 @@ class App(tkinter.Tk):
                 data = zlib.decompress(element.data)
 
                 tyres_data = []
-                byte_index = 0
-                for _ in range(50):
+                nb_of_set = data[0]
+                byte_index = 1
+                for _ in range(nb_of_set):
                     tyre_info = TyresSetData.from_bytes(
                         data[byte_index:byte_index+TyresSetData.byte_size])
                     tyres_data.append(tyre_info)
                     byte_index += TyresSetData.byte_size
 
-                self.tyre_sets.tyres_data = tyres_data
+                self.tyre_sets.update_tyre_set_data(tyres_data)
 
         self.net_queue.q_out.clear()
 
@@ -723,6 +725,7 @@ class App(tkinter.Tk):
         if self.tyre_sets.updated:
 
             data = b""
+            data += struct.pack("!B", len(self.tyre_sets.tyres_data))
             for tyre_set in self.tyre_sets.tyres_data:
                 data += tyre_set.to_bytes()
 
