@@ -86,6 +86,8 @@ class TCP_Server(Protocol):
 
             except struct.error as msg:
                 server_log.warning(msg)
+                server_log.info(f"data was: {data}")
+                return
 
     def send_to_all_user(self, data: bytes) -> None:
 
