@@ -9,7 +9,7 @@ import time
 import tkinter
 from dataclasses import dataclass
 from tkinter import ttk
-from typing import ClassVar, List
+from typing import ClassVar, List, Optional
 from idlelib.tooltip import Hovertip
 
 from watchdog.events import FileModifiedEvent, FileSystemEventHandler
@@ -356,7 +356,8 @@ class TyreSets(ttk.Frame):
 
     def update_tyre_set_data(self, new_data) -> None:
 
-        self.tyre_set_cb["values"] = tuple(i for i in range(1, len(new_data) + 1))
+        self.tyre_set_cb["values"] = tuple(
+            i for i in range(1, len(new_data) + 1))
         self.tyres_data = new_data
 
     def _show_tyre_set_info(self, event) -> None:
@@ -409,6 +410,18 @@ class TyreSets(ttk.Frame):
             self._read_dump_file(event.src_path)
             self.updated = True
 
+    def _read_json(self, file, wait: float) -> Optional[dict]:
+
+        try:
+            time.sleep(wait)
+            tyre_set_data = json.load(file)
+
+        except:
+            logger.warning(f"Fail to read json tyre set data with wait of {wait}")
+            tyre_set_data = None
+
+        return tyre_set_data
+
     def _read_dump_file(self, path: str) -> None:
 
         self.tyres_data.clear()
@@ -416,9 +429,16 @@ class TyreSets(ttk.Frame):
 
         try:
             with open(path) as fp:
-                tyre_set_data = json.load(fp)
+                
+                tyre_set_data = self._read_json(fp, 0)
+                if tyre_set_data is None:
+                    self._read_json(fp, 0.5)
+
+            if tyre_set_data is None:
+                return
 
         except FileNotFoundError as msg:
+            logger.info(f"File not found {DUMP_FILE}")
             return
 
         for tyre_set in tyre_set_data["tyreSets"]:
@@ -474,18 +494,23 @@ class TyreSetData:
     def from_bytes(cls, data: bytes) -> TyreSetData:
 
         if len(data) > cls.byte_size:
-            logger.warning(f"Telemetry: Warning got packet of {len(data)} bytes")
+            logger.warning(
+                f"Telemetry: Warning got packet of {len(data)} bytes")
             data = data[:cls.byte_size]
 
-        raw_data = struct.unpack(cls.byte_format, data)
+        try:
+            raw_data = struct.unpack(cls.byte_format, data)
+            return TyreSetData(
+                raw_data[0:3],
+                raw_data[3],
+                raw_data[4],
+                raw_data[5],
+                raw_data[6],
+            )
 
-        return TyreSetData(
-            raw_data[0:3],
-            raw_data[3],
-            raw_data[4],
-            raw_data[5],
-            raw_data[6],
-        )
+        except struct.error:
+            logging.warning("Error in TyreSetData.frombytes")
+            return TyreSetData((0, 0, 0), 0, 0, 0, 0)
 
 
 @dataclass

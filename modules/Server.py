@@ -77,11 +77,15 @@ class TCP_Server(Protocol):
         byte_offset = 0
         while (len(data) != byte_offset):
 
-            packet_size = struct.unpack("!H",
+            try:
+                packet_size = struct.unpack("!H",
                                         data[byte_offset:byte_offset+2])[0]
-            byte_offset += 2
-            self.decode_data(data[byte_offset:byte_offset+packet_size])
-            byte_offset += packet_size
+                byte_offset += 2
+                self.decode_data(data[byte_offset:byte_offset+packet_size])
+                byte_offset += packet_size
+
+            except struct.error as msg:
+                server_log.warning(msg)
 
     def send_to_all_user(self, data: bytes) -> None:
 
