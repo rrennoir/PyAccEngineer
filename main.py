@@ -34,7 +34,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     datefmt="%H:%M:%S")
 
 
-_VERSION_ = "1.5.8c"
+_VERSION_ = "1.5.8d"
 
 
 class ConnectionPage(ttk.Frame):
@@ -83,19 +83,24 @@ class ConnectionPage(ttk.Frame):
             self, bd=2, relief=tkinter.RIDGE)
         self.f_connection_info.grid()
 
-        self.l_ip = tkinter.Label(self.f_connection_info, text="IP",
+        self.l_ip = tkinter.Label(self.f_connection_info, text="Address",
                                   anchor=tkinter.E, width=10)
         self.l_ip.grid(row=0, column=0, padx=5, pady=2)
+        Hovertip(self.l_ip, "Address of the server host ip or domain", 10)
 
         self.l_tcp_port = tkinter.Label(self.f_connection_info,
                                         text="TCP port", anchor=tkinter.E,
                                         width=10)
         self.l_tcp_port.grid(row=1, column=0, padx=5, pady=2)
+        Hovertip(self.l_ip, "TCP port of the host server (1024 - 10 000),"
+                            " can be the same UDP", 10)
 
         self.l_udp_port = tkinter.Label(self.f_connection_info,
                                         text="UDP port", anchor=tkinter.E,
                                         width=10)
         self.l_udp_port.grid(row=2, column=0, padx=5, pady=2)
+        Hovertip(self.l_ip, "UDP port of the host server (1024 - 10 000),"
+                            " can be the same as TCP", 10)
 
         self.l_username = tkinter.Label(self.f_connection_info,
                                         text="Username",
