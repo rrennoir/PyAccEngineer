@@ -27,11 +27,27 @@ class ClientInstance:
         self.looping_call = task.LoopingCall(self.check_queue)
         self.looping_call.start(0.01)
 
-        endpoint = TCP4ClientEndpoint(reactor, credis.ip, credis.tcp_port)
-        endpoint.connect(TCP_Factory(credis, self.tcp_queue))
+        endpoint = TCP4ClientEndpoint(reactor, credis.ip, credis.tcp_port, timeout=5)
+        
+        deferred = endpoint.connect(TCP_Factory(credis, self.tcp_queue))
+        deferred.addErrback(self._connectionErr)
 
         reactor.listenUDP(0, UDPClient(credis.ip, credis.udp_port,
                                        self.udp_queue))
+
+    def _connectionErr(self, reason: Failure) -> None:
+
+        client_log.warning(reason.value)
+
+        buffer = b""
+        buffer += struct.pack("!B", 0)
+        message: str = reason.value.MESSAGE
+        buffer += struct.pack("!B", len(message))
+        buffer += message.encode("utf-8")
+
+        net_data = NetData(NetworkQueue.ConnectionReply, buffer)
+
+        self.tcp_queue.q_out.append(net_data)
 
     def check_queue(self) -> None:
 
