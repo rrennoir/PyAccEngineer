@@ -29,7 +29,7 @@ For more images [here](https://imgur.com/a/ZlYYni5)
 
 ### Open the app
 
-- Use the start_PyAccEngineer.ps1 script
+- Use the start_PyAccEngineer.ps1 script (right click on it then run with powershell)
 
 or if you know what you are doing
 
