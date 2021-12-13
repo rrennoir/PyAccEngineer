@@ -2,8 +2,8 @@
 
 # Table of Contents
 
-1. [Install](#Install)
-2. [Usage](#Usage)
+1. [Install](#install)
+2. [Usage](#usage)
 3. [Usefull info](#warnings)
 4. [Donate](#donation)
 
@@ -20,6 +20,10 @@ For more images [here](https://imgur.com/a/ZlYYni5)
 
 **For sever host only**, client doesn't need to open anything on their router.
 - Open a TCP and UDP port (4269 TCP and 4270 UDP are the default)
+
+### Example of opening port for 4269 on both protocol (TCP and UDP)
+
+![port_forwarding_example](https://user-images.githubusercontent.com/32205591/145807682-943e091b-3cd3-4818-b71d-825ce2d52b37.png)
 
 ## Usage
 
