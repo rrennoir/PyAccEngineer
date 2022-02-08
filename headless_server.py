@@ -18,8 +18,8 @@ def headless(argv: List[str]) -> None:
     """
 
     try:
-        opts, args = getopt.getopt(argv[1:], "hu:t:",
-                                   ["help", "udp_port=", "tcp_port="])
+        opts, args = getopt.getopt(argv[1:], "hu:t:p:",
+                                   ["help", "udp_port=", "tcp_port=", "port="])
 
     except getopt.GetoptError as err:
 
@@ -27,12 +27,22 @@ def headless(argv: List[str]) -> None:
         sys.exit(2)
 
     tcp_port = 4269
-    udp_port = 4270
+    udp_port = 4269
     for opt, arg in opts:
 
         if opt in ("-h", "--help"):
             print(f"python {__file__} [-p <port> (default 4269)]")
             sys.exit()
+
+        elif opt in ("-p", "--port"):
+
+            if arg.isnumeric():
+                udp_port = int(arg)
+                tcp_port = int(arg)
+            
+            else:
+                logging.warning(f"Invalide UDP port arg: {arg}")
+                sys.exit(1)
 
         elif opt in ("-u", "--udp_port"):
 
