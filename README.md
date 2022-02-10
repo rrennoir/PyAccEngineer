@@ -1,4 +1,4 @@
-# PyAccEngineer v1.5.5
+# PyAccEngineer v1.5.9
 
 # Table of Contents
 
@@ -14,12 +14,12 @@ For more images [here](https://imgur.com/a/ZlYYni5)
 ## Install
 
 - Need python 3.8 or 3.9 (**don't use 3.10 it has problem installing some modules**), preferred [anaconda](https://www.anaconda.com/products/individual) or [python](https://www.python.org/downloads/)
-- Check to box while installing to ADD TO PATH
+- Check to box while installing to **ADD TO PATH**
 - Download the zip file in the [Release](https://github.com/rrennoir/PyAccEngineer/releases) or use git: `git clone https://github.com/rrennoir/PyAccEngineer.git --recursive`
-- Install the modules required, use the `install_module.ps1` script or do a `pip install -r requirement.txt` in the terminal
+- Install the modules required, use the `InstallModule.bat` script or the ps1, bat is recommended since it doesn't have the limitation by default
 
 **For sever host only**, client doesn't need to open anything on their router.
-- Open a TCP and UDP port (4269 TCP and 4270 UDP are the default)
+- Open a TCP and UDP port (4269 for TCP and UDP are the default)
 
 ### Example of opening port for 4269 on both protocol (TCP and UDP)
 
@@ -29,14 +29,7 @@ For more images [here](https://imgur.com/a/ZlYYni5)
 
 ### Open the app
 
-- Use the start_PyAccEngineer.ps1 script (right click on it then run with powershell)
-
-or if you know what you are doing
-
-- Open terminal
-- Navigate to the PyAccEngineer folder
-- Start venv (if used)
-- `python main.py`
+- Use the StartApp.bat / StartApp.ps1 script 
 
 #### Possible problems
 
@@ -51,7 +44,7 @@ or if you know what you are doing
 
 ### Run the server as headless (dedicated server)
 
-Simply run the Server.py, by default port is 4269 (TCP) and 4270 (UDP) use -u or --udp_port to change the UDP port and -t or --tcp_port to change the TCP port
+Simply run the Server.py, by default port is 4269 (TCP) and 4269 (UDP) use -u or --udp_port to change the UDP port and -t or --tcp_port to change the TCP port. To change both port at the same time use -p or --port `python headless_server.py -p 4275`
 
 
 ```powershell
