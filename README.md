@@ -2,9 +2,9 @@
 
 # Table of Contents
 
-1. [Install](#install)
+1. [Installation](#installation)
 2. [Usage](#usage)
-3. [Usefull info](#warnings)
+3. [Useful info](#warnings)
 4. [Donate](#donation)
 
 ![the app](https://i.imgur.com/lCR0e42.png)
