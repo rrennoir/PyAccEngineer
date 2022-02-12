@@ -15,8 +15,8 @@ For more images [here](https://imgur.com/a/ZlYYni5)
 
 - Need Python 3.8 or 3.9 (**don't use 3.10 it has problem installing some modules**), preferred [anaconda](https://www.anaconda.com/products/individual) or [python](https://www.python.org/downloads/)
 - Check the box **ADD TO PATH** while installing Python
-- Download the zip file from the [Release](https://github.com/rrennoir/PyAccEngineer/releases) page or use git: `git clone https://github.com/rrennoir/PyAccEngineer.git --recursive`
-- Install the modules required, using the `InstallModule.bat` script or the ps1, bat is recommended since it doesn't have the limitation by default
+- Download the zip file from the [Releases](https://github.com/rrennoir/PyAccEngineer/releases) page or use git: `git clone https://github.com/rrennoir/PyAccEngineer.git --recursive`
+- Install the required Python modules by running the `InstallModules.bat` or `InstallModules.ps` script. However .bat is recommended since it doesn't have the limitation by default
 
 **For server host only**, client doesn't need to open anything on their router.
 - Open TCP and UDP port (4269 for TCP and UDP are the default) for incoming connections
