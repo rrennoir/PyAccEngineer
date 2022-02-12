@@ -62,7 +62,7 @@ To stop the server simply press ctrl C in the cmd / powershell / windows termina
 - **At least one pit strategy must be set or different from the default**
 - When the strategy setter is started the driving user shouldn't alt tab (duh)
 
-## ***Will you controle my PC for other things ?***
+## ***Will you control my PC for other things ?***
 
 No and if you don't trust me just read the code 😂
 
