@@ -1,4 +1,4 @@
-Write-Host "Stating PyAccEngineer"
+Write-Host "Starting PyAccEngineer"
 PyAccEngineerEnv\Scripts\python.exe .\main.py
 
 Write-Host "Press any key to continue..."
