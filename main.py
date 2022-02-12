@@ -86,14 +86,14 @@ class ConnectionPage(ttk.Frame):
         self.l_ip = tkinter.Label(self.f_connection_info, text="Address",
                                   anchor=tkinter.E, width=10)
         self.l_ip.grid(row=0, column=0, padx=5, pady=2)
-        Hovertip(self.l_ip, "Address of the server host ip or domain", 10)
+        Hovertip(self.l_ip, "Hostname or IP address of the server", 10)
 
         self.l_tcp_port = tkinter.Label(self.f_connection_info,
                                         text="TCP port", anchor=tkinter.E,
                                         width=10)
         self.l_tcp_port.grid(row=1, column=0, padx=5, pady=2)
         Hovertip(self.l_ip, "TCP port of the host server (1024 - 10 000),"
-                            " can be the same UDP", 10)
+                            " can be the same as UDP", 10)
 
         self.l_udp_port = tkinter.Label(self.f_connection_info,
                                         text="UDP port", anchor=tkinter.E,
@@ -182,21 +182,21 @@ class ConnectionPage(ttk.Frame):
 
         except ValueError:
 
-            logging.info("Querrying dns server...")
+            logging.info("Querying DNS server...")
 
             try:
                 results = dns.resolver.resolve(self.cb_ip.get())
                 for result in results:
-                    logging.info(f"Found ip: {result.address}")
+                    logging.info(f"Found IP: {result.address}")
 
-                logging.info(f"Picking first dns answer: {results[0].address}")
+                logging.info(f"Picking first DNS answer: {results[0].address}")
                 ip = results[0].address
 
             except dns.resolver.NXDOMAIN:
-                error_message += "Invalide IP address or Domain name\n"
+                error_message += "Invalid IP address or domain name\n"
 
             except dns.resolver.NoAnswer:
-                error_message += ("DNS didn't replied to the request"
+                error_message += ("DNS didn't reply to the request"
                                   f" for {self.cb_ip.get()}")
 
             except dns.resolver.NoNameservers:
@@ -211,21 +211,21 @@ class ConnectionPage(ttk.Frame):
 
         else:
             self.e_tcp_port.config(background="Red")
-            error_message += "Invalide TCP port\n"
+            error_message += "Invalid TCP port\n"
 
         if self.e_udp_port.get().isnumeric():
             self.e_udp_port.config(background="White")
 
         else:
             self.e_udp_port.config(background="Red")
-            error_message += "Invalide UDP port\n"
+            error_message += "Invalid UDP port\n"
 
         if self.e_username.get() != "":
             self.e_username.config(background="White")
 
         else:
             self.e_username.config(background="Red")
-            error_message += "Invalide username\n"
+            error_message += "Invalid username\n"
 
         driverID = self.e_driverID.get()
         if driverID != "" and driverID.isnumeric() and 0 < int(driverID) <= 5:
@@ -237,11 +237,11 @@ class ConnectionPage(ttk.Frame):
                 error_message += ("Are you sure you are the driver N° "
                                   f"{driverID} in your team ?")
             else:
-                error_message += "Invalide driver ID\n"
+                error_message += "Invalid driver ID\n"
 
         if error_message == "":
 
-            logging.info("No error in the credidentials")
+            logging.info("No error in the credentials")
 
             self.credits = Credidentials(
                 ip=ip,
@@ -289,7 +289,7 @@ class ConnectionPage(ttk.Frame):
 
     def save_credidentials(self, credits: Credidentials) -> None:
 
-        logging.info("Saving credidentials")
+        logging.info("Saving credentials")
 
         if self.credidentials is None:
             saved_ip = [self.cb_ip.get()]
@@ -449,7 +449,7 @@ class App(tkinter.Tk):
         self.tab_control.add(self.driver_inputs, text="Driver Inputs")
         self.tab_control.add(self.tyre_graph, text="Pressures")
         self.tab_control.add(self.prev_lap_graph, text="Previous Laps")
-        self.tab_control.add(self.tyre_sets, text="Tyre sets")
+        self.tab_control.add(self.tyre_sets, text="Tyre Sets")
 
         self.tab_control.hide(0)
 
@@ -756,7 +756,7 @@ class App(tkinter.Tk):
 
     def connect_to_server(self, credits: Credidentials) -> None:
 
-        logging.info("Creating a ClientInstance connecting"
+        logging.info("Creating a ClientInstance, connecting"
                      f" to {credits.ip}:{credits.tcp_port}")
         self.client = ClientInstance(credits, self.net_queue)
 
