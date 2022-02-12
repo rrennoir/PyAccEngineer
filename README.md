@@ -11,15 +11,15 @@
 
 For more images [here](https://imgur.com/a/ZlYYni5)
 
-## Install
+## Installation
 
-- Need python 3.8 or 3.9 (**don't use 3.10 it has problem installing some modules**), preferred [anaconda](https://www.anaconda.com/products/individual) or [python](https://www.python.org/downloads/)
-- Check to box while installing to **ADD TO PATH**
-- Download the zip file in the [Release](https://github.com/rrennoir/PyAccEngineer/releases) or use git: `git clone https://github.com/rrennoir/PyAccEngineer.git --recursive`
-- Install the modules required, use the `InstallModule.bat` script or the ps1, bat is recommended since it doesn't have the limitation by default
+- Need Python 3.8 or 3.9 (**don't use 3.10 it has problem installing some modules**), preferred [anaconda](https://www.anaconda.com/products/individual) or [python](https://www.python.org/downloads/)
+- Check the box **ADD TO PATH** while installing Python
+- Download the zip file from the [Release](https://github.com/rrennoir/PyAccEngineer/releases) page or use git: `git clone https://github.com/rrennoir/PyAccEngineer.git --recursive`
+- Install the modules required, using the `InstallModule.bat` script or the ps1, bat is recommended since it doesn't have the limitation by default
 
-**For sever host only**, client doesn't need to open anything on their router.
-- Open a TCP and UDP port (4269 for TCP and UDP are the default)
+**For server host only**, client doesn't need to open anything on their router.
+- Open TCP and UDP port (4269 for TCP and UDP are the default) for incoming connections
 
 ### Example of opening port for 4269 on both protocol (TCP and UDP)
 
@@ -37,8 +37,8 @@ For more images [here](https://imgur.com/a/ZlYYni5)
 
 ### How to use it
 
-- One user connect as server and the others connect to it
-- [OPTIONAL] Chose the same username as in acc ("name surname") then so the user driving will be highlighted in green.
+- One user starts "As Server" and others connect to it
+- [OPTIONAL] Choose the same username as in ACC ("name surname"), so that the user driving can be recognized and will be highlighted in green.
 - `Update values` will refresh the information on the strategy page to the lastest value in game (mfd page)
 - `Set Strategy` will send a command to the user who is currently driving and set the strategy accordingly
 
@@ -62,7 +62,7 @@ To stop the server simply press ctrl C in the cmd / powershell / windows termina
 - **At least one pit strategy must be set or different from the default**
 - When the strategy setter is started the driving user shouldn't alt tab (duh)
 
-## ***Will you controle my pc for other things ?***
+## ***Will you controle my PC for other things ?***
 
 No and if you don't trust me just read the code 😂
 
