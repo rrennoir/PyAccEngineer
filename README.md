@@ -13,7 +13,7 @@ For more images [here](https://imgur.com/a/ZlYYni5)
 
 ## Installation
 
-- Need Python 3.8 or 3.9 (**don't use 3.10 it has problem installing some modules**), preferred [anaconda](https://www.anaconda.com/products/individual) or [python](https://www.python.org/downloads/)
+- You need Python 3.8 or 3.9 installed (**don't use 3.10 it has problem installing some modules**), preferrably [anaconda](https://www.anaconda.com/products/individual) or [python](https://www.python.org/downloads/)
 - Check the box **ADD TO PATH** while installing Python
 - Download the zip file from the [Releases](https://github.com/rrennoir/PyAccEngineer/releases) page or use git: `git clone https://github.com/rrennoir/PyAccEngineer.git --recursive`
 - Install the required Python modules by running the `InstallModules.bat` or `InstallModules.ps` script. However .bat is recommended since it doesn't have the limitation by default
@@ -44,13 +44,15 @@ For more images [here](https://imgur.com/a/ZlYYni5)
 
 ### Run the server as headless (dedicated server)
 
-Simply run the headless_server.py, by default port is 4269 (TCP) and 4269 (UDP) use -u or --udp_port to change the UDP port and -t or --tcp_port to change the TCP port. To change both port at the same time use -p or --port
+Simply run the headless_server.py, default port is 4269 (TCP) and 4269 (UDP). Or use the command line switches -u or --udp_port to change the UDP port and -t or --tcp_port to change the TCP port. To change both port at the same time use -p or --port
 
 ```powershell
+# sets both UDP/TCP ports to 4275
 python headless_server.py -p 4275
 ```
 
 ```powershell
+# sets ports for UDP to 4270 and TCP to 4269
 python headless_server.py -u 4270 --tcp_port 4269
 ```
 
