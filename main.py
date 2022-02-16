@@ -333,7 +333,7 @@ class App(tkinter.Tk):
 
         except FileNotFoundError:
             print("APP: './Config/gui.json' not found.")
-            return
+            sys.exit(1)
 
         self.font = (self.gui_config["font"], self.gui_config["font_size"])
 
