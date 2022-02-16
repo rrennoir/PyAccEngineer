@@ -41,7 +41,7 @@ def headless(argv: List[str]) -> None:
                 tcp_port = int(arg)
             
             else:
-                logging.warning(f"Invalide UDP port arg: {arg}")
+                logging.warning(f"Invalid port arg: {arg}")
                 sys.exit(1)
 
         elif opt in ("-u", "--udp_port"):
@@ -50,7 +50,7 @@ def headless(argv: List[str]) -> None:
                 udp_port = int(arg)
 
             else:
-                logging.warning(f"Invalide UDP port arg: {arg}")
+                logging.warning(f"Invalid UDP port arg: {arg}")
                 sys.exit(1)
 
         elif opt in ("-t", "--tcp_port"):
@@ -59,7 +59,7 @@ def headless(argv: List[str]) -> None:
                 tcp_port = int(arg)
 
             else:
-                logging.warning(f"Invalide TCP port arg: {arg}")
+                logging.warning(f"Invalid TCP port arg: {arg}")
                 sys.exit(1)
 
     ServerInstance(tcp_port, udp_port)
