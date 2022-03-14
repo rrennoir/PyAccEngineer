@@ -2,7 +2,7 @@
 
 - [PyAccEngineer v1.5.9](#pyaccengineer-v159)
   - [Download](#download)
-  - [Prerequisit](#prerequisit)
+  - [Prerequisitz](#prerequisitz)
   - [Installation](#installation)
     - [For server host (any driver, just one of them)](#for-server-host-any-driver-just-one-of-them)
   - [Open the app](#open-the-app)
@@ -27,7 +27,7 @@ Download the zip file from the [Releases](https://github.com/rrennoir/PyAccEngin
 
 Or use git: `git clone https://github.com/rrennoir/PyAccEngineer.git --recursive`
 
-## Prerequisit
+## Prerequisitz
 
 To work the app need Python installed (for the user is enough, doesn't require admin access) and added to the path. 
 
@@ -62,11 +62,11 @@ If you get the error `python isn't recognized...` and python is installed, [chec
 
 ### Nobody is able to connect
 
-If nobody can connect and the address / port are connect that mean the TCP port forwarding isn't setup correctly on the host router.
+If nobody can connect and the address / port are correct that mean the TCP port forwarding isn't setup correctly on the host router or the firewall is blocking the packets.
 
 ### Able to connect but no telemetry
 
-If everyone can connect, but no telemetry is received to the clients that mean the UDP port forwarding isn't setup correctly on the host router.
+If everyone can connect, but no telemetry is received to the clients that mean the UDP port forwarding isn't setup correctly on the host router or the firewall is blocking the packets.
 
 ## How to use it
 
