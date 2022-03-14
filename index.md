@@ -2,7 +2,7 @@
 
 - [PyAccEngineer v1.5.9](#pyaccengineer-v159)
   - [Download](#download)
-  - [Prerequisitz](#prerequisitz)
+  - [Prerequisite](#prerequisite)
   - [Installation](#installation)
     - [For server host (any driver, just one of them)](#for-server-host-any-driver-just-one-of-them)
   - [Open the app](#open-the-app)
@@ -27,7 +27,7 @@ Download the zip file from the [Releases](https://github.com/rrennoir/PyAccEngin
 
 Or use git: `git clone https://github.com/rrennoir/PyAccEngineer.git --recursive`
 
-## Prerequisitz
+## Prerequisite
 
 To work the app need Python installed (for the user is enough, doesn't require admin access) and added to the path. 
 
