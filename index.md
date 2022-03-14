@@ -1,37 +1,72 @@
-## Welcome to GitHub Pages
+# PyAccEngineer v1.5.9
 
-You can use the [editor on GitHub](https://github.com/rrennoir/PyAccEngineer/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
+1. [Installation](#installation)
+2. [Usage](#usage)
+3. [Useful info](#warnings)
+4. [Donate](#donation)
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+![the app](https://i.imgur.com/lCR0e42.png)
 
-### Markdown
+For more images [here](https://imgur.com/a/ZlYYni5)
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+## Installation
 
-```markdown
-Syntax highlighted code block
+- You need Python 3.8 or 3.9 installed (**don't use 3.10 it has problem installing some modules**), preferrably [anaconda](https://www.anaconda.com/products/individual) or [python](https://www.python.org/downloads/)
+- Check the box **ADD TO PATH** while installing Python
+- Download the zip file from the [Releases](https://github.com/rrennoir/PyAccEngineer/releases) page or use git: `git clone https://github.com/rrennoir/PyAccEngineer.git --recursive`
+- Install the required Python modules by running the `InstallModules.bat` or `InstallModules.ps` script. However .bat is recommended since it doesn't have the limitation by default
 
-# Header 1
-## Header 2
-### Header 3
+**For server host only**, client doesn't need to open anything on their router.
+- Open TCP and UDP port (4269 for TCP and UDP are the default) for incoming connections
 
-- Bulleted
-- List
+### Example of opening port for 4269 on both protocol (TCP and UDP)
 
-1. Numbered
-2. List
+![port_forwarding_example](https://user-images.githubusercontent.com/32205591/145807682-943e091b-3cd3-4818-b71d-825ce2d52b37.png)
 
-**Bold** and _Italic_ and `Code` text
+## Usage
 
-[Link](url) and ![Image](src)
+### Open the app
+
+- Use the StartApp.bat / StartApp.ps1 script 
+
+#### Possible problems
+
+- If you get the error `python isn't recognized...` and python is installed, [check here to add it to the path](https://www.educative.io/edpresso/how-to-add-python-to-path-variable-in-windows)
+
+### How to use it
+
+- One user starts "As Server" and others connect to it
+- [OPTIONAL] Choose the same username as in ACC ("name surname"), so that the user driving can be recognized and will be highlighted in green.
+- `Update values` will refresh the information on the strategy page to the lastest value in game (mfd page)
+- `Set Strategy` will send a command to the user who is currently driving and set the strategy accordingly
+
+### Run the server as headless (dedicated server)
+
+Simply run the headless_server.py, default port is 4269 (TCP) and 4269 (UDP). Or use the command line switches -u or --udp_port to change the UDP port and -t or --tcp_port to change the TCP port. To change both port at the same time use -p or --port
+
+```powershell
+# sets both UDP/TCP ports to 4275
+python headless_server.py -p 4275
 ```
 
-For more details see [Basic writing and formatting syntax](https://docs.github.com/en/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
+```powershell
+# sets ports for UDP to 4270 and TCP to 4269
+python headless_server.py -u 4270 --tcp_port 4269
+```
 
-### Jekyll Themes
+To stop the server simply press ctrl C in the cmd / powershell / windows terminal
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/rrennoir/PyAccEngineer/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+## **Warnings**
 
-### Support or Contact
+- **Tyre change must be on before the strategy setter is started**
+- **At least one pit strategy must be set or different from the default**
+- When the strategy setter is started the driving user shouldn't alt tab (duh)
 
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+## ***Will you control my PC for other things ?***
+
+No and if you don't trust me just read the code 😂
+
+## Donation
+
+If you have too much money you can donate [here](https://www.paypal.com/donate?hosted_button_id=H8LHDCTB7R2KC) 😊
+(and now gop will stop asking for a donate link 🐒)
