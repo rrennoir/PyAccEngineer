@@ -1,7 +1,5 @@
 # PyAccEngineer v1.5.9
 
-# Table of Contents
-
 1. [Installation](#installation)
 2. [Usage](#usage)
 3. [Useful info](#warnings)
