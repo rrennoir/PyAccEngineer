@@ -16,9 +16,12 @@ import win32com.client
 import win32con
 import win32gui
 from idlelib.tooltip import Hovertip
-from SharedMemory.PyAccSharedMemory import (ACC_SESSION_TYPE,
-                                            ACC_TRACK_GRIP_STATUS, ACC_map,
-                                            accSharedMemory)
+
+from pyaccsharedmemory import (accSharedMemory,
+                               ACC_map,
+                               ACC_SESSION_TYPE,
+                               ACC_TRACK_GRIP_STATUS)
+
 
 from modules.Common import CarInfo, PitStop, avg, string_time_from_ms
 from modules.Telemetry import Telemetry

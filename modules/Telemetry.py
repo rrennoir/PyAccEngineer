@@ -8,10 +8,10 @@ from dataclasses import astuple, dataclass
 from tkinter import ttk
 from typing import ClassVar, List, Optional, Tuple
 
-from SharedMemory.PyAccSharedMemory import (ACC_RAIN_INTENSITY,
-                                            ACC_SESSION_TYPE,
-                                            ACC_TRACK_GRIP_STATUS, CarDamage,
-                                            Wheels)
+from pyaccsharedmemory import (ACC_RAIN_INTENSITY,
+                               ACC_SESSION_TYPE,
+                               ACC_TRACK_GRIP_STATUS, CarDamage,
+                               Wheels)
 
 from modules.Common import convert_to_rgb, rgbtohex, string_time_from_ms
 
