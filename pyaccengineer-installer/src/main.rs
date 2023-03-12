@@ -1,81 +1,112 @@
+use std::fmt;
 use std::process::{exit, Command};
 
-fn check_python() -> bool {
-    // Check if python is installed
+use semver::{Version, VersionReq};
 
-    let output = Command::new("cmd")
+#[derive(Debug, Clone)]
+struct PythonError;
+
+impl std::error::Error for PythonError {}
+
+impl fmt::Display for PythonError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Error while executing python command")
+    }
+}
+
+fn get_python_version() -> Result<Version, PythonError> {
+    // Get the current Python version
+
+    let python_version = Command::new("cmd")
         .args(["/C", "python --version"])
         .output()
         .unwrap();
 
-    output.stderr.len() == 0
-}
-
-fn get_python_version() -> String {
-    const VERSIONS: [&str; 2] = ["3.9", "3.11"];
-
-    loop {
-        println!("Select the python version you have installed [3.9, 3.11]");
-
-        let mut input = String::new();
-        std::io::stdin()
-            .read_line(&mut input)
-            .expect("Failed to read stdin");
-
-        let version = input.trim();
-
-        if VERSIONS.contains(&version) {
-            return version.to_string();
-        }
+    if !python_version.status.success() {
+        return Err(PythonError);
     }
+
+    let string_output = String::from_utf8(python_version.stdout).unwrap();
+    let full_version = string_output.split_whitespace().last().unwrap();
+
+    let version = Version::parse(full_version).unwrap();
+
+    Ok(version)
 }
 
-fn create_venv(version: &String) {
-    println!("Creating virtual environment for Python {}...", version);
+fn create_venv() {
+    println!("Creating Python virtual environment ...");
 
-    let output = Command::new("cmd")
+    let python_venv = Command::new("cmd")
         .args(["/C", "python -m venv env"])
         .output()
         .unwrap();
 
-    println!("Venv stdout: {}", String::from_utf8(output.stdout).unwrap());
-    println!("Venv stderr: {}", String::from_utf8(output.stderr).unwrap());
+    println!(
+        "Venv stdout: {}",
+        String::from_utf8(python_venv.stdout).unwrap()
+    );
+    if !python_venv.status.success() {
+        println!(
+            "Venv stderr: {}",
+            String::from_utf8(python_venv.stderr).unwrap()
+        );
+    }
 }
 
-fn installing_packages(version: &String) {
+fn installing_packages(version: &Version) {
     println!("Installing packages for Python {}...", version);
 
-    let req_version = if version == "3.9" { "309" } else { "311" };
+    let minor_version;
+    if version.minor < 10 {
+        minor_version = format!("0{}", version.minor)
+    } else {
+        minor_version = format!("{}", version.minor)
+    }
 
-    let command = format!(
-        ".\\env\\Scripts\\pip.exe install -r requirement-{}.txt",
-        req_version
-    );
+    let requirement = format!("requirement-{}{}.txt", version.major, minor_version);
 
-    println!("{}", command);
+    let command = format!(".\\env\\Scripts\\pip.exe install -r {}", requirement);
 
-    let output = Command::new("cmd").args(["/C", &command]).output().unwrap();
+    println!("pip install commande is: {}", command);
+
+    let pip_install = Command::new("cmd").args(["/C", &command]).output().unwrap();
 
     println!(
         "Install stdout: {}",
-        String::from_utf8(output.stdout).unwrap()
+        String::from_utf8(pip_install.stdout).unwrap()
     );
-    println!(
-        "Install stderr: {}",
-        String::from_utf8(output.stderr).unwrap()
-    );
+
+    if !pip_install.status.success() {
+        println!(
+            "Install stderr: {}",
+            String::from_utf8(pip_install.stderr).unwrap()
+        );
+    }
 }
 
 fn main() {
-    if !check_python() {
-        println!("Python isn't correctly installed, not found in PATH !");
+    let python_requirements = VersionReq::parse(">=3.9, <=3.11").unwrap();
+
+    let python_version = match get_python_version() {
+        Ok(version) => version,
+        Err(PythonError) => {
+            println!("Python isn't correctly installed or isn't in PATH");
+            std::io::stdin().read_line(&mut String::new()).unwrap();
+            exit(1)
+        }
+    };
+
+    println!("Python version is: {}", python_version);
+
+    if !python_requirements.matches(&python_version) {
+        println!("The current Python version isn't supported.");
+        std::io::stdin().read_line(&mut String::new()).unwrap();
         exit(1)
     }
 
-    let version = get_python_version();
-
-    create_venv(&version);
-    installing_packages(&version);
+    create_venv();
+    installing_packages(&python_version);
 
     println!("Done, press enter to exit");
     std::io::stdin().read_line(&mut String::new()).unwrap();
